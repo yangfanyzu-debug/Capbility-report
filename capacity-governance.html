@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#09100f" />
+  <title>Capacity Agent · 容量治理指挥舱</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&amp;family=Noto+Sans+SC:wght@400;500;600;700;800&amp;family=Syne:wght@600;700&amp;display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="./capacity-governance.css" />
+</head>
+<body>
+  <a class="skip-link" href="#main">跳至主要内容</a>
+  <div class="noise" aria-hidden="true"></div>
+  <div class="shell">
+    <aside class="side">
+      <a class="brand" href="./capacity-governance.html" aria-label="Capacity Agent 首页">
+        <span class="brand-orbit"><i></i></span>
+        <span><strong>CAPACITY</strong><small>AGENT / 02</small></span>
+      </a>
+      <nav id="nav" aria-label="治理导航"></nav>
+      <div class="side-status">
+        <span class="live-dot"></span>
+        <div><b>自主值守中</b><small>下次取数 明日 08:00</small></div>
+      </div>
+      <a class="legacy-link" href="./index.html">← 返回原版本</a>
+    </aside>
+
+    <section class="stage">
+      <header class="topbar">
+        <div class="crumb" id="crumb">全域容量治理</div>
+        <div class="top-actions">
+          <label class="date-box"><span>数据日期</span><input id="date" type="date" value="2026-08-12" max="2026-08-12" /></label>
+          <button class="agent-chip" data-open-agent><span class="agent-eye"></span><span><b>Capacity Agent</b><small id="agent-mini-status">正在复核容量风险</small></span><em>3</em></button>
+          <button class="avatar" aria-label="用户：杨帆">杨</button>
+        </div>
+      </header>
+
+      <section class="workline" id="workline" aria-live="polite"></section>
+      <main id="main" tabindex="-1"></main>
+    </section>
+  </div>
+
+  <section class="agent-drawer" id="agent-drawer" aria-hidden="true" inert>
+    <header class="drawer-head">
+      <div class="agent-identity"><span class="agent-core"><i></i></span><div><small>YOUR CAPACITY COLLEAGUE</small><h2>Capacity Agent</h2><p><span class="live-dot"></span> 自主值守 · 今日第 14 轮</p></div></div>
+      <button class="icon-close" data-close-agent aria-label="关闭">×</button>
+    </header>
+    <div class="drawer-tabs" role="tablist">
+      <button class="active" data-agent-tab="log" role="tab">共事记录</button>
+      <button data-agent-tab="plan" role="tab">工作计划 <b>5</b></button>
+      <button data-agent-tab="memory" role="tab">判断依据</button>
+    </div>
+    <div class="drawer-content" id="drawer-content"></div>
+    <form class="agent-form" id="agent-form">
+      <div class="prompt-row">
+        <button type="button" data-prompt="解释 GreatDB 的判断依据">解释判断</button>
+        <button type="button" data-prompt="先分析支付系统">调整优先级</button>
+        <button type="button" data-prompt="模拟缩容一个 Redis 节点">模拟方案</button>
+      </div>
+      <div class="input-row"><textarea id="agent-input" rows="1" placeholder="追问、纠正，或给 Agent 新的分析方向…"></textarea><button>发送</button></div>
+      <small>你的反馈会进入 Agent 的工作上下文，不会自动执行生产变更</small>
+    </form>
+  </section>
+
+  <section class="modal" id="evidence-modal" aria-hidden="true" inert>
+    <div class="modal-card">
+      <button class="icon-close" data-close-modal aria-label="关闭">×</button>
+      <div id="modal-content"></div>
+    </div>
+  </section>
+  <div class="scrim" id="scrim" hidden></div>
+  <div class="toasts" id="toasts" aria-live="polite"></div>
+  <script src="./capacity-governance.js"></script>
+</body>
+</html>
