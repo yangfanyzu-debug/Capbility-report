@@ -16,46 +16,80 @@
   "组件拓扑": {
     "GREATDB": {
       "dsi-mgr": [
-        null,
-        null,
-        null,
-        null,
-        null
+        { "component": "greatdb", "cpu": "8", "hostname": "bja-dsi-mgr-kzx-0001", "idc": "BJ-DB", "ip": "25.131.100.101", "memory": 32, "mtype": "v", "os": "Kylin.Linux.Advanced.Server.release.V10.(Sword)" },
+        { "component": "greatdb", "cpu": "8", "hostname": "bja-dsi-mgr-kzx-0002", "idc": "BJ-DB", "ip": "25.131.100.102", "memory": 32, "mtype": "v", "os": "Kylin.Linux.Advanced.Server.release.V10.(Sword)" },
+        { "component": "greatdb", "cpu": "8", "hostname": "bjb-dsi-mgr-kzx-0001", "idc": "BJ-YZ", "ip": "25.131.100.103", "memory": 32, "mtype": "v", "os": "Kylin.Linux.Advanced.Server.release.V10.(Sword)" },
+        { "component": "greatdb", "cpu": "8", "hostname": "bjc-dsi-mgr-kzx-0001", "idc": "BJ-LH", "ip": "25.131.100.104", "memory": 32, "mtype": "v", "os": "Kylin.Linux.Advanced.Server.release.V10.(Sword)" },
+        { "component": "greatdb", "cpu": "8", "hostname": "bjc-dsi-mgr-kzx-0002", "idc": "BJ-LH", "ip": "25.131.100.105", "memory": 32, "mtype": "v", "os": "Kylin.Linux.Advanced.Server.release.V10.(Sword)" }
       ]
     },
     "HAPROXY": {
       "bja-dsi-haproxy-1": [
-        null,
-        null,
-        null,
-        null
+        { "component": "haproxy", "cpu": "4", "hostname": "bja-dsi-haproxy-kzx-0001", "idc": "BJ-DB", "ip": "25.131.101.101", "memory": 8, "mtype": "v", "os": "Kylin.Linux.Advanced.Server.release.V10.(Sword)" },
+        { "component": "haproxy", "cpu": "4", "hostname": "bja-dsi-haproxy-kzx-0002", "idc": "BJ-DB", "ip": "25.131.101.102", "memory": 8, "mtype": "v", "os": "Kylin.Linux.Advanced.Server.release.V10.(Sword)" },
+        { "component": "haproxy", "cpu": "4", "hostname": "bja-dsi-haproxy-kzx-0003", "idc": "BJ-DB", "ip": "25.131.101.103", "memory": 8, "mtype": "v", "os": "Kylin.Linux.Advanced.Server.release.V10.(Sword)" },
+        { "component": "haproxy", "cpu": "4", "hostname": "bja-dsi-haproxy-kzx-0004", "idc": "BJ-DB", "ip": "25.131.101.104", "memory": 8, "mtype": "v", "os": "Kylin.Linux.Advanced.Server.release.V10.(Sword)" }
       ],
       "bjb-dsi-haproxy-1": [
-        null,
-        null
+        { "component": "haproxy", "cpu": "4", "hostname": "bjb-dsi-haproxy-kzx-0001", "idc": "BJ-YZ", "ip": "25.131.102.101", "memory": 8, "mtype": "v", "os": "Kylin.Linux.Advanced.Server.release.V10.(Sword)" },
+        { "component": "haproxy", "cpu": "4", "hostname": "bjb-dsi-haproxy-kzx-0002", "idc": "BJ-YZ", "ip": "25.131.102.102", "memory": 8, "mtype": "v", "os": "Kylin.Linux.Advanced.Server.release.V10.(Sword)" }
       ],
       "bjc-dsi-haproxy-1": [
-        null,
-        null
+        { "component": "haproxy", "cpu": "4", "hostname": "bjc-dsi-haproxy-kzx-0001", "idc": "BJ-LH", "ip": "25.131.103.101", "memory": 8, "mtype": "v", "os": "Kylin.Linux.Advanced.Server.release.V10.(Sword)" },
+        { "component": "haproxy", "cpu": "4", "hostname": "bjc-dsi-haproxy-kzx-0002", "idc": "BJ-LH", "ip": "25.131.103.102", "memory": 8, "mtype": "v", "os": "Kylin.Linux.Advanced.Server.release.V10.(Sword)" }
       ]
     },
     "MYSQL": {
       "dsi-proc": [
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null
+        { "component": "mysql", "cpu": "8", "hostname": "bja-dsi-proc-kzx-0001", "idc": "BJ-DB", "ip": "25.131.104.101", "memory": 32, "mtype": "v", "os": "Kylin.Linux.Advanced.Server.release.V10.(Sword)" },
+        { "component": "mysql", "cpu": "8", "hostname": "bja-dsi-proc-kzx-0002", "idc": "BJ-DB", "ip": "25.131.104.102", "memory": 32, "mtype": "v", "os": "Kylin.Linux.Advanced.Server.release.V10.(Sword)" },
+        { "component": "mysql", "cpu": "8", "hostname": "bja-dsi-proc-kzx-0003", "idc": "BJ-DB", "ip": "25.131.104.103", "memory": 32, "mtype": "v", "os": "Kylin.Linux.Advanced.Server.release.V10.(Sword)" },
+        { "component": "mysql", "cpu": "8", "hostname": "bja-dsi-proc-kzx-0004", "idc": "BJ-DB", "ip": "25.131.104.104", "memory": 32, "mtype": "v", "os": "Kylin.Linux.Advanced.Server.release.V10.(Sword)" },
+        { "component": "mysql", "cpu": "8", "hostname": "bjb-dsi-proc-kzx-0001", "idc": "BJ-YZ", "ip": "25.131.104.105", "memory": 32, "mtype": "v", "os": "Kylin.Linux.Advanced.Server.release.V10.(Sword)" },
+        { "component": "mysql", "cpu": "8", "hostname": "bjb-dsi-proc-kzx-0002", "idc": "BJ-YZ", "ip": "25.131.104.106", "memory": 32, "mtype": "v", "os": "Kylin.Linux.Advanced.Server.release.V10.(Sword)" },
+        { "component": "mysql", "cpu": "8", "hostname": "bjc-dsi-proc-kzx-0001", "idc": "BJ-LH", "ip": "25.131.104.107", "memory": 32, "mtype": "v", "os": "Kylin.Linux.Advanced.Server.release.V10.(Sword)" },
+        { "component": "mysql", "cpu": "8", "hostname": "bjc-dsi-proc-kzx-0002", "idc": "BJ-LH", "ip": "25.131.104.108", "memory": 32, "mtype": "v", "os": "Kylin.Linux.Advanced.Server.release.V10.(Sword)" }
       ],
       "hfa-auth-risk": [
-        null
+        { "component": "mysql", "cpu": "4", "hostname": "bja-hfa-auth-risk-kzx-0001", "idc": "BJ-DB", "ip": "25.131.104.121", "memory": 16, "mtype": "v", "os": "Kylin.Linux.Advanced.Server.release.V10.(Sword)" }
       ]
     },
-    "NGINX": {},
-    "REDIS": {},
+    "NGINX": {
+      "bja-dsi-nginx-1": [
+        { "component": "nginx", "cpu": "4", "hostname": "bja-dsi-nginx-kzx-0001", "idc": "BJ-DB", "ip": "25.131.105.101", "memory": 8, "mtype": "v", "os": "Kylin.Linux.Advanced.Server.release.V10.(Sword)" },
+        { "component": "nginx", "cpu": "4", "hostname": "bja-dsi-nginx-kzx-0002", "idc": "BJ-DB", "ip": "25.131.105.102", "memory": 8, "mtype": "v", "os": "Kylin.Linux.Advanced.Server.release.V10.(Sword)" }
+      ],
+      "bjb-dsi-nginx-1": [
+        { "component": "nginx", "cpu": "4", "hostname": "bjb-dsi-nginx-kzx-0001", "idc": "BJ-YZ", "ip": "25.131.105.111", "memory": 8, "mtype": "v", "os": "Kylin.Linux.Advanced.Server.release.V10.(Sword)" },
+        { "component": "nginx", "cpu": "4", "hostname": "bjb-dsi-nginx-kzx-0002", "idc": "BJ-YZ", "ip": "25.131.105.112", "memory": 8, "mtype": "v", "os": "Kylin.Linux.Advanced.Server.release.V10.(Sword)" }
+      ],
+      "bjc-dsi-nginx-1": [
+        { "component": "nginx", "cpu": "4", "hostname": "bjc-dsi-nginx-kzx-0001", "idc": "BJ-LH", "ip": "25.131.105.121", "memory": 8, "mtype": "v", "os": "Kylin.Linux.Advanced.Server.release.V10.(Sword)" },
+        { "component": "nginx", "cpu": "4", "hostname": "bjc-dsi-nginx-kzx-0002", "idc": "BJ-LH", "ip": "25.131.105.122", "memory": 8, "mtype": "v", "os": "Kylin.Linux.Advanced.Server.release.V10.(Sword)" }
+      ],
+      "bjd-dsi-nginx-1": [
+        { "component": "nginx", "cpu": "4", "hostname": "bjd-dsi-nginx-kzx-0001", "idc": "BJ-YF", "ip": "25.131.105.131", "memory": 8, "mtype": "v", "os": "Kylin.Linux.Advanced.Server.release.V10.(Sword)" },
+        { "component": "nginx", "cpu": "4", "hostname": "bjd-dsi-nginx-kzx-0002", "idc": "BJ-YF", "ip": "25.131.105.132", "memory": 8, "mtype": "v", "os": "Kylin.Linux.Advanced.Server.release.V10.(Sword)" }
+      ]
+    },
+    "REDIS": {
+      "bja-dsi-redis-1": [
+        { "component": "redis", "cpu": "4", "hostname": "bja-dsi-redis-kzx-0001", "idc": "BJ-DB", "ip": "25.131.107.101", "memory": 16, "mtype": "v", "os": "Kylin.Linux.Advanced.Server.release.V10.(Sword)" },
+        { "component": "redis", "cpu": "4", "hostname": "bja-dsi-redis-kzx-0002", "idc": "BJ-DB", "ip": "25.131.107.102", "memory": 16, "mtype": "v", "os": "Kylin.Linux.Advanced.Server.release.V10.(Sword)" }
+      ],
+      "bjb-dsi-redis-1": [
+        { "component": "redis", "cpu": "4", "hostname": "bjb-dsi-redis-kzx-0001", "idc": "BJ-YZ", "ip": "25.131.107.111", "memory": 16, "mtype": "v", "os": "Kylin.Linux.Advanced.Server.release.V10.(Sword)" },
+        { "component": "redis", "cpu": "4", "hostname": "bjb-dsi-redis-kzx-0002", "idc": "BJ-YZ", "ip": "25.131.107.112", "memory": 16, "mtype": "v", "os": "Kylin.Linux.Advanced.Server.release.V10.(Sword)" }
+      ],
+      "bjc-dsi-redis-1": [
+        { "component": "redis", "cpu": "4", "hostname": "bjc-dsi-redis-kzx-0001", "idc": "BJ-LH", "ip": "25.131.107.121", "memory": 16, "mtype": "v", "os": "Kylin.Linux.Advanced.Server.release.V10.(Sword)" },
+        { "component": "redis", "cpu": "4", "hostname": "bjc-dsi-redis-kzx-0002", "idc": "BJ-LH", "ip": "25.131.107.122", "memory": 16, "mtype": "v", "os": "Kylin.Linux.Advanced.Server.release.V10.(Sword)" }
+      ],
+      "bjd-dsi-redis-1": [
+        { "component": "redis", "cpu": "4", "hostname": "bjd-dsi-redis-kzx-0001", "idc": "BJ-YF", "ip": "25.131.107.131", "memory": 16, "mtype": "v", "os": "Kylin.Linux.Advanced.Server.release.V10.(Sword)" },
+        { "component": "redis", "cpu": "4", "hostname": "bjd-dsi-redis-kzx-0002", "idc": "BJ-YF", "ip": "25.131.107.132", "memory": 16, "mtype": "v", "os": "Kylin.Linux.Advanced.Server.release.V10.(Sword)" }
+      ]
+    },
     "应用": {
       "dsi-python-kzx": [
         {
@@ -68,9 +102,36 @@
           "mtype": "v",
           "os": "Kylin.Linux.Advanced.Server.release.V10.(Sword)"
         },
-        null,
-        null,
-        null
+        {
+          "component": "dsi_data_python-executor",
+          "cpu": "4",
+          "hostname": "bjc-dsi-python-kzx-0002",
+          "idc": "BJ-DB",
+          "ip": "25.131.106.145",
+          "memory": 8,
+          "mtype": "v",
+          "os": "Kylin.Linux.Advanced.Server.release.V10.(Sword)"
+        },
+        {
+          "component": "dsi_data_python-executor",
+          "cpu": "4",
+          "hostname": "bjc-dsi-python-kzx-0003",
+          "idc": "BJ-DB",
+          "ip": "25.131.106.146",
+          "memory": 8,
+          "mtype": "v",
+          "os": "Kylin.Linux.Advanced.Server.release.V10.(Sword)"
+        },
+        {
+          "component": "dsi_data_python-executor",
+          "cpu": "4",
+          "hostname": "bjc-dsi-python-kzx-0004",
+          "idc": "BJ-DB",
+          "ip": "25.131.106.147",
+          "memory": 8,
+          "mtype": "v",
+          "os": "Kylin.Linux.Advanced.Server.release.V10.(Sword)"
+        }
       ]
     }
   },
