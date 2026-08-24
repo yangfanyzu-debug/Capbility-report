@@ -1,0 +1,115 @@
+{
+  "基础信息": {
+    "主机房": "北京汇天机房",
+    "数据中心": [
+      "北京东坝机房",
+      "深圳五联机房",
+      "合肥灾备机房",
+      "深圳南湾机房",
+      "北京南法信机房",
+      "北京马坡机房"
+    ],
+    "系统名": "S数据服务网关",
+    "系统简介": "纳管多系统的查询Api接口，并具有数据API和API编排、Api市场供卡中心各业务系统使用的网关平台。",
+    "系统重要性级别": "A"
+  },
+  "组件拓扑": {
+    "GREATDB": {
+      "dsi-mgr": [
+        null,
+        null,
+        null,
+        null,
+        null
+      ]
+    },
+    "HAPROXY": {
+      "bja-dsi-haproxy-1": [
+        null,
+        null,
+        null,
+        null
+      ],
+      "bjb-dsi-haproxy-1": [
+        null,
+        null
+      ],
+      "bjc-dsi-haproxy-1": [
+        null,
+        null
+      ]
+    },
+    "MYSQL": {
+      "dsi-proc": [
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      "hfa-auth-risk": [
+        null
+      ]
+    },
+    "NGINX": {},
+    "REDIS": {},
+    "应用": {
+      "dsi-python-kzx": [
+        {
+          "component": "dsi_data_python-executor",
+          "cpu": "4",
+          "hostname": "bjc-dsi-python-kzx-0001",
+          "idc": "BJ-DB",
+          "ip": "25.131.106.144",
+          "memory": 8,
+          "mtype": "v",
+          "os": "Kylin.Linux.Advanced.Server.release.V10.(Sword)"
+        },
+        null,
+        null,
+        null
+      ]
+    }
+  },
+  "链路": [
+    {
+      "fnode": "bja-dsi-haproxy-1",
+      "module": "HAPROXY",
+      "snode": "dsi-proc"
+    },
+    {
+      "fnode": "bjb-dsi-haproxy-1",
+      "module": "HAPROXY",
+      "snode": "dsi-proc"
+    },
+    {
+      "fnode": "bjc-dsi-haproxy-1",
+      "module": "HAPROXY",
+      "snode": "dsi-proc"
+    }
+  ],
+  "集群关系": {
+    "HAPROXY": [
+      {
+        "clusterName": "dsi-mgr-haproxy",
+        "nodes": [
+          "bjb-dsi-haproxy-1",
+          "bjc-dsi-haproxy-1"
+        ]
+      }
+    ],
+    "REDIS": [
+      {
+        "clusterName": "dsi-redis-1",
+        "nodes": [
+          "bjb-dsi-redis-1",
+          "bjc-dsi-redis-1"
+        ]
+      }
+    ],
+    "应用": []
+  }
+}
