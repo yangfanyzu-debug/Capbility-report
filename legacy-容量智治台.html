@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#071014" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 32 32%22><rect width=%2232%22 height=%2232%22 rx=%228%22 fill=%22%2310252c%22/><path d=%22M8 23V16h4v7zm6 0V8h4v15zm6 0V12h4v11z%22 fill=%22%2347c4ba%22/></svg>" />
+  <title>容量智治台 · SRE 性能容量治理</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&amp;family=Fira+Code:wght@400;500;600&amp;family=Noto+Sans+SC:wght@400;500;600;700&amp;display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <a class="skip-link" href="#main-content">跳至主要内容</a>
+  <div class="app-shell">
+    <aside class="sidebar" aria-label="主导航">
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i></span>
+        <div><strong>容量智治台</strong><small>CAPACITY OPS</small></div>
+      </div>
+      <nav id="main-nav"></nav>
+      <div class="sidebar-foot">
+        <div class="agent-presence"><span class="pulse-dot"></span><div><strong>Capacity Agent</strong><small>在线 · 持续分析中</small></div></div>
+        <button class="icon-button" id="collapse-btn" aria-label="折叠侧边栏" title="折叠侧边栏"></button>
+      </div>
+    </aside>
+
+    <section class="workspace">
+      <header class="topbar">
+        <div class="breadcrumb" id="breadcrumb"></div>
+        <div class="top-actions">
+          <label class="date-control"><span>数据日期</span><input id="date-picker" type="date" value="2026-08-06" max="2026-08-06" /></label>
+          <button class="icon-button notification-button" id="notification-btn" aria-label="查看通知"><span class="notification-badge">3</span></button>
+          <div class="user-chip"><span>杨</span><div><strong>杨帆</strong><small>SRE 管理员</small></div></div>
+        </div>
+      </header>
+
+      <section class="autonomy-rail" id="autonomy-rail" aria-label="Capacity Agent 自主运行状态" aria-live="polite"></section>
+
+      <main id="main-content" tabindex="-1"></main>
+    </section>
+  </div>
+
+  <section class="agent-drawer" id="agent-drawer" aria-label="AI Agent 分析工作台" aria-hidden="true" inert>
+    <header>
+      <div class="agent-title"><span class="agent-glyph"></span><div><strong>Capacity Agent</strong><small><span class="agent-online-dot"></span>容量值守同事 · 自主工作中</small></div></div>
+      <button class="icon-button close-button" data-close-agent aria-label="关闭 AI 工作台"></button>
+    </header>
+    <div class="agent-shift" id="agent-shift"></div>
+    <div class="agent-tabs" role="tablist" aria-label="Agent 工作区">
+      <button class="active" role="tab" data-agent-tab="conversation" aria-selected="true">共事记录</button>
+      <button role="tab" data-agent-tab="plan" aria-selected="false">今日计划 <span>4</span></button>
+      <button role="tab" data-agent-tab="memory" aria-selected="false">工作记忆</button>
+    </div>
+    <div id="agent-content" class="agent-content"></div>
+    <form class="agent-composer" id="agent-composer">
+      <div class="agent-suggestions" aria-label="快捷问题">
+        <button type="button" data-agent-prompt="为什么判断 GreatDB 磁盘有风险？">解释判断</button>
+        <button type="button" data-agent-prompt="先重点分析支付系统，其他任务往后排。">调整优先级</button>
+        <button type="button" data-agent-prompt="对比 Redis 各实例最近 30 天利用率。">追加任务</button>
+      </div>
+      <div class="composer-row"><textarea id="agent-input" rows="1" placeholder="和 Capacity Agent 沟通，追问或调整它的工作方向…" aria-label="给 Capacity Agent 发送消息"></textarea><button type="submit" class="composer-send" aria-label="发送消息">发送</button></div>
+      <small>Agent 会把你的意见写入当前工作计划，并继续自主跟进</small>
+    </form>
+  </section>
+
+  <div class="scrim" id="scrim" hidden></div>
+  <section class="data-sheet" id="data-sheet" aria-label="性能趋势数据" aria-hidden="true" inert>
+    <div id="data-sheet-content"></div>
+  </section>
+  <div class="toast-region" id="toast-region" aria-live="polite"></div>
+
+  <script src="./app.js"></script>
+</body>
+</html>
