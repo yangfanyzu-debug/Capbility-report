@@ -127,10 +127,10 @@ main{padding:36px clamp(24px,3vw,48px);max-width:1580px}
 .governance-table .task-title b{font-size:13px}
 .governance-table .task-title small{margin-top:5px;color:var(--acid);font:9px var(--mono)}
 .status-pill,.stage-badge{display:inline-flex;align-items:center;min-height:26px;border:1px solid #d4e2da;border-radius:999px;background:#f8fbf9;padding:0 10px;color:#39564a;font-size:11px;white-space:nowrap}
-.work-order{display:inline-flex;align-items:center;gap:8px;flex-wrap:wrap}
-.work-order b{font:11px var(--mono);letter-spacing:.02em}
-.work-order em{font-style:normal;border:1px solid #b9dccc;border-radius:999px;background:#eaf7f1;color:#0e7259;padding:3px 8px;font-size:10px;white-space:nowrap}
-.work-order em.done{border-color:#cfdad4;background:#f3f7f4;color:#62766c}
+.work-order-no{font:11px var(--mono);letter-spacing:.02em;color:#263f35;white-space:nowrap}
+.work-status{display:inline-flex;align-items:center;min-height:24px;border:1px solid #b9dccc;border-radius:999px;background:#eaf7f1;color:#0e7259;padding:0 9px;font-size:10px;white-space:nowrap}
+.work-status.done{border-color:#cfdad4;background:#f3f7f4;color:#62766c}
+.empty-cell{display:block;min-width:24px;min-height:1px}
 .table-actions{display:flex;gap:7px;flex-wrap:wrap;justify-content:flex-end}
 .task-verification{padding:20px}
 .life-step:before{border-color:#c8d5ce}.life-step:not(:last-child):after{background:#d6e1da}.life-step.done{color:#168066}.life-step.active{color:#0e7259}.life-step.active:before{box-shadow:0 0 0 4px rgba(19,125,101,.10)}

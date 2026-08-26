@@ -50,9 +50,9 @@ const systemDetails={
 };
 
 const tasks=[
-  {id:'CAP-1842',title:'GreatDB 磁盘容量风险处置',owner:'陈哲',stage:2,status:'变更评审',workOrder:'ACT-CHUG-20260826-0002',workStatus:'实施中',action:'查看证据'},
+  {id:'CAP-1842',title:'GreatDB 磁盘容量风险处置',owner:'陈哲',stage:2,status:'变更评审',workOrder:'ACT-CHUG-20260826-0002',workStatus:'评审中',action:'查看证据'},
   {id:'CAP-1839',title:'Redis 低利用实例缩容验证',owner:'王璐',stage:3,status:'观察第 3/7 天',workOrder:'ACT-CHUG-20260826-0003',workStatus:'实施完成',action:'效果验证'},
-  {id:'CAP-1831',title:'Nginx 节点规格降配',owner:'李琦',stage:4,status:'效果达标',workOrder:'',workStatus:'',action:'查看归档'}
+  {id:'CAP-1831',title:'Nginx 节点规格降配',owner:'李琦',stage:1,status:'方案待提单',workOrder:'',workStatus:'',action:'查看方案'}
 ];
 
 const messages=[
@@ -160,10 +160,10 @@ function fact(label,value){return `<div class="fact"><span>${label}</span><b>${v
 
 function renderTasks(){
   main.innerHTML=`
-  <section class="panel governance-table-panel"><div class="panel-head"><div><h2>正在治理的事项</h2><p>按治理任务、工单状态、当前阶段和 Agent 跟进动作查看</p></div><small>3 ACTIVE</small></div><div class="governance-table-wrap"><table class="governance-table"><thead><tr><th>治理任务</th><th>负责人</th><th>当前状态</th><th>治理工单</th><th>治理阶段</th><th>操作</th></tr></thead><tbody>${tasks.map(taskRow).join('')}</tbody></table></div></section>
+  <section class="panel governance-table-panel"><div class="panel-head"><div><h2>正在治理的事项</h2><p>按治理任务、当前状态、工单号、工单状态和 Agent 跟进动作查看</p></div><small>3 ACTIVE</small></div><div class="governance-table-wrap"><table class="governance-table"><thead><tr><th>治理任务</th><th>负责人</th><th>当前状态</th><th>变更单号</th><th>工单状态</th><th>治理阶段</th><th>操作</th></tr></thead><tbody>${tasks.map(taskRow).join('')}</tbody></table></div></section>
   <section class="panel verification task-verification"><p class="kicker">EFFECT VERIFICATION / CAP-1839</p><h2>Redis 缩容观察 · 第 3/7 天</h2><p style="color:var(--muted);font-size:11px">Agent 每天取数后自动比较变更前基线与变更后水位，并决定继续观察、回滚或进入下一步。</p><div class="verify-hero"><div class="verify-card"><span>变更前 CPU 峰值</span><strong>18%</strong></div><div class="verify-card"><span>变更后 CPU 峰值</span><strong class="verify-good">31%</strong></div><div class="verify-card"><span>内存峰值变化</span><strong class="verify-good">23% → 36%</strong></div><div class="verify-card"><span>异常 / 告警</span><strong class="verify-good">0 / 0</strong></div></div><div class="decision"><b>Agent 当前结论</b><p>效果符合预期，暂不继续缩容。待观察满 7 天且覆盖周末批处理窗口后，再评估由 5 台缩至 4 台。</p></div></section>`;
 }
-function taskRow(t){const stages=['发现','建议','审批','观察','验证'];return `<tr><td><span class="task-title"><b>${t.title}</b><small>${t.id}</small></span></td><td>${t.owner}</td><td><span class="status-pill">${t.status}</span></td><td>${t.workOrder?`<span class="work-order"><b>${t.workOrder}</b><em class="${t.workStatus==='实施完成'?'done':''}">${t.workStatus}</em></span>`:`<button class="btn small" data-create-workorder="${t.id}">去提单</button>`}</td><td><span class="stage-badge">${stages[t.stage]||'处理中'}</span></td><td><span class="table-actions"><button class="btn small" ${t.id==='CAP-1839'?'data-verify':''}>${t.action}</button><button class="btn small" data-open-followup="${t.id}">查看Agent跟进记录</button></span></td></tr>`}
+function taskRow(t){const stages=['发现','建议','审批','观察','验证'];return `<tr><td><span class="task-title"><b>${t.title}</b><small>${t.id}</small></span></td><td>${t.owner}</td><td><span class="status-pill">${t.status}</span></td><td>${t.workOrder?`<span class="work-order-no">${t.workOrder}</span>`:'<span class="empty-cell"></span>'}</td><td>${t.workOrder?`<span class="work-status ${t.workStatus==='实施完成'?'done':''}">${t.workStatus}</span>`:`<button class="btn small" data-create-workorder="${t.id}">去提单</button>`}</td><td><span class="stage-badge">${stages[t.stage]||'处理中'}</span></td><td><span class="table-actions"><button class="btn small" ${t.id==='CAP-1839'?'data-verify':''}>${t.action}</button><button class="btn small" data-open-followup="${t.id}">查看Agent跟进记录</button></span></td></tr>`}
 
 function renderWorkline(){
   const jobs=[['关联 GreatDB 30 日趋势','统一支付 / GreatDB'],['计算同类组件资源效率','渠道接入 / Nginx'],['轮询 CAP-1842 评审状态','治理任务'],['验证 Redis 缩容后水位','统一支付 / Redis']];
