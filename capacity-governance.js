@@ -50,9 +50,9 @@ const systemDetails={
 };
 
 const tasks=[
-  {id:'CAP-1842',title:'GreatDB 磁盘容量风险处置',owner:'陈哲',stage:2,status:'变更评审',action:'查看证据'},
-  {id:'CAP-1839',title:'Redis 低利用实例缩容验证',owner:'王璐',stage:3,status:'观察第 3/7 天',action:'效果验证'},
-  {id:'CAP-1831',title:'Nginx 节点规格降配',owner:'李琦',stage:4,status:'效果达标',action:'查看归档'}
+  {id:'CAP-1842',title:'GreatDB 磁盘容量风险处置',owner:'陈哲',stage:2,status:'变更评审',workOrder:'ACT-CHUG-20260826-0002',workStatus:'实施中',action:'查看证据'},
+  {id:'CAP-1839',title:'Redis 低利用实例缩容验证',owner:'王璐',stage:3,status:'观察第 3/7 天',workOrder:'ACT-CHUG-20260826-0003',workStatus:'实施完成',action:'效果验证'},
+  {id:'CAP-1831',title:'Nginx 节点规格降配',owner:'李琦',stage:4,status:'效果达标',workOrder:'',workStatus:'',action:'查看归档'}
 ];
 
 const messages=[
@@ -70,6 +70,7 @@ const workline=document.querySelector('#workline');
 const drawer=document.querySelector('#agent-drawer');
 const drawerContent=document.querySelector('#drawer-content');
 const modal=document.querySelector('#evidence-modal');
+const modalCard=document.querySelector('.modal-card');
 const modalContent=document.querySelector('#modal-content');
 const scrim=document.querySelector('#scrim');
 const agentInput=document.querySelector('#agent-input');
@@ -158,12 +159,11 @@ function renderAdmission(){
 function fact(label,value){return `<div class="fact"><span>${label}</span><b>${value}</b></div>`}
 
 function renderTasks(){
-  main.innerHTML=header('GOVERNANCE LOOP','治理闭环与效果验证','发现不是终点：建议、审批、执行、观察和验证均由 Agent 持续跟进',`<button class="btn">筛选任务</button><button class="btn acid" data-open-agent>查看 Agent 跟进记录</button>`)+`
-  <section class="panel"><div class="panel-head"><div><h2>正在治理的事项</h2><p>JIRA 状态与容量效果放在同一条时间线上</p></div><small>3 ACTIVE</small></div><div class="tasks">${tasks.map(taskRow).join('')}</div></section>
-  <section class="grid two" style="margin-top:15px"><article class="panel verification"><p class="kicker">EFFECT VERIFICATION / CAP-1839</p><h2>Redis 缩容观察 · 第 3/7 天</h2><p style="color:var(--muted);font-size:11px">Agent 每天取数后自动比较变更前基线与变更后水位，并决定继续观察、回滚或进入下一步。</p><div class="verify-hero"><div class="verify-card"><span>变更前 CPU 峰值</span><strong>18%</strong></div><div class="verify-card"><span>变更后 CPU 峰值</span><strong class="verify-good">31%</strong></div><div class="verify-card"><span>内存峰值变化</span><strong class="verify-good">23% → 36%</strong></div><div class="verify-card"><span>异常 / 告警</span><strong class="verify-good">0 / 0</strong></div></div><div class="decision"><b>Agent 当前结论</b><p>效果符合预期，暂不继续缩容。待观察满 7 天且覆盖周末批处理窗口后，再评估由 5 台缩至 4 台。</p></div></article>
-  <aside class="panel verification"><p class="kicker">AGENT FOLLOW-UP</p><h2>持续跟进记录</h2><div class="timeline"><div class="timeline-item"><b>08-09 22:00 · 已缩减 1 个节点</b><p>JIRA 变更完成，Agent 自动进入观察期。</p></div><div class="timeline-item"><b>08-10 08:15 · 首日验证正常</b><p>CPU P95 29%，无新增告警。</p></div><div class="timeline-item"><b>今天 08:20 · 第三日验证正常</b><p>业务流量较基线 +7%，容量水位仍安全。</p></div><div class="timeline-item"><b>下一步 · 08-16 自动复核</b><p>覆盖完整观察窗口后生成最终结论。</p></div></div></aside></section>`;
+  main.innerHTML=`
+  <section class="panel governance-table-panel"><div class="panel-head"><div><h2>正在治理的事项</h2><p>按治理任务、工单状态、当前阶段和 Agent 跟进动作查看</p></div><small>3 ACTIVE</small></div><div class="governance-table-wrap"><table class="governance-table"><thead><tr><th>治理任务</th><th>负责人</th><th>当前状态</th><th>治理工单</th><th>治理阶段</th><th>操作</th></tr></thead><tbody>${tasks.map(taskRow).join('')}</tbody></table></div></section>
+  <section class="panel verification task-verification"><p class="kicker">EFFECT VERIFICATION / CAP-1839</p><h2>Redis 缩容观察 · 第 3/7 天</h2><p style="color:var(--muted);font-size:11px">Agent 每天取数后自动比较变更前基线与变更后水位，并决定继续观察、回滚或进入下一步。</p><div class="verify-hero"><div class="verify-card"><span>变更前 CPU 峰值</span><strong>18%</strong></div><div class="verify-card"><span>变更后 CPU 峰值</span><strong class="verify-good">31%</strong></div><div class="verify-card"><span>内存峰值变化</span><strong class="verify-good">23% → 36%</strong></div><div class="verify-card"><span>异常 / 告警</span><strong class="verify-good">0 / 0</strong></div></div><div class="decision"><b>Agent 当前结论</b><p>效果符合预期，暂不继续缩容。待观察满 7 天且覆盖周末批处理窗口后，再评估由 5 台缩至 4 台。</p></div></section>`;
 }
-function taskRow(t){const labels=['发现','建议','审批','观察','验证'];return `<article class="task"><span class="task-id">${t.id}</span><span class="task-title"><b>${t.title}</b><small>${t.owner} · ${t.status}</small></span><span class="lifecycle">${labels.map((x,i)=>`<span class="life-step ${i<t.stage?'done':i===t.stage?'active':''}">${x}</span>`).join('')}</span><span class="task-action"><button class="btn small" ${t.id==='CAP-1839'?'data-verify':''}>${t.action}</button></span></article>`}
+function taskRow(t){const stages=['发现','建议','审批','观察','验证'];return `<tr><td><span class="task-title"><b>${t.title}</b><small>${t.id}</small></span></td><td>${t.owner}</td><td><span class="status-pill">${t.status}</span></td><td>${t.workOrder?`<span class="work-order"><b>${t.workOrder}</b><em class="${t.workStatus==='实施完成'?'done':''}">${t.workStatus}</em></span>`:`<button class="btn small" data-create-workorder="${t.id}">去提单</button>`}</td><td><span class="stage-badge">${stages[t.stage]||'处理中'}</span></td><td><span class="table-actions"><button class="btn small" ${t.id==='CAP-1839'?'data-verify':''}>${t.action}</button><button class="btn small" data-open-followup="${t.id}">查看Agent跟进记录</button></span></td></tr>`}
 
 function renderWorkline(){
   const jobs=[['关联 GreatDB 30 日趋势','统一支付 / GreatDB'],['计算同类组件资源效率','渠道接入 / Nginx'],['轮询 CAP-1842 评审状态','治理任务'],['验证 Redis 缩容后水位','统一支付 / Redis']];
@@ -184,7 +184,19 @@ function memory(label,title){return `<div class="memory-card"><small>WORKING MEM
 
 function openAgent(){state.agentOpen=true;drawer.classList.add('open');drawer.removeAttribute('inert');drawer.setAttribute('aria-hidden','false');scrim.hidden=false;renderDrawer()}
 function closeOverlays(){state.agentOpen=false;drawer.classList.remove('open');drawer.setAttribute('inert','');drawer.setAttribute('aria-hidden','true');modal.classList.remove('open');modal.setAttribute('inert','');modal.setAttribute('aria-hidden','true');scrim.hidden=true}
-function openEvidence(){modalContent.innerHTML=`<div class="evidence-head"><small>HOW I REACHED THIS CONCLUSION</small><h2>这不是一句“AI 觉得有风险”</h2><p>Capacity Agent 把计算、判断与行动分开呈现，SRE 可以检查每一层证据。</p></div><div class="evidence-steps"><div class="evidence-step"><span>01 / CALCULATE</span><h3>算法负责算</h3><p>关联 30 日历史，计算动态基线、7 日斜率、节点极差和预计触达阈值时间。</p></div><div class="evidence-step"><span>02 / REASON</span><h3>AI 负责判断</h3><p>结合主备角色、系统等级和治理规则，判断是整体不足、单节点异常还是负载倾斜。</p></div><div class="evidence-step"><span>03 / ACT</span><h3>Agent 负责做</h3><p>生成建议、等待关键审批、创建 JIRA、轮询状态并验证变更后的容量效果。</p></div></div><div class="explain" style="margin-top:18px"><strong>本次结论：</strong>GreatDB 风险置信度 91%。证据包括峰值 87.6%、偏离基线 18.4%、连续 7 日增长和节点极差 49.6%。</div>`;modal.classList.add('open');modal.removeAttribute('inert');modal.setAttribute('aria-hidden','false');scrim.hidden=false}
+function openEvidence(){modalCard.classList.remove('followup-card');modalContent.innerHTML=`<div class="evidence-head"><small>HOW I REACHED THIS CONCLUSION</small><h2>这不是一句“AI 觉得有风险”</h2><p>Capacity Agent 把计算、判断与行动分开呈现，SRE 可以检查每一层证据。</p></div><div class="evidence-steps"><div class="evidence-step"><span>01 / CALCULATE</span><h3>算法负责算</h3><p>关联 30 日历史，计算动态基线、7 日斜率、节点极差和预计触达阈值时间。</p></div><div class="evidence-step"><span>02 / REASON</span><h3>AI 负责判断</h3><p>结合主备角色、系统等级和治理规则，判断是整体不足、单节点异常还是负载倾斜。</p></div><div class="evidence-step"><span>03 / ACT</span><h3>Agent 负责做</h3><p>生成建议、等待关键审批、创建 JIRA、轮询状态并验证变更后的容量效果。</p></div></div><div class="explain" style="margin-top:18px"><strong>本次结论：</strong>GreatDB 风险置信度 91%。证据包括峰值 87.6%、偏离基线 18.4%、连续 7 日增长和节点极差 49.6%。</div>`;modal.classList.add('open');modal.removeAttribute('inert');modal.setAttribute('aria-hidden','false');scrim.hidden=false}
+function openFollowup(taskId){
+  const task=tasks.find(t=>t.id===taskId)||tasks[1];
+  const events=[
+    ['08-09 22:00 · 已缩减 1 个节点','JIRA 变更完成，Agent 自动进入观察期。'],
+    ['08-10 08:15 · 首日验证正常','CPU P95 29%，无新增告警。'],
+    ['今天 08:20 · 第三日验证正常','业务流量较基线 +7%，容量水位仍安全。'],
+    ['下一步 · 08-16 自动复核','覆盖完整观察窗口后生成最终结论。']
+  ];
+  modalCard.classList.add('followup-card');
+  modalContent.innerHTML=`<div class="follow-dialog"><div class="evidence-head"><small>AGENT FOLLOW-UP / ${task.id}</small><h2>${task.title}</h2><p>${task.workOrder?`${task.workOrder} · ${task.workStatus}`:'当前治理任务尚未提单，Agent 会在提单后继续自动轮询状态。'}</p></div><div class="dialog-timeline">${events.map(([title,body],i)=>`<div class="timeline-item" style="--i:${i}"><b>${title}</b><p>${body}</p></div>`).join('')}</div></div>`;
+  modal.classList.add('open');modal.removeAttribute('inert');modal.setAttribute('aria-hidden','false');scrim.hidden=false;
+}
 function toast(title,body){const el=document.createElement('div');el.className='toast';el.innerHTML=`<b>${title}</b><span>${body}</span>`;document.querySelector('#toasts').append(el);setTimeout(()=>el.remove(),3800)}
 
 document.addEventListener('click',e=>{
@@ -192,9 +204,11 @@ document.addEventListener('click',e=>{
   if(e.target.closest('[data-open-agent]')){openAgent();return}
   if(e.target.closest('[data-close-agent]')||e.target.closest('[data-close-modal]')||e.target===scrim){closeOverlays();return}
   if(e.target.closest('[data-open-evidence]')){openEvidence();return}
+  const follow=e.target.closest('[data-open-followup]');if(follow){openFollowup(follow.dataset.openFollowup);return}
   const tab=e.target.closest('[data-agent-tab]');if(tab){state.agentTab=tab.dataset.agentTab;renderDrawer();return}
   const prompt=e.target.closest('[data-prompt]');if(prompt){agentInput.value=prompt.dataset.prompt;agentInput.focus();return}
   if(e.target.closest('[data-create-task]')){toast('已生成静态演示任务','CAP-1848 已进入“待 SRE 审批”，不会触发真实生产变更。');return}
+  if(e.target.closest('[data-create-workorder]')){toast('已准备治理工单','演示环境不会真实提单，请在生产流程中完成变更单创建。');return}
   if(e.target.closest('[data-review]')){toast('Capacity Agent 已完成评估','已结合历史趋势、同类对标与安全余量，建议新增 4 台。');return}
   if(e.target.closest('[data-reset-sim]')){state.simNodes=5;state.simLoad=20;renderSimulator();return}
   if(e.target.closest('[data-verify]')){toast('效果验证正常','Redis 缩容后连续 3 天处于安全水位，将继续观察至第 7 天。');return}
