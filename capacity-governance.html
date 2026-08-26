@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&amp;family=Noto+Sans+SC:wght@400;500;600;700;800&amp;family=Syne:wght@600;700&amp;display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="./capacity-governance.css?v=20260826-no-hero" />
+  <link rel="stylesheet" href="./capacity-governance.css?v=20260826-topbar-agent" />
 </head>
 <body>
   <a class="skip-link" href="#main">跳至主要内容</a>
@@ -31,14 +31,13 @@
     <section class="stage">
       <header class="topbar">
         <div class="crumb" id="crumb">我的容量治理</div>
+        <section class="workline" id="workline" aria-live="polite"></section>
         <div class="top-actions">
-          <label class="date-box"><span>数据日期</span><input id="date" type="date" value="2026-08-12" max="2026-08-12" /></label>
           <button class="agent-chip" data-open-agent><span class="agent-eye"></span><span><b>Capacity Agent</b><small id="agent-mini-status">正在复核容量风险</small></span><em>3</em></button>
           <button class="avatar" aria-label="用户：杨帆">杨</button>
         </div>
       </header>
 
-      <section class="workline" id="workline" aria-live="polite"></section>
       <main id="main" tabindex="-1"></main>
     </section>
   </div>
@@ -73,6 +72,6 @@
   </section>
   <div class="scrim" id="scrim" hidden></div>
   <div class="toasts" id="toasts" aria-live="polite"></div>
-  <script src="./capacity-governance.js?v=20260826-no-hero"></script>
+  <script src="./capacity-governance.js?v=20260826-topbar-agent"></script>
 </body>
 </html>

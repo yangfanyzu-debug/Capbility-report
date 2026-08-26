@@ -208,7 +208,6 @@ document.addEventListener('input',e=>{
 
 document.addEventListener('change',e=>{if(e.target.id==='system-select'){state.selectedSystemId=e.target.value;render()}});
 document.querySelector('#agent-form').addEventListener('submit',e=>{e.preventDefault();const text=agentInput.value.trim();if(!text)return;messages.push({time:'刚刚',title:'收到，我已经调整工作上下文',body:`你的要求“${text}”已进入当前计划。我会先验证相关数据和安全约束，再主动汇报结论。`,tone:'user'});agentInput.value='';state.agentTab='log';renderDrawer();drawerContent.scrollTop=drawerContent.scrollHeight;toast('分析方向已更新','Agent 会继续自主工作，并在有结论时主动通知你。')});
-document.querySelector('#date').addEventListener('change',e=>toast('历史快照已切换',`${e.target.value} 的静态容量数据已加载，Agent 结论随日期同步更新。`));
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeOverlays()});
 
 render();renderWorkline();

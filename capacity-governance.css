@@ -31,7 +31,10 @@ body{
 .nav-item em{border-color:#cbd9d1;background:rgba(255,255,255,.7)}
 .side-status{border-color:#d7e5dd;background:linear-gradient(145deg,#f1f8f4,#fff);box-shadow:0 10px 28px rgba(38,83,62,.06)}
 .live-dot{box-shadow:0 0 0 5px rgba(34,155,120,.10)}
-.topbar{background:rgba(250,252,249,.86);border-color:rgba(215,226,219,.9);box-shadow:0 1px 0 rgba(255,255,255,.9)}
+.topbar{background:rgba(250,252,249,.86);border-color:rgba(215,226,219,.9);box-shadow:0 1px 0 rgba(255,255,255,.9);display:grid;grid-template-columns:max-content minmax(300px,1fr) max-content;gap:18px}
+.topbar .workline{min-width:0;min-height:42px;padding:0 8px;border:0;background:transparent;color:#667a70;gap:8px;white-space:nowrap;overflow:hidden}
+.topbar .workline b{flex:0 0 auto}.topbar .workline>span:nth-of-type(2){min-width:0;overflow:hidden;text-overflow:ellipsis}
+.topbar .work-progress{flex:0 0 min(150px,22%);max-width:150px}.topbar .workline button{flex:0 0 auto;margin-left:6px}
 .date-box,.agent-chip{border-color:#d8e3dc;background:rgba(255,255,255,.9);box-shadow:0 6px 18px rgba(40,74,58,.05)}
 .date-box input{color-scheme:light}
 .agent-chip{transition:border-color .2s,box-shadow .2s,transform .2s}
