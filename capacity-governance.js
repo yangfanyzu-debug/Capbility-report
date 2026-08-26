@@ -80,7 +80,7 @@ function navHTML(){
 }
 
 function header(kicker,title,subtitle,actions=''){
-  return `<header class="page-head"><div><p class="kicker">${kicker}</p><h1>${title}</h1><p>${subtitle}</p></div><div class="head-actions">${actions}</div></header>`;
+  return `<section class="page-toolbar"><div><span>${kicker}</span><strong>${title}</strong><small>${subtitle}</small></div><div class="toolbar-actions">${actions}</div></section>`;
 }
 
 function render(){
