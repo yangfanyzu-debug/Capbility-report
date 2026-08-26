@@ -146,11 +146,28 @@ main{padding:36px clamp(24px,3vw,48px);max-width:1580px}
 .input-row{border-color:#c6d9cf;background:#fff;box-shadow:0 4px 14px rgba(39,72,56,.05)}.input-row textarea{color:var(--ink)}
 .scrim{background:rgba(23,37,31,.34);backdrop-filter:blur(4px)}
 .modal-card{border-color:#d4e1d9;background:#fff;box-shadow:0 28px 80px rgba(29,58,44,.18)}
-.modal-card.followup-card{width:min(680px,calc(100vw - 28px))}
-.follow-dialog .evidence-head h2{font-size:21px;line-height:1.35}
-.dialog-timeline{position:relative;margin-top:22px;padding:4px 0 2px 22px;border-left:1px solid #cbdad2}
-.dialog-timeline .timeline-item{opacity:0;transform:translateY(10px);animation:timelineIn .44s cubic-bezier(.2,.8,.2,1) forwards;animation-delay:calc(var(--i)*.13s);margin-bottom:20px}
-.dialog-timeline .timeline-item:before{background:#168066;box-shadow:0 0 0 6px rgba(22,128,102,.10)}
+.modal-card.followup-card{width:min(760px,calc(100vw - 28px));padding:0;overflow:hidden;border-color:#d8e6df;background:linear-gradient(180deg,#fbfdfb,#fff);box-shadow:0 32px 90px rgba(26,55,42,.20)}
+.followup-card>.icon-close{right:18px;top:18px;width:32px;height:32px;border:1px solid #d7e5de;border-radius:50%;background:rgba(255,255,255,.82);color:#61786d;font-size:21px;z-index:2;transition:.18s}
+.followup-card>.icon-close:hover{background:#eff7f3;color:#0e7259;transform:rotate(6deg)}
+.follow-hero{position:relative;display:flex;align-items:flex-start;justify-content:space-between;gap:24px;padding:28px 58px 24px 30px;background:radial-gradient(circle at 88% 0,rgba(19,125,101,.12),transparent 34%),linear-gradient(135deg,#f7fbf8,#fff 68%);border-bottom:1px solid #e4eee8}
+.follow-hero small{color:#0e7259;font:9px var(--mono);letter-spacing:.14em}
+.follow-hero h2{margin:9px 0 9px;font-size:24px;line-height:1.32;letter-spacing:-.02em}
+.follow-hero p{margin:0;color:#667a70;font-size:12px;line-height:1.7;max-width:520px}
+.follow-status{flex:0 0 auto;margin-top:28px;border:1px solid #b9dccc;border-radius:999px;background:#eaf7f1;color:#0e7259;padding:6px 10px;font-size:11px;white-space:nowrap}
+.follow-status.done{border-color:#cfdad4;background:#f3f7f4;color:#62766c}
+.follow-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:16px 30px;background:rgba(248,251,249,.72);border-bottom:1px solid #edf3ef}
+.follow-summary div{border:1px solid #e0ebe5;border-radius:12px;background:#fff;padding:12px 13px;box-shadow:0 8px 20px rgba(36,72,55,.035)}
+.follow-summary span,.follow-summary b{display:block}
+.follow-summary span{color:#7b8d84;font-size:10px;margin-bottom:6px}
+.follow-summary b{font:12px var(--mono);color:#213a30;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dialog-timeline{position:relative;margin:0;padding:24px 30px 30px 58px}
+.dialog-timeline:before{content:"";position:absolute;left:42px;top:34px;bottom:42px;width:1px;background:linear-gradient(#b9dccc,#e3efe9)}
+.dialog-timeline .timeline-item{position:relative;display:grid;grid-template-columns:34px 1fr;gap:12px;align-items:flex-start;margin:0 0 12px;opacity:0;transform:translateY(10px);animation:timelineIn .44s cubic-bezier(.2,.8,.2,1) forwards;animation-delay:calc(var(--i)*.13s)}
+.dialog-timeline .timeline-item:before{display:none}
+.timeline-dot{position:relative;z-index:1;width:28px;height:28px;border:1px solid #b9dccc;border-radius:50%;background:#f0f8f4;color:#0e7259;display:grid;place-items:center;font:9px var(--mono);box-shadow:0 0 0 6px #fff}
+.dialog-timeline .timeline-item>div{border:1px solid #e0ebe5;border-radius:14px;background:linear-gradient(180deg,#fff,#fbfdfb);padding:13px 15px;box-shadow:0 10px 24px rgba(36,72,55,.045)}
+.dialog-timeline .timeline-item b{display:block;font-size:12px;line-height:1.45}
+.dialog-timeline .timeline-item p{margin:5px 0 0;color:#667a70;font-size:11px;line-height:1.7}
 .evidence-step{border-color:#dce5df;background:#f8faf8}
 .toasts{right:24px;top:116px;bottom:auto;align-items:start}
 .toast{border-color:#bad5c8;background:#fff;box-shadow:0 18px 46px rgba(31,68,50,.16);animation:toastIn .28s cubic-bezier(.2,.8,.2,1)}.toast b{color:#0e7259}

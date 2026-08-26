@@ -199,7 +199,7 @@ function openFollowup(taskId){
     ['下一步 · 08-16 自动复核','覆盖完整观察窗口后生成最终结论。']
   ];
   modalCard.classList.add('followup-card');
-  modalContent.innerHTML=`<div class="follow-dialog"><div class="evidence-head"><small>AGENT FOLLOW-UP / ${task.id}</small><h2>${task.title}</h2><p>${task.workOrder?`${task.workOrder} · ${task.workStatus}`:'当前治理任务尚未提单，Agent 会在提单后继续自动轮询状态。'}</p></div><div class="dialog-timeline">${events.map(([title,body],i)=>`<div class="timeline-item" style="--i:${i}"><b>${title}</b><p>${body}</p></div>`).join('')}</div></div>`;
+  modalContent.innerHTML=`<div class="follow-dialog"><header class="follow-hero"><div><small>AGENT FOLLOW-UP / ${task.id}</small><h2>${task.title}</h2><p>${task.workOrder?`Agent 正在跟进 ${task.workOrder}，当前变更状态为 ${task.workStatus}。`:'当前治理任务尚未提单，Agent 会在提单后继续自动轮询状态。'}</p></div><span class="follow-status ${task.workStatus==='实施完成'?'done':''}">${task.workStatus||'待提单'}</span></header><div class="follow-summary"><div><span>治理工单</span><b>${task.id}</b></div><div><span>变更单</span><b>${task.workOrder||'尚未创建'}</b></div><div><span>当前阶段</span><b>${task.status}</b></div></div><div class="dialog-timeline">${events.map(([title,body],i)=>`<div class="timeline-item" style="--i:${i}"><span class="timeline-dot">${String(i+1).padStart(2,'0')}</span><div><b>${title}</b><p>${body}</p></div></div>`).join('')}</div></div>`;
   modal.classList.add('open');modal.removeAttribute('inert');modal.setAttribute('aria-hidden','false');scrim.hidden=false;
 }
 function toast(title,body){const el=document.createElement('div');el.className='toast';el.innerHTML=`<b>${title}</b><span>${body}</span>`;document.querySelector('#toasts').append(el);setTimeout(()=>el.remove(),3800)}
