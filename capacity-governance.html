@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&amp;family=Noto+Sans+SC:wght@400;500;600;700;800&amp;family=Syne:wght@600;700&amp;display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="./capacity-governance.css?v=20260826-task-table-dialog" />
+  <link rel="stylesheet" href="./capacity-governance.css?v=20260826-agent-pet" />
 </head>
 <body>
   <a class="skip-link" href="#main">跳至主要内容</a>
@@ -42,8 +42,12 @@
   </div>
 
   <button class="agent-float" id="agent-float" data-open-agent aria-label="打开 Capacity Agent 工作现场">
-    <span class="agent-float-core"><span class="agent-eye"></span><i>3</i></span>
-    <span class="agent-float-copy"><b>Capacity Agent</b><small id="agent-mini-status">正在复核容量风险</small></span>
+    <span class="agent-bubble"><b>Capacity Agent</b><small id="agent-mini-status">正在复核容量风险</small></span>
+    <span class="agent-bot" aria-hidden="true">
+      <span class="agent-antenna"></span>
+      <span class="agent-face"><i></i><i></i><em></em></span>
+      <span class="agent-body"><i>3</i></span>
+    </span>
   </button>
 
   <section class="agent-drawer" id="agent-drawer" aria-hidden="true" inert>
@@ -76,6 +80,6 @@
   </section>
   <div class="scrim" id="scrim" hidden></div>
   <div class="toasts" id="toasts" aria-live="polite"></div>
-  <script src="./capacity-governance.js?v=20260826-task-table-dialog"></script>
+  <script src="./capacity-governance.js?v=20260826-agent-pet"></script>
 </body>
 </html>

@@ -169,7 +169,12 @@ function renderWorkline(){
   const jobs=[['关联 GreatDB 30 日趋势','统一支付 / GreatDB'],['计算同类组件资源效率','渠道接入 / Nginx'],['轮询 CAP-1842 评审状态','治理任务'],['验证 Redis 缩容后水位','统一支付 / Redis']];
   const job=jobs[state.work%jobs.length];
   workline.innerHTML=`<span class="live-dot"></span><b>Capacity Agent 自主工作中</b><span>${job[0]} · ${job[1]}</span><span class="work-progress"><i style="width:${state.progress}%"></i></span><span>${state.progress}%</span><button data-open-agent>观察工作现场 →</button>`;
-  document.querySelector('#agent-mini-status').textContent=job[0];
+  const mini=document.querySelector('#agent-mini-status');
+  const pet=document.querySelector('#agent-float');
+  mini.textContent=`${job[0]} · ${state.progress}%`;
+  pet.classList.remove('speaking');
+  void pet.offsetWidth;
+  pet.classList.add('speaking');
 }
 
 function renderDrawer(){

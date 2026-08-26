@@ -42,11 +42,21 @@ body{
 .workline{border-color:#d8e8df;background:linear-gradient(90deg,#eef7f2 0,#f6faf7 74%,#edf7f2);color:#667a70}
 .workline b,.workline button{color:#14785f}
 .work-progress{background:#d9e9e0}.work-progress i{background:linear-gradient(90deg,#1f9e7a,#54b893)}
-.agent-float{position:fixed;right:24px;bottom:24px;z-index:65;width:270px;min-height:78px;border:1px solid #cfe1d8;border-radius:18px;background:rgba(255,255,255,.94);box-shadow:0 22px 60px rgba(35,69,54,.16);display:flex;align-items:center;gap:12px;padding:12px 14px;text-align:left;animation:agentFloat 4.2s ease-in-out infinite}
-.agent-float:before{content:"";position:absolute;inset:-6px;border-radius:24px;border:1px solid rgba(19,125,101,.16);opacity:.7;animation:agentPulse 2.8s ease-out infinite}
-.agent-float-core{position:relative;flex:0 0 auto}.agent-float-core .agent-eye{width:38px;height:38px}.agent-float-core .agent-eye:after{left:14px;top:14px}
-.agent-float-core i{position:absolute;right:-7px;top:-7px;min-width:19px;height:19px;border-radius:10px;background:var(--acid);color:#fff;display:grid;place-items:center;font:10px var(--mono);font-style:normal;box-shadow:0 6px 14px rgba(19,125,101,.22)}
-.agent-float-copy{min-width:0}.agent-float-copy b,.agent-float-copy small{display:block}.agent-float-copy b{font-size:12px}.agent-float-copy small{margin-top:4px;color:var(--muted);font-size:10px;line-height:1.4;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.agent-float{position:fixed;right:28px;bottom:24px;z-index:65;width:246px;height:146px;border:0;background:transparent;box-shadow:none;padding:0;display:grid;justify-items:end;align-items:end;text-align:left}
+.agent-bubble{position:absolute;right:42px;bottom:86px;width:210px;border:1px solid #cfe1d8;border-radius:16px 16px 4px 16px;background:rgba(255,255,255,.96);box-shadow:0 18px 44px rgba(35,69,54,.16);padding:10px 12px;transform-origin:100% 100%;animation:bubbleTalk 2.4s ease-in-out infinite}
+.agent-bubble:after{content:"";position:absolute;right:14px;bottom:-8px;width:14px;height:14px;background:rgba(255,255,255,.96);border-right:1px solid #cfe1d8;border-bottom:1px solid #cfe1d8;transform:rotate(45deg)}
+.agent-bubble b,.agent-bubble small{display:block}.agent-bubble b{font-size:11px;color:#0e7259}.agent-bubble small{margin-top:4px;color:#60756b;font-size:10px;line-height:1.35;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.agent-bot{position:relative;width:74px;height:82px;margin-right:2px;filter:drop-shadow(0 18px 26px rgba(35,69,54,.16));animation:agentFloat 4.2s ease-in-out infinite}
+.agent-bot:before{content:"";position:absolute;left:9px;right:9px;bottom:0;height:36px;border:1px solid #b9d7ca;border-radius:18px 18px 22px 22px;background:linear-gradient(145deg,#f5fbf8,#dcefe7)}
+.agent-bot:after{content:"";position:absolute;left:14px;right:14px;bottom:-5px;height:10px;border-radius:50%;background:rgba(24,94,70,.13);filter:blur(2px);animation:agentShadow 4.2s ease-in-out infinite}
+.agent-antenna{position:absolute;left:35px;top:0;width:2px;height:12px;background:#99c7b6;border-radius:3px}.agent-antenna:before{content:"";position:absolute;left:-4px;top:-7px;width:10px;height:10px;border-radius:50%;background:#139575;box-shadow:0 0 0 5px rgba(19,149,117,.12)}
+.agent-face{position:absolute;left:7px;top:12px;width:60px;height:48px;border:1px solid #add0c1;border-radius:24px;background:radial-gradient(circle at 50% 20%,#fff 0,#f2faf6 42%,#d8eee5 100%);box-shadow:inset 0 -6px 14px rgba(19,125,101,.08)}
+.agent-face i{position:absolute;top:18px;width:8px;height:8px;border-radius:50%;background:#0e7259;box-shadow:0 0 0 4px rgba(19,125,101,.10);animation:agentBlink 5s infinite}.agent-face i:first-child{left:17px}.agent-face i:nth-child(2){right:17px}
+.agent-face em{position:absolute;left:25px;top:31px;width:10px;height:4px;border-radius:0 0 10px 10px;border-bottom:2px solid #0e7259}
+.agent-body i{position:absolute;right:-3px;bottom:25px;min-width:19px;height:19px;border-radius:10px;background:var(--acid);color:#fff;display:grid;place-items:center;font:10px var(--mono);font-style:normal;box-shadow:0 6px 14px rgba(19,125,101,.22)}
+.agent-float:hover .agent-bot{transform:translateY(-3px)}.agent-float:hover .agent-bubble{border-color:#a9cbbd}
+.agent-float.speaking .agent-bubble{animation:bubblePop .36s cubic-bezier(.2,.8,.2,1),bubbleTalk 2.4s ease-in-out .36s infinite}
+.agent-float.speaking .agent-face{animation:botWake .48s ease}
 main{padding:36px clamp(24px,3vw,48px);max-width:1580px}
 .page-head{margin-bottom:28px}.page-head h1{letter-spacing:-.045em}.page-head p{line-height:1.7}
 .page-toolbar{min-height:58px;margin-bottom:15px;border:1px solid #dce6df;border-radius:12px;background:rgba(255,255,255,.92);box-shadow:0 10px 26px rgba(38,70,55,.045);display:flex;align-items:center;justify-content:space-between;gap:16px;padding:12px 16px}
@@ -148,6 +158,11 @@ main{padding:36px clamp(24px,3vw,48px);max-width:1580px}
 @keyframes pageRise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 @keyframes agentFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
 @keyframes agentPulse{0%{opacity:.7;transform:scale(.98)}70%,100%{opacity:0;transform:scale(1.08)}}
+@keyframes agentShadow{0%,100%{transform:scaleX(1);opacity:.55}50%{transform:scaleX(.82);opacity:.35}}
+@keyframes agentBlink{0%,44%,48%,100%{transform:scaleY(1)}46%{transform:scaleY(.18)}}
+@keyframes bubbleTalk{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-2px) scale(1.015)}}
+@keyframes bubblePop{from{opacity:.65;transform:translateY(5px) scale(.96)}to{opacity:1;transform:translateY(0) scale(1)}}
+@keyframes botWake{0%,100%{transform:rotate(0)}35%{transform:rotate(-2deg)}70%{transform:rotate(2deg)}}
 @keyframes timelineIn{to{opacity:1;transform:none}}
 main>*,.today-brief,.score-card{animation:pageRise .42s ease both}
 main>*:nth-child(2){animation-delay:.04s}main>*:nth-child(3){animation-delay:.08s}
