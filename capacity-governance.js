@@ -16,6 +16,9 @@ const systems=[
   {id:'ledger',code:'ACT',name:'核心账务系统',domain:'核心账务域',risk:21,waste:16,skew:19,priority:32,level:'P3',hint:'整体容量稳定'}
 ];
 
+const managedSystemIds=new Set(['payment','risk','channel']);
+const managedSystems=systems.filter(s=>managedSystemIds.has(s.id));
+
 const nodes=[
   {host:'greatdb-010',value:87.6,color:'var(--red)'},{host:'greatdb-011',value:76.1,color:'var(--amber)'},
   {host:'greatdb-012',value:65.2,color:'var(--mint)'},{host:'greatdb-013',value:42.7,color:'var(--cyan)'},
@@ -29,7 +32,7 @@ const tasks=[
 ];
 
 const messages=[
-  {time:'08:00',title:'我开始今天的容量值守了',body:'三个接口的数据已获取并完成完整性检查。本轮覆盖 6 个系统、39 个组件和 308 个实例。',tone:'normal'},
+  {time:'08:00',title:'我开始今天的容量值守了',body:'三个接口的数据已获取并完成完整性检查。本轮聚焦你负责的 3 个系统、18 个组件和 142 个实例。',tone:'normal'},
   {time:'08:07',title:'我发现 GreatDB 的磁盘行为异常',body:'它不只是超过 85% 固定阈值，同时也明显偏离自己的 30 日动态基线。按近 7 日速度，预计 6 天后进入 90% 风险区间。',tone:'risk'},
   {time:'08:18',title:'我把服务器信号合并成了集群结论',body:'GreatDB 不是集群整体容量不足，而是节点负载倾斜并叠加单节点磁盘增长。建议先校验归档策略，再评估增加 2 个节点。',tone:'analysis'},
   {time:'09:10',title:'Redis 缩容正在观察期',body:'缩减 1 个节点后，CPU 峰值由 18% 升至 31%，仍处安全范围。我会观察满 7 天后再决定是否继续。',tone:'follow'}
@@ -58,22 +61,16 @@ function header(kicker,title,subtitle,actions=''){
 
 function render(){
   nav.innerHTML=navHTML();
-  const names={overview:'全域容量治理',system:'统一支付系统 / 系统洞察',peer:'同类系统 / 资源对标',simulate:'容量方案 / What-if 模拟',admission:'增量资源 / 容量准入',tasks:'治理任务 / 效果验证'};
+  const names={overview:'我的容量治理',system:'统一支付系统 / 系统洞察',peer:'同类系统 / 资源对标',simulate:'容量方案 / What-if 模拟',admission:'增量资源 / 容量准入',tasks:'治理任务 / 效果验证'};
   crumb.textContent=names[state.page];
   ({overview:renderOverview,system:renderSystem,peer:renderPeer,simulate:renderSimulator,admission:renderAdmission,tasks:renderTasks}[state.page]||renderOverview)();
   main.focus({preventScroll:true});
 }
 
 function renderOverview(){
-  main.innerHTML=header('CAPACITY GOVERNANCE / DAILY','今天，Agent 给出了这些治理结论','2026-08-12 · 日粒度容量数据 · 本轮巡检已完成',`<button class="btn ghost">导出日报</button><button class="btn acid" data-open-agent>查看 Agent 工作现场</button>`)+`
-  <section class="today-brief">
-    <div class="brief-copy"><span class="brief-stamp"><i></i> AGENT DAILY VERDICT · 08:32</span><h2>整体容量稳定，但支付系统需要在本周内完成处置决策。</h2><p>我已将 <strong>308 个服务器信号归并为 9 个治理事项</strong>。GreatDB 磁盘是近期最高风险；Redis 属于集群整体过度配置；数据中台 MySQL 则更像批处理窗口造成的周期性偏移。</p><div class="brief-actions"><button class="btn acid" data-page="system">查看最高风险</button><button class="btn" data-open-evidence>查看我的判断过程</button></div></div>
-    <div class="brief-numbers">
-      ${briefNumber('容量风险','3','项','较昨日 +1','risk')}${briefNumber('资源浪费','4','候选','连续 30 日','waste')}${briefNumber('负载倾斜','2','集群','先调度后扩容','balance')}${briefNumber('预计可回收','24C','/ 96GB','约 ¥8.6k / 月','save')}
-    </div>
-  </section>
-  <div class="grid two"><section class="panel"><div class="panel-head"><div><h2>系统治理优先级</h2><p>不是健康分：分别评价风险、浪费、倾斜和行动必要性</p></div><small>按治理优先级排序</small></div><div class="systems">${systems.map(systemRow).join('')}</div></section>
-  <aside class="panel"><div class="panel-head"><div><h2>Agent 主动发现</h2><p>服务器信号已归并为可行动结论</p></div><small>3 NEW</small></div><div class="signal-list">
+  main.innerHTML=header('MY CAPACITY GOVERNANCE','我负责的系统','2026-08-12 · 3 个生产系统 · 仅展示当前 SRE 负责范围',`<button class="btn ghost">导出日报</button><button class="btn acid" data-open-agent>查看 Agent 工作现场</button>`)+`
+  <div class="grid two"><section class="panel"><div class="panel-head"><div><h2>我负责的系统治理优先级</h2><p>按容量风险、资源浪费、负载倾斜和行动必要性排序</p></div><small>${managedSystems.length} 个系统 · 按优先级排序</small></div><div class="systems">${managedSystems.map(systemRow).join('')}</div></section>
+  <aside class="panel"><div class="panel-head"><div><h2>面向我的治理建议</h2><p>服务器信号已归并为负责系统内的可行动结论</p></div><small>3 NEW</small></div><div class="signal-list">
     ${signal('01','单节点增长 + 集群倾斜','GreatDB 最高节点磁盘 87.6%，节点差值 49.6%，不应仅凭集群平均值判断。','system')}
     ${signal('02','Redis 集群整体配置偏大','4 个实例连续 30 日 CPU 与内存峰值低于 25%，建议渐进缩容。','simulate')}
     ${signal('03','同类对标发现规格异常','渠道平台 Nginx 的单实例规格高于同类中位数 2 倍。','peer')}
@@ -144,7 +141,7 @@ function renderWorkline(){
 function renderDrawer(){
   document.querySelectorAll('[data-agent-tab]').forEach(b=>b.classList.toggle('active',b.dataset.agentTab===state.agentTab));
   if(state.agentTab==='log') drawerContent.innerHTML=messages.map((m,i)=>messageHTML(m,i)).join('');
-  if(state.agentTab==='plan') drawerContent.innerHTML=`<p class="kicker">TODAY / AUTONOMOUS PLAN</p><div class="plan-list">${plan('08:00','三个接口取数与完整性检查','已完成 6 系统 / 308 实例')}${plan('进行中','GreatDB 容量风险复核','动态基线 + 集群归因',true)}${plan('随后','同类组件资源效率扫描','12 个可比集群')}${plan('14:00','生成容量准入评估摘要','2 项待人工决策')}${plan('持续','轮询治理任务与效果验证','CAP-1842 / CAP-1839')}</div>`;
+  if(state.agentTab==='plan') drawerContent.innerHTML=`<p class="kicker">TODAY / AUTONOMOUS PLAN</p><div class="plan-list">${plan('08:00','三个接口取数与完整性检查','已完成 3 系统 / 142 实例')}${plan('进行中','GreatDB 容量风险复核','动态基线 + 集群归因',true)}${plan('随后','同类组件资源效率扫描','12 个可比集群')}${plan('14:00','生成容量准入评估摘要','2 项待人工决策')}${plan('持续','轮询治理任务与效果验证','CAP-1842 / CAP-1839')}</div>`;
   if(state.agentTab==='memory') drawerContent.innerHTML=`<p class="kicker">DECISION CONTEXT</p>${memory('算法负责“算”','动态基线、趋势预测、节点离散度与方案水位由静态模拟的时序分析层提供。')}${memory('AI 负责“判断”','结合系统等级、架构角色、历史行为、同类基准和治理办法解释结论。')}${memory('Agent 负责“做”','安排计划、创建治理单、轮询状态，并在变更后验证效果。')}${memory('长期安全约束','核心集群至少 4 个节点；关键生产变更必须由 SRE 人工审批。')}`;
 }
 function messageHTML(m,i){const user=m.tone==='user';return `<article class="message ${user?'user':''}"><span class="msg-avatar">${user?'YOU':'CA'}</span><div class="message-body"><small>${m.time} · ${m.tone.toUpperCase()}</small><h3>${m.title}</h3><p>${m.body}</p>${i===1?'<div class="message-actions"><button class="btn small" data-page="system">查看趋势证据</button><button class="btn small" data-open-evidence>判断过程</button></div>':''}</div></article>`}

@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="theme-color" content="#f4f7f3" />
   <title>Capacity Agent · 容量治理指挥舱</title>
+  <link rel="icon" href="data:," />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&amp;family=Noto+Sans+SC:wght@400;500;600;700;800&amp;family=Syne:wght@600;700&amp;display=swap" rel="stylesheet" />
@@ -29,7 +30,7 @@
 
     <section class="stage">
       <header class="topbar">
-        <div class="crumb" id="crumb">全域容量治理</div>
+        <div class="crumb" id="crumb">我的容量治理</div>
         <div class="top-actions">
           <label class="date-box"><span>数据日期</span><input id="date" type="date" value="2026-08-12" max="2026-08-12" /></label>
           <button class="agent-chip" data-open-agent><span class="agent-eye"></span><span><b>Capacity Agent</b><small id="agent-mini-status">正在复核容量风险</small></span><em>3</em></button>
@@ -72,6 +73,6 @@
   </section>
   <div class="scrim" id="scrim" hidden></div>
   <div class="toasts" id="toasts" aria-live="polite"></div>
-  <script src="./capacity-governance.js"></script>
+  <script src="./capacity-governance.js?v=20260826-sre"></script>
 </body>
 </html>
