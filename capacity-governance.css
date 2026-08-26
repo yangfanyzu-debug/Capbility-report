@@ -59,8 +59,13 @@ main{padding:36px clamp(24px,3vw,48px);max-width:1580px}
     linear-gradient(135deg,#f5faf7,#eef6f1 72%);
   box-shadow:0 20px 48px rgba(35,82,60,.075);
 }
-.today-brief:before{color:rgba(18,90,66,.045)}
-.brief-number{border-color:#d8e6de;background:rgba(255,255,255,.78);box-shadow:0 7px 18px rgba(35,74,56,.045)}
+.today-brief:before{display:none}
+.brief-copy,.brief-data{border:1px solid #d8e6de;border-radius:14px;background:rgba(255,255,255,.78);box-shadow:0 9px 24px rgba(35,74,56,.045)}
+.brief-copy{padding:22px 24px}.brief-copy h2{font-size:24px;line-height:1.42;letter-spacing:-.02em;margin:13px 0 10px}.brief-copy p{font-size:13px;line-height:1.8}
+.brief-data{padding:16px}
+.brief-data-head{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin-bottom:12px}
+.brief-data-head span{font-weight:800;color:var(--ink)}.brief-data-head small{color:var(--faint);font:9px var(--mono)}
+.brief-number{border-color:#d8e6de;background:rgba(255,255,255,.86);box-shadow:0 7px 18px rgba(35,74,56,.035)}
 .system-switcher{min-height:74px;margin-bottom:16px;border:1px solid #dce6df;border-radius:14px;background:rgba(255,255,255,.9);box-shadow:0 12px 32px rgba(38,70,55,.055);display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px 18px}
 .system-switcher label{display:grid;gap:7px;min-width:min(430px,100%)}
 .system-switcher label span{color:var(--muted);font:10px var(--mono);letter-spacing:.12em}
