@@ -64,6 +64,21 @@ const messages=[
   {time:'09:10',title:'Redis 缩容正在观察期',body:'缩减 1 个节点后，CPU 峰值由 18% 升至 31%，仍处安全范围。我会观察满 7 天后再决定是否继续。',tone:'follow'}
 ];
 
+const autonomousJobs=[
+  {phase:'关联 GreatDB 30 日趋势',scope:'统一支付 / GreatDB',target:'bjd-dsi-greatdb-010-kzx',kind:'趋势预测',next:'生成容量风险证据'},
+  {phase:'计算同类组件资源效率',scope:'渠道接入 / Nginx',target:'同类入口规格样本',kind:'资源对标',next:'标记可降配实例'},
+  {phase:'轮询 CAP-1842 评审状态',scope:'治理任务',target:'ACT-CHUG-20260826-0002',kind:'工单跟进',next:'同步变更状态'},
+  {phase:'验证 Redis 缩容后水位',scope:'统一支付 / Redis',target:'CAP-1839 观察期',kind:'效果验证',next:'写入跟进记录'}
+];
+
+const collabRecords=[
+  {time:'08:00',type:'collect',status:'已完成',title:'取数与完整性检查完成',body:'已拉取你负责范围内 3 个生产系统、18 个组件、142 个实例的昨日容量快照，并过滤掉 2 条采集延迟数据。',facts:['3 系统','18 组件','142 实例']},
+  {time:'08:07',type:'risk',status:'高风险',title:'GreatDB 单节点磁盘进入处置队列',body:'greatdb-010 磁盘峰值 87.6%，近 7 日持续增长；同时 CPU / MEM 未同步升高，优先判断为归档或分片倾斜问题。',facts:['87.6%','+18.4%','6 天']},
+  {time:'08:18',type:'analysis',status:'已归因',title:'将服务器信号合并成集群结论',body:'结论不是“全量扩容”，而是先检查归档策略和节点权重；若 3 天后增速未回落，再增加 2 个节点并重平衡。',facts:['负载倾斜','先治理','后扩容']},
+  {time:'08:42',type:'action',status:'待评审',title:'生成治理任务 CAP-1842',body:'治理建议已写入任务列表，变更单 ACT-CHUG-20260826-0002 处于评审中，Agent 会持续轮询状态。',facts:['CAP-1842','变更评审','陈哲']},
+  {time:'09:10',type:'follow',status:'观察中',title:'Redis 缩容进入效果观察',body:'缩减 1 个节点后，CPU 峰值由 18% 升至 31%，仍处于安全区间；需覆盖完整 7 天和周末批处理窗口。',facts:['18% → 31%','0 告警','第 3/7 天']}
+];
+
 const state={page:'home',selectedSystemId:'payment',agentOpen:false,agentTab:'log',work:0,progress:36,simNodes:5,simLoad:20,simKind:'shrink'};
 const main=document.querySelector('#main');
 const nav=document.querySelector('#nav');
@@ -331,12 +346,11 @@ function renderTasks(){
 function taskRow(t){const stages=['发现','建议','审批','观察','验证'];return `<tr><td><span class="ticket-no">${t.id}</span></td><td><span class="task-title"><b>${t.title}</b></span></td><td>${t.owner}</td><td><span class="status-pill">${t.status}</span></td><td>${t.workOrder?`<span class="work-order-no">${t.workOrder}</span>`:'<span class="empty-cell"></span>'}</td><td>${t.workOrder?`<span class="work-status ${t.workStatus==='实施完成'?'done':''}">${t.workStatus}</span>`:`<button class="btn small" data-create-workorder="${t.id}">去提单</button>`}</td><td><span class="stage-badge">${stages[t.stage]||'处理中'}</span></td><td><span class="table-actions"><button class="btn small" ${t.id==='CAP-1839'?'data-verify':''}>${t.action}</button><button class="btn small" data-open-followup="${t.id}">查看Agent跟进记录</button></span></td></tr>`}
 
 function renderWorkline(){
-  const jobs=[['关联 GreatDB 30 日趋势','统一支付 / GreatDB'],['计算同类组件资源效率','渠道接入 / Nginx'],['轮询 CAP-1842 评审状态','治理任务'],['验证 Redis 缩容后水位','统一支付 / Redis']];
-  const job=jobs[state.work%jobs.length];
-  workline.innerHTML=`<span class="live-dot"></span><b>Capacity Agent 自主工作中</b><span>${job[0]} · ${job[1]}</span><span class="work-progress"><i style="width:${state.progress}%"></i></span><span>${state.progress}%</span><button data-open-agent>观察工作现场 →</button>`;
+  const job=autonomousJobs[state.work%autonomousJobs.length];
+  workline.innerHTML=`<span class="live-dot"></span><b>Capacity Agent 自主工作中</b><span>${job.phase} · ${job.scope}</span><span class="work-progress"><i style="width:${state.progress}%"></i></span><span>${state.progress}%</span><button data-open-agent>观察工作现场 →</button>`;
   const mini=document.querySelector('#agent-mini-status');
   const pet=document.querySelector('#agent-float');
-  mini.textContent=`${job[0]} · ${state.progress}%`;
+  mini.textContent=`${job.phase} · ${state.progress}%`;
   pet.classList.remove('speaking');
   void pet.offsetWidth;
   pet.classList.add('speaking');
@@ -344,9 +358,42 @@ function renderWorkline(){
 
 function renderDrawer(){
   document.querySelectorAll('[data-agent-tab]').forEach(b=>b.classList.toggle('active',b.dataset.agentTab===state.agentTab));
-  if(state.agentTab==='log') drawerContent.innerHTML=messages.map((m,i)=>messageHTML(m,i)).join('');
+  if(state.agentTab==='log') drawerContent.innerHTML=renderCollabLog();
   if(state.agentTab==='plan') drawerContent.innerHTML=`<p class="kicker">TODAY / AUTONOMOUS PLAN</p><div class="plan-list">${plan('08:00','三个接口取数与完整性检查','已完成 3 系统 / 142 实例')}${plan('进行中','GreatDB 容量风险复核','动态基线 + 集群归因',true)}${plan('随后','同类组件资源效率扫描','12 个可比集群')}${plan('14:00','生成容量准入评估摘要','2 项待人工决策')}${plan('持续','轮询治理任务与效果验证','CAP-1842 / CAP-1839')}</div>`;
   if(state.agentTab==='memory') drawerContent.innerHTML=`<p class="kicker">DECISION CONTEXT</p>${memory('算法负责“算”','动态基线、趋势预测、节点离散度与方案水位由静态模拟的时序分析层提供。')}${memory('AI 负责“判断”','结合系统等级、架构角色、历史行为、同类基准和治理办法解释结论。')}${memory('Agent 负责“做”','安排计划、创建治理单、轮询状态，并在变更后验证效果。')}${memory('长期安全约束','核心集群至少 4 个节点；关键生产变更必须由 SRE 人工审批。')}`;
+}
+function renderCollabLog(){
+  const job=autonomousJobs[state.work%autonomousJobs.length];
+  const activeIndex=state.work%collabRecords.length;
+  const userRecords=messages.filter(m=>m.tone==='user').map((m,i)=>({time:m.time,type:'user',status:'已接收',title:m.title,body:m.body,facts:['SRE 反馈','写入上下文'],user:true,offset:collabRecords.length+i}));
+  return `<section class="collab-workbench">
+    <div class="collab-date"><span>2026-08-12 · 今日共事记录</span></div>
+    <div class="collab-shift">
+      <div class="shift-main"><span class="shift-avatar">CA</span><div><small>当前正在做</small><strong>${job.phase}</strong><p>${job.scope} · ${job.target}</p></div></div>
+      <div class="shift-card"><small>任务类型</small><b>${job.kind}</b><p>${job.next}</p></div>
+      <div class="shift-card"><small>实时进度</small><b>${state.progress}%</b><span class="shift-track"><i style="width:${state.progress}%"></i></span></div>
+    </div>
+    <div class="collab-stream">
+      ${collabRecords.map((item,i)=>collabRecordHTML(item,i,i===activeIndex)).join('')}
+      ${userRecords.map((item,i)=>collabRecordHTML(item,item.offset,true)).join('')}
+    </div>
+    <div class="agent-thinking live">
+      <span class="msg-avatar">CA</span>
+      <div><i></i><i></i><i></i><small>正在把新的分析结果写入共事记录…</small></div>
+    </div>
+  </section>`;
+}
+function collabRecordHTML(item,i,active=false){
+  return `<article class="collab-record ${item.type} ${active?'active':''} ${item.user?'user-note':''}" style="--i:${i}">
+    <time>${item.time}</time>
+    <div class="record-node"></div>
+    <div class="record-card">
+      <div class="record-head"><span>${item.status}</span><b>${item.title}</b></div>
+      <p>${item.body}</p>
+      <div class="record-facts">${item.facts.map(x=>`<em>${x}</em>`).join('')}</div>
+      ${item.type==='risk'?'<div class="message-actions"><button class="btn small" data-page="system">查看趋势证据</button><button class="btn small" data-open-evidence>判断过程</button></div>':''}
+    </div>
+  </article>`;
 }
 function messageHTML(m,i){const user=m.tone==='user';return `<article class="message ${user?'user':''}"><span class="msg-avatar">${user?'YOU':'CA'}</span><div class="message-body"><small>${m.time} · ${m.tone.toUpperCase()}</small><h3>${m.title}</h3><p>${m.body}</p>${i===1?'<div class="message-actions"><button class="btn small" data-page="system">查看趋势证据</button><button class="btn small" data-open-evidence>判断过程</button></div>':''}</div></article>`}
 function plan(time,title,note,active=false){return `<div class="plan-item ${active?'active':''}"><time>${time}</time><div><b>${title}</b><small>${note}</small></div></div>`}
@@ -415,5 +462,5 @@ document.querySelector('#agent-form').addEventListener('submit',e=>{e.preventDef
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeOverlays()});
 
 render();renderWorkline();
-setInterval(()=>{state.progress+=7;if(state.progress>100){state.progress=12;state.work++;if(state.work%2===0)toast('Capacity Agent 主动更新','完成一项容量分析，新的治理结论已写入工作记录。')}renderWorkline()},2400);
+setInterval(()=>{state.progress+=7;if(state.progress>100){state.progress=12;state.work++;if(state.work%2===0)toast('Capacity Agent 主动更新','完成一项容量分析，新的治理结论已写入工作记录。')}renderWorkline();if(state.agentOpen&&state.agentTab==='log')renderDrawer()},2400);
 setTimeout(()=>toast('今日容量巡检已完成','Agent 正在持续跟进 3 项治理任务，无需人工触发。'),800);
