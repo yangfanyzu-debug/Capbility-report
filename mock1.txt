@@ -1,0 +1,342 @@
+const MOCK_RESPONSE = {
+  code: 200,
+  msg: 'success',
+  data: {
+    analysis_params: {
+      system: ''
+    },
+    analysis_result: {
+      'K8S集群(52实例组模拟)': generateLargeCategory(),
+      GREATDB: {
+        'bja-dsi-greatdb-1': {
+          code: 0, // code: 0=正常(绿), 1=警告(黄), 2=异常(红)
+          desc: '主集群运行稳定，CPU与内存使用率均在合理范围',
+          data: [
+            { 'CPU平均值': 13.64, 'CPU峰值': 22.00, 'CPU最小值': 6.14, code: 0, component: 'greatdb', cpu: '8', memory: '32', 'disk平均值': 25.84, 'disk峰值': 38.00, 'disk最小值': 13.44, exceptions: [], hostname: 'bja-dsi-greatdb-010-kzx', ip: '25.129.2.110', idc: 'BJ-DB', os: 'Red.Hat.Enterprise.Linux.7.9', role: 'master', sn: 'SN251292110', '内存平均值': 23.10, '内存峰值': 35.00, '内存最小值': 11.09 },
+            { 'CPU平均值': 22.82, 'CPU峰值': 35.10, 'CPU最小值': 11.41, code: 0, component: 'greatdb', cpu: '8', memory: '32', 'disk平均值': 32.02, 'disk峰值': 45.10, 'disk最小值': 18.25, exceptions: [], hostname: 'bja-dsi-greatdb-011-kzx', ip: '25.129.2.111', idc: 'BJ-DB', os: 'Red.Hat.Enterprise.Linux.7.9', role: 'slave', sn: 'SN251292111', '内存平均值': 31.58, '内存峰值': 46.10, '内存最小值': 16.42 },
+            { 'CPU平均值': 44.34, 'CPU峰值': 65.20, 'CPU最小值': 24.38, code: 1, component: 'greatdb', cpu: '8', memory: '64', 'disk平均值': 46.77, 'disk峰值': 63.20, 'disk最小值': 29.00, exceptions: [], hostname: 'bja-dsi-greatdb-012-kzx', ip: '25.129.2.112', idc: 'BJ-DB', os: 'Red.Hat.Enterprise.Linux.8.6', role: 'slave', sn: 'SN251292112', '内存平均值': 49.84, '内存峰值': 70.20, '内存最小值': 27.91 }
+          ]
+        },
+        'bjb-dsi-greatdb-1': {
+          code: 1,
+          desc: '备集群内存使用率持续偏高，建议近期扩容',
+          data: [
+            { 'CPU平均值': 32.16, 'CPU峰值': 45.30, 'CPU最小值': 19.30, code: 1, component: 'greatdb', cpu: '4', memory: '16', 'disk平均值': 54.13, 'disk峰值': 70.30, 'disk最小值': 28.15, exceptions: [], hostname: 'bjb-dsi-greatdb-010-kzx', ip: '25.129.3.110', idc: 'BJ-YZ', os: 'CentOS.7.9', role: 'master', sn: 'SN251293110', '内存平均值': 36.97, '内存峰值': 50.30, '内存最小值': 22.18 },
+            { 'CPU平均值': 30.64, 'CPU峰值': 41.40, 'CPU最小值': 13.79, code: 0, component: 'greatdb', cpu: '4', memory: '16', 'disk平均值': 45.15, 'disk峰值': 66.40, 'disk最小值': 25.74, exceptions: [], hostname: 'bjb-dsi-greatdb-011-kzx', ip: '25.129.3.111', idc: 'BJ-YZ', os: 'CentOS.7.9', role: 'slave', sn: 'SN251293111', '内存平均值': 36.78, '内存峰值': 48.40, '内存最小值': 17.66 }
+          ]
+        },
+        'bjc-dsi-greatdb-1': {
+          code: 0,
+          desc: '灾备集群运行正常，定期同步延迟在秒级',
+          data: [
+            { 'CPU平均值': 33.79, 'CPU峰值': 54.50, 'CPU最小值': 16.89, code: 0, component: 'greatdb', cpu: '8', memory: '32', 'disk平均值': 31.60, 'disk峰值': 44.50, 'disk最小值': 19.59, exceptions: [], hostname: 'bjc-dsi-greatdb-010-kzx', ip: '25.129.4.110', idc: 'BJ-LH', os: 'Red.Hat.Enterprise.Linux.8.6', role: 'master', sn: 'SN251294110', '内存平均值': 39.27, '内存峰值': 59.50, '内存最小值': 20.42 },
+            { 'CPU平均值': 22.49, 'CPU峰值': 34.60, 'CPU最小值': 12.37, code: 0, component: 'greatdb', cpu: '8', memory: '32', 'disk平均值': 38.18, 'disk峰值': 51.60, 'disk最小值': 19.86, exceptions: [], hostname: 'bjc-dsi-greatdb-011-kzx', ip: '25.129.4.111', idc: 'BJ-LH', os: 'Red.Hat.Enterprise.Linux.8.6', role: 'slave', sn: 'SN251294111', '内存平均值': 27.13, '内存峰值': 39.60, '内存最小值': 15.19 }
+          ]
+        },
+        'bjd-dsi-greatdb-1': {
+          code: 2,
+          desc: '磁盘空间不足，部分表空间增长异常需紧急处理',
+          data: [
+            { 'CPU平均值': 55.56, 'CPU峰值': 81.70, 'CPU最小值': 33.33, code: 2, component: 'greatdb', cpu: '4', memory: '16', 'disk平均值': 61.60, 'disk峰值': 80.00, 'disk最小值': 35.11, exceptions: [], hostname: 'bjd-dsi-greatdb-010-kzx', ip: '25.129.5.110', idc: 'BJ-YF', os: 'Red.Hat.Enterprise.Linux.7.9', role: 'master', sn: 'SN251295110', '内存平均值': 54.46, '内存峰值': 76.70, '内存最小值': 32.67 },
+            { 'CPU平均值': 31.81, 'CPU峰值': 44.80, 'CPU最小值': 14.31, code: 1, component: 'greatdb', cpu: '4', memory: '16', 'disk平均值': 51.75, 'disk峰值': 76.10, 'disk最小值': 32.08, exceptions: [], hostname: 'bjd-dsi-greatdb-011-kzx', ip: '25.129.5.111', idc: 'BJ-YF', os: 'Red.Hat.Enterprise.Linux.7.9', role: 'slave', sn: 'SN251295111', '内存平均值': 54.98, '内存峰值': 74.80, '内存最小值': 26.39 },
+            { 'CPU平均值': 55.43, 'CPU峰值': 74.90, 'CPU最小值': 27.71, code: 2, component: 'greatdb', cpu: '4', memory: '16', 'disk平均值': 46.29, 'disk峰值': 65.20, 'disk最小值': 24.07, exceptions: [], hostname: 'bjd-dsi-greatdb-012-kzx', ip: '25.129.5.112', idc: 'BJ-YF', os: 'Red.Hat.Enterprise.Linux.7.9', role: 'slave', sn: 'SN251295112', '内存平均值': 50.92, '内存峰值': 67.00, '内存最小值': 26.48 }
+          ]
+        },
+        'bje-dsi-greatdb-1': {
+          code: 1,
+          desc: '只读实例CPU负载波动较大，慢查询偶发增长',
+          data: [
+            { 'CPU平均值': 43.40, 'CPU峰值': 70.00, 'CPU最小值': 23.87, code: 1, component: 'greatdb', cpu: '8', memory: '32', 'disk平均值': 45.36, 'disk峰值': 61.30, 'disk最小值': 25.86, exceptions: [], hostname: 'bje-dsi-greatdb-010-kzx', ip: '25.129.6.110', idc: 'BJ-DX', os: 'Red.Hat.Enterprise.Linux.8.6', role: 'master', sn: 'SN251296110', '内存平均值': 42.97, '内存峰值': 65.10, '内存最小值': 24.06 },
+            { 'CPU平均值': 21.52, 'CPU峰值': 33.10, 'CPU最小值': 12.91, code: 0, component: 'greatdb', cpu: '8', memory: '32', 'disk平均值': 44.20, 'disk峰值': 57.40, 'disk最小值': 27.40, exceptions: [], hostname: 'bje-dsi-greatdb-011-kzx', ip: '25.129.6.111', idc: 'BJ-DX', os: 'Red.Hat.Enterprise.Linux.8.6', role: 'slave', sn: 'SN251296111', '内存平均值': 43.29, '内存峰值': 63.20, '内存最小值': 25.98 }
+          ]
+        }
+      },
+      HAPROXY: {
+        'bja-dsi-haproxy-1': {
+          code: 0,
+          desc: '主负载均衡节点，流量分发正常，连接数稳定',
+          data: [
+            { 'CPU平均值': 31.42, 'CPU峰值': 46.20, 'CPU最小值': 14.14, code: 0, component: 'haproxy', cpu: '2', memory: '4', 'disk平均值': 43.86, 'disk峰值': 64.50, 'disk最小值': 22.81, exceptions: [], hostname: 'bja-dsi-haproxy-020-kzx', ip: '25.129.2.210', idc: 'BJ-DB', os: 'Red.Hat.Enterprise.Linux', role: 'master', sn: 'SN251292210', '内存平均值': 30.74, '内存峰值': 43.30, '内存最小值': 14.76 },
+            { 'CPU平均值': 18.67, 'CPU峰值': 26.30, 'CPU最小值': 9.34, code: 0, component: 'haproxy', cpu: '2', memory: '4', 'disk平均值': 30.25, 'disk峰值': 42.60, 'disk最小值': 17.24, exceptions: [], hostname: 'bja-dsi-haproxy-021-kzx', ip: '25.129.2.211', idc: 'BJ-DB', os: 'Red.Hat.Enterprise.Linux', role: 'slave', sn: 'SN251292211', '内存平均值': 39.98, '内存峰值': 54.40, '内存最小值': 20.79 },
+            { 'CPU平均值': 29.16, 'CPU峰值': 39.40, 'CPU最小值': 16.04, code: 0, component: 'haproxy', cpu: '2', memory: '4', 'disk平均值': 36.26, 'disk峰值': 49.00, 'disk最小值': 22.48, exceptions: [], hostname: 'bja-dsi-haproxy-022-kzx', ip: '25.129.2.212', idc: 'BJ-DB', os: 'Red.Hat.Enterprise.Linux', role: 'slave', sn: 'SN251292212', '内存平均值': 49.78, '内存峰值': 65.50, '内存最小值': 27.88 }
+          ]
+        },
+        'bjb-dsi-haproxy-1': {
+          code: 0,
+          desc: '备用负载均衡，承接离线流量与定时任务',
+          data: [
+            { 'CPU平均值': 32.55, 'CPU峰值': 52.50, 'CPU最小值': 19.53, code: 0, component: 'haproxy', cpu: '2', memory: '4', 'disk平均值': 43.20, 'disk峰值': 56.10, 'disk最小值': 22.46, exceptions: [], hostname: 'bjb-dsi-haproxy-020-kzx', ip: '25.129.3.210', idc: 'BJ-YZ', os: 'Red.Hat.Enterprise.Linux', role: 'master', sn: 'SN251293210', '内存平均值': 30.10, '内存峰值': 45.60, '内存最小值': 18.06 },
+            { 'CPU平均值': 32.24, 'CPU峰值': 49.60, 'CPU最小值': 14.51, code: 1, component: 'haproxy', cpu: '2', memory: '4', 'disk平均值': 50.46, 'disk峰值': 74.20, 'disk最小值': 28.76, exceptions: [], hostname: 'bjb-dsi-haproxy-021-kzx', ip: '25.129.3.211', idc: 'BJ-YZ', os: 'Red.Hat.Enterprise.Linux', role: 'slave', sn: 'SN251293211', '内存平均值': 47.74, '内存峰值': 69.70, '内存最小值': 22.92 }
+          ]
+        },
+        'bjc-dsi-haproxy-1': {
+          code: 2,
+          desc: '活跃连接数超阈值，CPU负载过高，需紧急扩容',
+          data: [
+            { 'CPU平均值': 54.20, 'CPU峰值': 79.70, 'CPU最小值': 27.10, code: 2, component: 'haproxy', cpu: '2', memory: '4', 'disk平均值': 44.94, 'disk峰值': 63.30, 'disk最小值': 27.86, exceptions: [], hostname: 'bjc-dsi-haproxy-020-kzx', ip: '25.129.4.210', idc: 'BJ-LH', os: 'Red.Hat.Enterprise.Linux', role: 'master', sn: 'SN251294210', '内存平均值': 44.59, '内存峰值': 62.80, '内存最小值': 23.19 },
+            { 'CPU平均值': 42.46, 'CPU峰值': 59.80, 'CPU最小值': 23.35, code: 2, component: 'haproxy', cpu: '2', memory: '4', 'disk平均值': 52.10, 'disk峰值': 70.40, 'disk最小值': 27.09, exceptions: [], hostname: 'bjc-dsi-haproxy-021-kzx', ip: '25.129.4.211', idc: 'BJ-LH', os: 'Red.Hat.Enterprise.Linux', role: 'slave', sn: 'SN251294211', '内存平均值': 53.66, '内存峰值': 73.00, '内存最小值': 30.05 },
+            { 'CPU平均值': 41.37, 'CPU峰值': 55.90, 'CPU最小值': 24.82, code: 1, component: 'haproxy', cpu: '2', memory: '4', 'disk平均值': 51.20, 'disk峰值': 66.50, 'disk最小值': 29.19, exceptions: [], hostname: 'bjc-dsi-haproxy-022-kzx', ip: '25.129.4.212', idc: 'BJ-LH', os: 'Red.Hat.Enterprise.Linux', role: 'slave', sn: 'SN251294212', '内存平均值': 54.04, '内存峰值': 71.10, '内存最小值': 32.42 }
+          ]
+        },
+        'bjd-dsi-haproxy-1': {
+          code: 0,
+          desc: '新机房负载均衡节点，承接灰度流量',
+          data: [
+            { 'CPU平均值': 31.62, 'CPU峰值': 51.00, 'CPU最小值': 14.23, code: 0, component: 'haproxy', cpu: '2', memory: '4', 'disk平均值': 42.57, 'disk峰值': 62.60, 'disk最小值': 26.39, exceptions: [], hostname: 'bjd-dsi-haproxy-020-kzx', ip: '25.129.5.210', idc: 'BJ-YF', os: 'Red.Hat.Enterprise.Linux', role: 'master', sn: 'SN251295210', '内存平均值': 25.21, '内存峰值': 38.20, '内存最小值': 12.10 },
+            { 'CPU平均值': 20.21, 'CPU峰值': 31.10, 'CPU最小值': 10.11, code: 0, component: 'haproxy', cpu: '2', memory: '4', 'disk平均值': 28.40, 'disk峰值': 40.00, 'disk最小值': 14.77, exceptions: [], hostname: 'bjd-dsi-haproxy-021-kzx', ip: '25.129.5.211', idc: 'BJ-YF', os: 'Red.Hat.Enterprise.Linux', role: 'slave', sn: 'SN251295211', '内存平均值': 33.77, '内存峰值': 49.30, '内存最小值': 17.56 }
+          ]
+        },
+        'bje-dsi-haproxy-1': {
+          code: 1,
+          desc: '部分后端服务响应超时，需排查上游链路',
+          data: [
+            { 'CPU平均值': 41.62, 'CPU峰值': 61.20, 'CPU最小值': 22.89, code: 1, component: 'haproxy', cpu: '2', memory: '4', 'disk平均值': 42.99, 'disk峰值': 58.10, 'disk最小值': 24.51, exceptions: [], hostname: 'bje-dsi-haproxy-030-kzx', ip: '25.129.6.210', idc: 'BJ-DX', os: 'Red.Hat.Enterprise.Linux', role: 'master', sn: 'SN251296210', '内存平均值': 52.11, '内存峰值': 73.40, '内存最小值': 29.18 },
+            { 'CPU平均值': 17.25, 'CPU峰值': 24.30, 'CPU最小值': 10.35, code: 0, component: 'haproxy', cpu: '2', memory: '4', 'disk平均值': 41.73, 'disk峰值': 54.20, 'disk最小值': 25.88, exceptions: [], hostname: 'bje-dsi-haproxy-031-kzx', ip: '25.129.6.211', idc: 'BJ-DX', os: 'Red.Hat.Enterprise.Linux', role: 'slave', sn: 'SN251296211', '内存平均值': 29.77, '内存峰值': 40.50, '内存最小值': 17.86 },
+            { 'CPU平均值': 40.26, 'CPU峰值': 54.40, 'CPU最小值': 18.12, code: 1, component: 'haproxy', cpu: '2', memory: '4', 'disk平均值': 49.16, 'disk峰值': 72.30, 'disk最小值': 25.57, exceptions: [], hostname: 'bje-dsi-haproxy-032-kzx', ip: '25.129.6.212', idc: 'BJ-DX', os: 'Red.Hat.Enterprise.Linux', role: 'slave', sn: 'SN251296212', '内存平均值': 49.10, '内存峰值': 64.60, '内存最小值': 23.57 }
+          ]
+        }
+      },
+      'JAVA应用': {
+        'bj-order-service-1': {
+          code: 0,
+          desc: '订单核心服务，QPS稳定，线程池使用正常',
+          data: [
+            { 'CPU平均值': 31.31, 'CPU峰值': 50.50, 'CPU最小值': 15.65, code: 0, component: 'java-app', cpu: '4', memory: '8', 'disk平均值': 27.97, 'disk峰值': 39.40, 'disk最小值': 15.95, exceptions: [], hostname: 'bj-order-svc-010-kzx', ip: '25.129.2.50', idc: 'BJ-DB', os: 'Red.Hat.Enterprise.Linux', role: 'master', sn: 'SN25129250', '内存平均值': 41.38, '内存峰值': 62.70, '内存最小值': 21.52 },
+            { 'CPU平均值': 19.89, 'CPU峰值': 30.60, 'CPU最小值': 10.94, code: 0, component: 'java-app', cpu: '4', memory: '8', 'disk平均值': 34.41, 'disk峰值': 46.50, 'disk最小值': 21.33, exceptions: [], hostname: 'bj-order-svc-011-kzx', ip: '25.129.2.51', idc: 'BJ-DB', os: 'Red.Hat.Enterprise.Linux', role: 'slave', sn: 'SN25129251', '内存平均值': 29.32, '内存峰值': 42.80, '内存最小值': 16.42 },
+            { 'CPU平均值': 41.28, 'CPU峰值': 60.70, 'CPU最小值': 24.77, code: 1, component: 'java-app', cpu: '4', memory: '8', 'disk平均值': 49.74, 'disk峰值': 64.60, 'disk最小值': 25.87, exceptions: [], hostname: 'bj-order-svc-012-kzx', ip: '25.129.2.52', idc: 'BJ-DB', os: 'Red.Hat.Enterprise.Linux', role: 'slave', sn: 'SN25129252', '内存平均值': 46.86, '内存峰值': 66.00, '内存最小值': 28.12 }
+          ]
+        },
+        'bj-payment-service-1': {
+          code: 1,
+          desc: '支付服务GC频率偏高，Young GC间隔缩短，需调整JVM参数',
+          data: [
+            { 'CPU平均值': 28.97, 'CPU峰值': 40.80, 'CPU最小值': 13.04, code: 1, component: 'java-app', cpu: '8', memory: '16', 'disk平均值': 48.28, 'disk峰值': 71.00, 'disk最小值': 27.52, exceptions: [], hostname: 'bj-pay-svc-010-kzx', ip: '25.129.2.60', idc: 'BJ-DB', os: 'Red.Hat.Enterprise.Linux', role: 'master', sn: 'SN25129260', '内存平均值': 56.67, '内存峰值': 77.10, '内存最小值': 27.20 },
+            { 'CPU平均值': 27.31, 'CPU峰值': 36.90, 'CPU最小值': 13.65, code: 0, component: 'java-app', cpu: '8', memory: '16', 'disk平均值': 27.05, 'disk峰值': 38.10, 'disk最小值': 16.77, exceptions: [], hostname: 'bj-pay-svc-011-kzx', ip: '25.129.2.61', idc: 'BJ-DB', os: 'Red.Hat.Enterprise.Linux', role: 'slave', sn: 'SN25129261', '内存平均值': 33.59, '内存峰值': 44.20, '内存最小值': 17.47 }
+          ]
+        },
+        'bj-user-service-1': {
+          code: 0,
+          desc: '用户服务运行正常，接口响应时间在预期范围内',
+          data: [
+            { 'CPU平均值': 30.38, 'CPU峰值': 49.00, 'CPU最小值': 16.71, code: 0, component: 'java-app', cpu: '4', memory: '8', 'disk平均值': 33.45, 'disk峰值': 45.20, 'disk最小值': 17.39, exceptions: [], hostname: 'bj-user-svc-010-kzx', ip: '25.129.2.70', idc: 'BJ-DB', os: 'Red.Hat.Enterprise.Linux', role: 'master', sn: 'SN25129270', '内存平均值': 36.50, '内存峰值': 55.30, '内存最小值': 20.44 },
+            { 'CPU平均值': 18.92, 'CPU峰值': 29.10, 'CPU最小值': 11.35, code: 0, component: 'java-app', cpu: '4', memory: '8', 'disk平均值': 40.27, 'disk峰值': 52.30, 'disk最小值': 22.95, exceptions: [], hostname: 'bj-user-svc-011-kzx', ip: '25.129.2.71', idc: 'BJ-DB', os: 'Red.Hat.Enterprise.Linux', role: 'slave', sn: 'SN25129271', '内存平均值': 24.25, '内存峰值': 35.40, '内存最小值': 14.55 },
+            { 'CPU平均值': 28.70, 'CPU峰值': 42.20, 'CPU最小值': 12.91, code: 0, component: 'java-app', cpu: '4', memory: '8', 'disk平均值': 40.39, 'disk峰值': 59.40, 'disk最小值': 25.04, exceptions: [], hostname: 'bj-user-svc-012-kzx', ip: '25.129.2.72', idc: 'BJ-DB', os: 'Red.Hat.Enterprise.Linux', role: 'slave', sn: 'SN25129272', '内存平均值': 33.02, '内存峰值': 46.50, '内存最小值': 15.85 }
+          ]
+        },
+        'bj-gateway-service-1': {
+          code: 0,
+          desc: 'API网关服务，流量路由与鉴权正常',
+          data: [
+            { 'CPU平均值': 15.83, 'CPU峰值': 22.30, 'CPU最小值': 7.92, code: 0, component: 'java-app', cpu: '4', memory: '8', 'disk平均值': 47.22, 'disk峰值': 66.50, 'disk最小值': 24.55, exceptions: [], hostname: 'bj-gateway-svc-010-kzx', ip: '25.129.2.80', idc: 'BJ-DB', os: 'Red.Hat.Enterprise.Linux', role: 'master', sn: 'SN25129280', '内存平均值': 42.34, '内存峰值': 57.60, '内存最小值': 22.01 },
+            { 'CPU平均值': 26.20, 'CPU峰值': 35.40, 'CPU最小值': 14.41, code: 0, component: 'java-app', cpu: '4', memory: '8', 'disk平均值': 33.00, 'disk峰值': 44.60, 'disk最小值': 18.81, exceptions: [], hostname: 'bj-gateway-svc-011-kzx', ip: '25.129.2.81', idc: 'BJ-DB', os: 'Red.Hat.Enterprise.Linux', role: 'slave', sn: 'SN25129281', '内存平均值': 28.65, '内存峰值': 37.70, '内存最小值': 16.05 }
+          ]
+        },
+        'bj-notification-service-1': {
+          code: 1,
+          desc: '消息推送服务，偶发队列积压需关注',
+          data: [
+            { 'CPU平均值': 30.07, 'CPU峰值': 48.50, 'CPU最小值': 18.04, code: 0, component: 'java-app', cpu: '2', memory: '4', 'disk平均值': 39.27, 'disk峰值': 51.00, 'disk最小值': 24.35, exceptions: [], hostname: 'bj-notify-svc-010-kzx', ip: '25.129.2.90', idc: 'BJ-DB', os: 'Red.Hat.Enterprise.Linux', role: 'master', sn: 'SN25129290', '内存平均值': 32.21, '内存峰值': 48.80, '内存最小值': 19.32 },
+            { 'CPU平均值': 29.64, 'CPU峰值': 45.60, 'CPU最小值': 13.34, code: 1, component: 'java-app', cpu: '2', memory: '4', 'disk平均值': 46.99, 'disk峰值': 69.10, 'disk最小值': 24.43, exceptions: [], hostname: 'bj-notify-svc-011-kzx', ip: '25.129.2.91', idc: 'BJ-DB', os: 'Red.Hat.Enterprise.Linux', role: 'slave', sn: 'SN25129291', '内存平均值': 49.32, '内存峰值': 72.00, '内存最小值': 23.67 }
+          ]
+        },
+        'bj-scheduler-service-1': {
+          code: 0,
+          desc: '定时任务调度服务，任务执行成功率99.8%',
+          data: [
+            { 'CPU平均值': 28.36, 'CPU峰值': 41.70, 'CPU最小值': 14.18, code: 0, component: 'java-app', cpu: '4', memory: '8', 'disk平均值': 46.29, 'disk峰值': 65.20, 'disk最小值': 26.39, exceptions: [], hostname: 'bj-scheduler-svc-010-kzx', ip: '25.129.2.100', idc: 'BJ-DB', os: 'Red.Hat.Enterprise.Linux', role: 'master', sn: 'SN251292100', '内存平均值': 27.76, '内存峰值': 39.10, '内存最小值': 14.44 },
+            { 'CPU平均值': 38.91, 'CPU峰值': 54.80, 'CPU最小值': 21.40, code: 0, component: 'java-app', cpu: '4', memory: '8', 'disk平均值': 32.04, 'disk峰值': 43.30, 'disk最小值': 19.87, exceptions: [], hostname: 'bj-scheduler-svc-011-kzx', ip: '25.129.2.101', idc: 'BJ-DB', os: 'Red.Hat.Enterprise.Linux', role: 'slave', sn: 'SN251292101', '内存平均值': 36.90, '内存峰值': 50.20, '内存最小值': 20.66 },
+            { 'CPU平均值': 38.41, 'CPU峰值': 51.90, 'CPU最小值': 23.04, code: 1, component: 'java-app', cpu: '4', memory: '8', 'disk平均值': 47.28, 'disk峰值': 61.40, 'disk最小值': 24.58, exceptions: [], hostname: 'bj-scheduler-svc-012-kzx', ip: '25.129.2.102', idc: 'BJ-DB', os: 'Red.Hat.Enterprise.Linux', role: 'slave', sn: 'SN251292102', '内存平均值': 56.47, '内存峰值': 74.30, '内存最小值': 33.88 }
+          ]
+        }
+      },
+      MYSQL: {
+        'bja-dsi-mysql-1': {
+          code: 0,
+          desc: '主库集群读写正常，主从延迟在毫秒级',
+          data: [
+            { 'CPU平均值': 29.14, 'CPU峰值': 47.00, 'CPU最小值': 13.11, code: 0, component: 'mysql', cpu: '16', memory: '64', 'disk平均值': 39.10, 'disk峰值': 57.50, 'disk最小值': 22.29, exceptions: [], hostname: 'bja-dsi-mysql-010-kzx', ip: '25.129.2.130', idc: 'BJ-DB', os: 'Red.Hat.Enterprise.Linux.8.6', role: 'master', sn: 'SN251292130', '内存平均值': 27.32, '内存峰值': 41.40, '内存最小值': 13.12 },
+            { 'CPU平均值': 17.62, 'CPU峰值': 27.10, 'CPU最小值': 8.81, code: 0, component: 'mysql', cpu: '16', memory: '64', 'disk平均值': 45.87, 'disk峰值': 64.60, 'disk最小值': 28.44, exceptions: [], hostname: 'bja-dsi-mysql-011-kzx', ip: '25.129.2.131', idc: 'BJ-DB', os: 'Red.Hat.Enterprise.Linux.8.6', role: 'slave', sn: 'SN251292131', '内存平均值': 35.96, '内存峰值': 52.50, '内存最小值': 18.70 },
+            { 'CPU平均值': 38.90, 'CPU峰值': 57.20, 'CPU最小值': 21.39, code: 1, component: 'mysql', cpu: '16', memory: '64', 'disk平均值': 39.22, 'disk峰值': 53.00, 'disk最小值': 20.39, exceptions: [], hostname: 'bja-dsi-mysql-012-kzx', ip: '25.129.2.132', idc: 'BJ-DB', os: 'Red.Hat.Enterprise.Linux.8.6', role: 'slave', sn: 'SN251292132', '内存平均值': 54.39, '内存峰值': 76.60, '内存最小值': 30.46 }
+          ]
+        },
+        'bjb-dsi-mysql-1': {
+          code: 2,
+          desc: '从库慢查询数量激增，部分索引失效需紧急重建',
+          data: [
+            { 'CPU平均值': 61.98, 'CPU峰值': 87.30, 'CPU最小值': 37.19, code: 2, component: 'mysql', cpu: '8', memory: '32', 'disk平均值': 54.75, 'disk峰值': 71.10, 'disk最小值': 31.21, exceptions: [], hostname: 'bjb-dsi-mysql-010-kzx', ip: '25.129.3.130', idc: 'BJ-YZ', os: 'Red.Hat.Enterprise.Linux.7.9', role: 'master', sn: 'SN251293130', '内存平均值': 51.23, '内存峰值': 69.70, '内存最小值': 30.74 },
+            { 'CPU平均值': 37.30, 'CPU峰值': 50.40, 'CPU最小值': 16.78, code: 1, component: 'mysql', cpu: '8', memory: '32', 'disk平均值': 45.70, 'disk峰值': 67.20, 'disk最小值': 28.33, exceptions: [], hostname: 'bjb-dsi-mysql-011-kzx', ip: '25.129.3.131', idc: 'BJ-YZ', os: 'Red.Hat.Enterprise.Linux.7.9', role: 'slave', sn: 'SN251293131', '内存平均值': 51.53, '内存峰值': 67.80, '内存最小值': 24.73 }
+          ]
+        },
+        'bjc-dsi-mysql-1': {
+          code: 1,
+          desc: '只读实例连接数接近上限，建议增加只读节点',
+          data: [
+            { 'CPU平均值': 39.37, 'CPU峰值': 63.50, 'CPU最小值': 19.68, code: 1, component: 'mysql', cpu: '8', memory: '32', 'disk平均值': 52.75, 'disk峰值': 74.30, 'disk最小值': 27.43, exceptions: [], hostname: 'bjc-dsi-mysql-010-kzx', ip: '25.129.4.130', idc: 'BJ-LH', os: 'Red.Hat.Enterprise.Linux.7.9', role: 'master', sn: 'SN251294130', '内存平均值': 51.48, '内存峰值': 78.00, '内存最小值': 26.77 },
+            { 'CPU平均值': 17.29, 'CPU峰值': 26.60, 'CPU最小值': 9.51, code: 0, component: 'mysql', cpu: '8', memory: '32', 'disk平均值': 30.64, 'disk峰值': 41.40, 'disk最小值': 17.46, exceptions: [], hostname: 'bjc-dsi-mysql-011-kzx', ip: '25.129.4.131', idc: 'BJ-LH', os: 'Red.Hat.Enterprise.Linux.7.9', role: 'slave', sn: 'SN251294131', '内存平均值': 30.89, '内存峰值': 45.10, '内存最小值': 17.30 },
+            { 'CPU平均值': 38.56, 'CPU峰值': 56.70, 'CPU最小值': 23.13, code: 1, component: 'mysql', cpu: '8', memory: '32', 'disk平均值': 45.81, 'disk峰值': 59.50, 'disk最小值': 28.41, exceptions: [], hostname: 'bjc-dsi-mysql-012-kzx', ip: '25.129.4.132', idc: 'BJ-LH', os: 'Red.Hat.Enterprise.Linux.7.9', role: 'slave', sn: 'SN251294132', '内存平均值': 49.13, '内存峰值': 69.20, '内存最小值': 29.48 }
+          ]
+        }
+      },
+      NGINX: {
+        'bja-dsi-nginx-1': {
+          code: 0,
+          desc: '前台网关集群，流量转发正常，无异常状态码',
+          data: [
+            { 'CPU平均值': 37.49, 'CPU峰值': 52.80, 'CPU最小值': 16.87, code: 0, component: 'nginx', cpu: '4', memory: '8', 'disk平均值': 37.81, 'disk峰值': 55.60, 'disk最小值': 19.66, exceptions: [], hostname: 'bja-dsi-nginx-030-kzx', ip: '25.129.2.20', idc: 'BJ-DB', os: 'Red.Hat.Enterprise.Linux', role: 'master', sn: 'SN25129220', '内存平均值': 26.68, '内存峰值': 36.30, '内存最小值': 12.81 },
+            { 'CPU平均值': 24.35, 'CPU峰值': 32.90, 'CPU最小值': 12.17, code: 0, component: 'nginx', cpu: '4', memory: '8', 'disk平均值': 44.02, 'disk峰值': 62.00, 'disk最小值': 25.09, exceptions: [], hostname: 'bja-dsi-nginx-031-kzx', ip: '25.129.2.21', idc: 'BJ-DB', os: 'Red.Hat.Enterprise.Linux', role: 'slave', sn: 'SN25129221', '内存平均值': 36.02, '内存峰值': 47.40, '内存最小值': 18.73 },
+            { 'CPU平均值': 27.90, 'CPU峰值': 45.00, 'CPU最小值': 15.35, code: 0, component: 'nginx', cpu: '4', memory: '8', 'disk平均值': 29.67, 'disk峰值': 40.10, 'disk最小值': 18.40, exceptions: [], hostname: 'bja-dsi-nginx-032-kzx', ip: '25.129.2.22', idc: 'BJ-DB', os: 'Red.Hat.Enterprise.Linux', role: 'slave', sn: 'SN25129222', '内存平均值': 38.61, '内存峰值': 58.50, '内存最小值': 21.62 }
+          ]
+        },
+        'bjb-dsi-nginx-1': {
+          code: 0,
+          desc: '备用机房网关，承接跨机房调度流量',
+          data: [
+            { 'CPU平均值': 16.32, 'CPU峰值': 25.10, 'CPU最小值': 9.79, code: 0, component: 'nginx', cpu: '4', memory: '8', 'disk平均值': 36.34, 'disk峰值': 47.20, 'disk最小值': 18.90, exceptions: [], hostname: 'bjb-dsi-nginx-030-kzx', ip: '25.129.3.20', idc: 'BJ-YZ', os: 'Red.Hat.Enterprise.Linux', role: 'master', sn: 'SN25129320', '内存平均值': 26.44, '内存峰值': 38.60, '内存最小值': 15.86 },
+            { 'CPU平均值': 25.98, 'CPU峰值': 38.20, 'CPU最小值': 11.69, code: 0, component: 'nginx', cpu: '4', memory: '8', 'disk平均值': 36.92, 'disk峰值': 54.30, 'disk最小值': 21.05, exceptions: [], hostname: 'bjb-dsi-nginx-031-kzx', ip: '25.129.3.21', idc: 'BJ-YZ', os: 'Red.Hat.Enterprise.Linux', role: 'slave', sn: 'SN25129321', '内存平均值': 35.29, '内存峰值': 49.70, '内存最小值': 16.94 }
+          ]
+        },
+        'bjc-dsi-nginx-1': {
+          code: 1,
+          desc: 'P99延迟略有上升，建议关注后端连接池状态',
+          data: [
+            { 'CPU平均值': 48.49, 'CPU峰值': 68.30, 'CPU最小值': 24.25, code: 1, component: 'nginx', cpu: '4', memory: '8', 'disk平均值': 51.40, 'disk峰值': 72.40, 'disk最小值': 31.87, exceptions: [], hostname: 'bjc-dsi-nginx-030-kzx', ip: '25.129.4.20', idc: 'BJ-LH', os: 'Red.Hat.Enterprise.Linux', role: 'master', sn: 'SN25129420', '内存平均值': 54.24, '内存峰值': 73.80, '内存最小值': 28.21 },
+            { 'CPU平均值': 23.24, 'CPU峰值': 31.40, 'CPU最小值': 12.78, code: 0, component: 'nginx', cpu: '4', memory: '8', 'disk平均值': 29.23, 'disk峰值': 39.50, 'disk最小值': 15.20, exceptions: [], hostname: 'bjc-dsi-nginx-031-kzx', ip: '25.129.4.21', idc: 'BJ-LH', os: 'Red.Hat.Enterprise.Linux', role: 'slave', sn: 'SN25129421', '内存平均值': 30.40, '内存峰值': 40.00, '内存最小值': 17.02 }
+          ]
+        },
+        'bjd-dsi-nginx-1': {
+          code: 2,
+          desc: '502错误码突增，需紧急排查上游服务健康状态',
+          data: [
+            { 'CPU平均值': 48.67, 'CPU峰值': 78.50, 'CPU最小值': 29.20, code: 2, component: 'nginx', cpu: '4', memory: '8', 'disk平均值': 52.82, 'disk峰值': 68.60, 'disk最小值': 30.11, exceptions: [], hostname: 'bjd-dsi-nginx-030-kzx', ip: '25.129.5.20', idc: 'BJ-YF', os: 'Red.Hat.Enterprise.Linux', role: 'master', sn: 'SN25129520', '内存平均值': 50.89, '内存峰值': 77.10, '内存最小值': 30.53 },
+            { 'CPU平均值': 38.09, 'CPU峰值': 58.60, 'CPU最小值': 17.14, code: 2, component: 'nginx', cpu: '4', memory: '8', 'disk平均值': 51.00, 'disk峰值': 75.00, 'disk最小值': 31.62, exceptions: [], hostname: 'bjd-dsi-nginx-031-kzx', ip: '25.129.5.21', idc: 'BJ-YF', os: 'Red.Hat.Enterprise.Linux', role: 'slave', sn: 'SN25129521', '内存平均值': 60.42, '内存峰值': 88.20, '内存最小值': 29.00 }
+          ]
+        }
+      },
+      REDIS: {
+        'bja-dsi-redis-1': {
+          code: 0,
+          desc: '主缓存集群命中率97%以上，响应时间亚毫秒级',
+          data: [
+            { 'CPU平均值': 25.64, 'CPU峰值': 37.70, 'CPU最小值': 12.82, code: 0, component: 'redis', cpu: '4', memory: '16', 'disk平均值': 42.67, 'disk峰值': 60.10, 'disk最小值': 22.19, exceptions: [], hostname: 'bja-dsi-redis-010-kzx', ip: '25.129.2.150', idc: 'BJ-DB', os: 'Red.Hat.Enterprise.Linux', role: 'master', sn: 'SN251292150', '内存平均值': 30.03, '内存峰值': 42.30, '内存最小值': 15.62 },
+            { 'CPU平均值': 36.07, 'CPU峰值': 50.80, 'CPU最小值': 19.84, code: 0, component: 'redis', cpu: '4', memory: '16', 'disk平均值': 28.27, 'disk峰值': 38.20, 'disk最小值': 16.11, exceptions: [], hostname: 'bja-dsi-redis-011-kzx', ip: '25.129.2.151', idc: 'BJ-DB', os: 'Red.Hat.Enterprise.Linux', role: 'slave', sn: 'SN251292151', '内存平均值': 39.25, '内存峰值': 53.40, '内存最小值': 21.98 },
+            { 'CPU平均值': 22.87, 'CPU峰值': 30.90, 'CPU最小值': 13.72, code: 0, component: 'redis', cpu: '4', memory: '16', 'disk平均值': 34.88, 'disk峰值': 45.30, 'disk最小值': 21.63, exceptions: [], hostname: 'bja-dsi-redis-012-kzx', ip: '25.129.2.152', idc: 'BJ-DB', os: 'Red.Hat.Enterprise.Linux', role: 'slave', sn: 'SN251292152', '内存平均值': 49.02, '内存峰值': 64.50, '内存最小值': 29.41 }
+          ]
+        },
+        'bjb-dsi-redis-1': {
+          code: 1,
+          desc: '内存使用接近上限，建议扩容或调整淘汰策略',
+          data: [
+            { 'CPU平均值': 37.20, 'CPU峰值': 60.00, 'CPU最小值': 16.74, code: 1, component: 'redis', cpu: '4', memory: '8', 'disk平均值': 43.11, 'disk峰值': 63.40, 'disk最小值': 22.42, exceptions: [], hostname: 'bjb-dsi-redis-010-kzx', ip: '25.129.3.150', idc: 'BJ-YZ', os: 'Red.Hat.Enterprise.Linux', role: 'master', sn: 'SN251293150', '内存平均值': 38.02, '内存峰值': 57.60, '内存最小值': 18.25 },
+            { 'CPU平均值': 15.02, 'CPU峰值': 23.10, 'CPU最小值': 7.51, code: 0, component: 'redis', cpu: '4', memory: '8', 'disk平均值': 42.25, 'disk峰值': 59.50, 'disk最小值': 24.08, exceptions: [], hostname: 'bjb-dsi-redis-011-kzx', ip: '25.129.3.151', idc: 'BJ-YZ', os: 'Red.Hat.Enterprise.Linux', role: 'slave', sn: 'SN251293151', '内存平均值': 38.15, '内存峰值': 55.70, '内存最小值': 19.84 }
+          ]
+        },
+        'bjc-dsi-redis-1': {
+          code: 0,
+          desc: '缓存预热实例，命中率逐步提升中',
+          data: [
+            { 'CPU平均值': 24.62, 'CPU峰值': 36.20, 'CPU最小值': 13.54, code: 0, component: 'redis', cpu: '4', memory: '16', 'disk平均值': 49.28, 'disk峰值': 66.60, 'disk最小值': 30.56, exceptions: [], hostname: 'bjc-dsi-redis-010-kzx', ip: '25.129.4.150', idc: 'BJ-LH', os: 'Red.Hat.Enterprise.Linux', role: 'master', sn: 'SN251294150', '内存平均值': 25.42, '内存峰值': 35.80, '内存最小值': 14.23 },
+            { 'CPU平均值': 35.00, 'CPU峰值': 49.30, 'CPU最小值': 21.00, code: 0, component: 'redis', cpu: '4', memory: '16', 'disk平均值': 33.88, 'disk峰值': 44.00, 'disk最小值': 17.62, exceptions: [], hostname: 'bjc-dsi-redis-011-kzx', ip: '25.129.4.151', idc: 'BJ-LH', os: 'Red.Hat.Enterprise.Linux', role: 'slave', sn: 'SN251294151', '内存平均值': 33.81, '内存峰值': 46.00, '内存最小值': 20.29 }
+          ]
+        }
+      }
+    },
+    metadata: {
+      'CPU平均值': 'CPU平均值(%)',
+      'CPU峰值': 'CPU峰值(%)',
+      'CPU最小值': 'CPU最小值(%)',
+      component: '组件',
+      'disk平均值': '磁盘平均值(%)',
+      'disk峰值': '磁盘峰值(%)',
+      'disk最小值': '磁盘最小值(%)',
+      exceptions: '异常信息',
+      os: '操作系统',
+      hostname: '主机名',
+      ip: 'IP地址',
+      idc: '机房',
+      cpu: 'CPU核数',
+      memory: '内存(GB)',
+      CPU: 'CPU使用率(%)',
+      '内存': '内存使用率(%)',
+      connections: '连接数',
+      qps: 'QPS',
+      tps: 'TPS',
+      slow_queries: '慢查询数',
+      hit_rate: '命中率(%)',
+      threads: '线程数',
+      gc_count: 'GC次数',
+      active_connections: '活跃连接数',
+      requests_per_sec: '请求数/秒',
+      used_memory: '已用内存(MB)',
+      max_memory: '最大内存(MB)',
+      disk_usage: '磁盘使用率',
+      network_in: '入站流量',
+      network_out: '出站流量',
+      iops_read: '读IOPS',
+      iops_write: '写IOPS',
+      avg_latency: '平均延迟',
+      role: '角色',
+      sn: '序列号',
+      '内存平均值': '内存平均值(%)',
+      '内存峰值': '内存峰值(%)',
+      '内存最小值': '内存最小值(%)'
+    }
+  }
+}
+
+function generateLargeCategory() {
+  const cat = {}
+  const idcs = ['BJ-DB', 'BJ-YZ', 'BJ-LH', 'BJ-YF', 'BJ-DX', 'BJ-HD', 'BJ-CY', 'BJ-FT', 'BJ-SY', 'BJ-TZ', 'BJ-MT', 'BJ-PG', 'BJ-HR']
+  for (let i = 1; i <= 52; i++) {
+    const pad = String(i).padStart(3, '0')
+    const idcIdx = i % idcs.length
+    const code = i <= 30 ? 0 : (i <= 44 ? 1 : 2)
+    const desc = code === 2 ? '资源使用率过高，需紧急处理' : (code === 1 ? '部分指标接近阈值，建议关注' : '运行状态正常')
+    const rowCount = (i % 3) + 2 // 每组 2-4 条记录
+    const rows = []
+    for (let j = 0; j < rowCount; j++) {
+      const rpad = String(j + 1).padStart(2, '0')
+      const rowCode = (i + j) % 5 === 0 ? 2 : ((i + j) % 3 === 0 ? 1 : 0)
+      const cpuPeak = Number((24 + ((i * 7 + j * 5) % 32) + rowCode * 18).toFixed(2))
+      const diskPeak = Number((40 + ((i * 5 + j * 3) % 27) + rowCode * 12).toFixed(2))
+      const memoryPeak = Number((36 + ((i * 9 + j * 4) % 29) + rowCode * 14).toFixed(2))
+      const baseRow = {
+        'CPU平均值': Number((cpuPeak * (0.64 + (j % 3) * 0.04)).toFixed(2)),
+        'CPU峰值': cpuPeak,
+        'CPU最小值': Number((cpuPeak * (0.31 + (j % 3) * 0.03)).toFixed(2)),
+        code: rowCode,
+        component: 'k8s',
+        cpu: String((i % 8) + 2),
+        memory: String([4, 8, 16, 32, 64][(i + j) % 5]),
+        'disk平均值': Number((diskPeak * (0.69 + (j % 3) * 0.03)).toFixed(2)),
+        'disk峰值': diskPeak,
+        'disk最小值': Number((diskPeak * (0.39 + (j % 3) * 0.04)).toFixed(2)),
+        exceptions: [],
+        hostname: `bja-dsi-k8s-node-${pad}-${rpad}-kzx`,
+        ip: `25.${129 + (i % 7)}.${i}.${10 + j}`,
+        idc: idcs[idcIdx],
+        os: ['Red.Hat.Enterprise.Linux.7.9', 'Red.Hat.Enterprise.Linux.8.6', 'CentOS.7.9', 'Kylin.Linux.Advanced.Server.V10'][j % 4],
+        role: j === 0 ? 'master' : 'worker',
+        sn: `SNK8S${pad}${rpad}`,
+        '内存平均值': Number((memoryPeak * (0.67 + (j % 3) * 0.035)).toFixed(2)),
+        '内存峰值': memoryPeak,
+        '内存最小值': Number((memoryPeak * (0.36 + (j % 3) * 0.04)).toFixed(2))
+      }
+      // 前 3 个实例组添加额外列，模拟列多导致操作被遮挡的场景
+      if (i <= 3) {
+        Object.assign(baseRow, {
+          disk_usage: String(45 + ((i + j) * 7) % 40) + '%',
+          network_in: String(120 + (i * 31) % 500) + 'MB/s',
+          network_out: String(80 + (j * 47) % 300) + 'MB/s',
+          iops_read: String(1500 + (i * 200) % 3000),
+          iops_write: String(800 + (j * 300) % 2000),
+          connections: String(320 + (i + j) * 50),
+          qps: String(1200 + (i * j) * 100),
+          avg_latency: (2.3 + (i * 0.5) + (j * 0.3)).toFixed(1) + 'ms',
+        })
+      }
+      rows.push(baseRow)
+    }
+    cat[`bja-dsi-k8s-cluster-${pad}`] = { code, desc, data: rows }
+  }
+  return cat
+}

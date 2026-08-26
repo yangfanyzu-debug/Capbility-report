@@ -1,1 +1,5 @@
 .worktrees/
+.claude/
+.playwright-cli/
+.DS_Store
+deliverables/.DS_Store

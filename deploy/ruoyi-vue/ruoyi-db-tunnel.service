@@ -1,0 +1,14 @@
+[Unit]
+Description=RuoYi MySQL and Redis SSH tunnel
+After=network-online.target docker.service
+Wants=network-online.target docker.service
+
+[Service]
+Type=simple
+User=root
+ExecStart=/usr/bin/ssh -NT -i /opt/ruoyi-vue/tunnel/id_ed25519 -o BatchMode=yes -o ExitOnForwardFailure=yes -o ServerAliveInterval=30 -o ServerAliveCountMax=3 -o StrictHostKeyChecking=yes -o UserKnownHostsFile=/opt/ruoyi-vue/tunnel/known_hosts -L 172.17.0.1:13306:127.0.0.1:3306 -L 172.17.0.1:16379:127.0.0.1:6379 root@49.51.194.37
+Restart=always
+RestartSec=5s
+
+[Install]
+WantedBy=multi-user.target

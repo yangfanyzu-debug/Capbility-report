@@ -4,7 +4,9 @@ const icons={
   peer:'<svg viewBox="0 0 24 24"><circle cx="8" cy="8" r="3"/><circle cx="17" cy="9" r="2"/><path d="M3 20c0-4 2-7 5-7s5 3 5 7M14 14c3 0 5 2 5 6"/></svg>',
   simulate:'<svg viewBox="0 0 24 24"><path d="M4 18V9m5 9V5m5 13v-7m5 7V3"/></svg>',
   admission:'<svg viewBox="0 0 24 24"><path d="M12 3 4 7v5c0 5 3 8 8 9 5-1 8-4 8-9V7z"/><path d="m8 12 3 3 5-6"/></svg>',
-  tasks:'<svg viewBox="0 0 24 24"><path d="M8 5h12M8 12h12M8 19h12M3 5h1M3 12h1M3 19h1"/></svg>'
+  tasks:'<svg viewBox="0 0 24 24"><path d="M8 5h12M8 12h12M8 19h12M3 5h1M3 12h1M3 19h1"/></svg>',
+  knowledge:'<svg viewBox="0 0 24 24"><path d="M4 4h7a3 3 0 0 1 3 3v13a2 2 0 0 0-2-2H4z"/><path d="M20 4h-7a3 3 0 0 0-3 3v13a2 2 0 0 1 2-2h8z"/></svg>',
+  home:'<svg viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5"/><path d="M5 10.5V20h14v-9.5"/><path d="M10 20v-6h4v6"/></svg>'
 };
 
 const systems=[
@@ -62,7 +64,7 @@ const messages=[
   {time:'09:10',title:'Redis 缩容正在观察期',body:'缩减 1 个节点后，CPU 峰值由 18% 升至 31%，仍处安全范围。我会观察满 7 天后再决定是否继续。',tone:'follow'}
 ];
 
-const state={page:'overview',selectedSystemId:'payment',agentOpen:false,agentTab:'log',work:0,progress:36,simNodes:5,simLoad:20,simKind:'shrink'};
+const state={page:'home',selectedSystemId:'payment',agentOpen:false,agentTab:'log',work:0,progress:36,simNodes:5,simLoad:20,simKind:'shrink'};
 const main=document.querySelector('#main');
 const nav=document.querySelector('#nav');
 const crumb=document.querySelector('#crumb');
@@ -76,8 +78,13 @@ const scrim=document.querySelector('#scrim');
 const agentInput=document.querySelector('#agent-input');
 
 function navHTML(){
-  const items=[['overview','治理总览',icons.overview,''],['system','系统洞察',icons.system,'3'],['peer','同类对标',icons.peer,''],['simulate','方案模拟',icons.simulate,''],['admission','容量准入',icons.admission,''],['tasks','治理闭环',icons.tasks,'3']];
-  return `<div class="nav-label">GOVERNANCE DESK</div>${items.map(([id,label,icon,count])=>`<button class="nav-item ${state.page===id?'active':''}" data-page="${id}">${icon}<span>${label}</span>${count?`<em>${count}</em>`:''}</button>`).join('')}`;
+  const groups=[
+    {label:'AGENT',items:[['home','首页',icons.home,''],['overview','治理总览',icons.overview,'']]},
+    {label:'KNOWLEDGE',items:[['knowledge','知识库',icons.knowledge,''],['peer','同类对标',icons.peer,'']]},
+    {label:'DEVICES',items:[['system','系统洞察',icons.system,'3'],['admission','容量准入',icons.admission,'']]},
+    {label:'OBSERVABILITY',items:[['simulate','方案模拟',icons.simulate,''],['tasks','治理闭环',icons.tasks,'3']]}
+  ];
+  return groups.map(g=>`<div class="nav-group"><div class="nav-label">${g.label}</div>${g.items.map(([id,label,icon,count])=>`<button class="nav-item ${state.page===id?'active':''}" data-page="${id}">${icon}<span>${label}</span>${count?`<em>${count}</em>`:''}</button>`).join('')}</div>`).join('');
 }
 
 function header(kicker,title,subtitle,actions=''){
@@ -86,9 +93,9 @@ function header(kicker,title,subtitle,actions=''){
 
 function render(){
   nav.innerHTML=navHTML();
-  const names={overview:'我的容量治理',system:'统一支付系统 / 系统洞察',peer:'同类系统 / 资源对标',simulate:'容量方案 / What-if 模拟',admission:'增量资源 / 容量准入',tasks:'治理任务 / 效果验证'};
+  const names={home:'首页 · 与 Capacity Agent 对话',overview:'我的容量治理',system:'统一支付系统 / 系统洞察',peer:'同类系统 / 资源对标',simulate:'容量方案 / What-if 模拟',admission:'增量资源 / 容量准入',knowledge:'容量治理 / 知识库',tasks:'治理任务 / 效果验证'};
   crumb.textContent=names[state.page];
-  ({overview:renderOverview,system:renderSystem,peer:renderPeer,simulate:renderSimulator,admission:renderAdmission,tasks:renderTasks}[state.page]||renderOverview)();
+  ({home:renderHome,overview:renderOverview,system:renderSystem,peer:renderPeer,simulate:renderSimulator,admission:renderAdmission,knowledge:renderKnowledge,tasks:renderTasks}[state.page]||renderHome)();
   main.focus({preventScroll:true});
 }
 
@@ -158,6 +165,164 @@ function renderAdmission(){
 }
 function fact(label,value){return `<div class="fact"><span>${label}</span><b>${value}</b></div>`}
 
+function renderHome(){
+  const sessions=[
+    {id:1,title:'工作台 · 今日巡检',time:'刚刚',preview:'Capacity Agent 已完成 14 轮数据采集…',tag:'进行中',active:true},
+    {id:2,title:'GreatDB 磁盘增长排查',time:'08:32',preview:'为什么单节点 87.6% 而集群水位稳定?…',tag:'已完成'},
+    {id:3,title:'Redis 缩容观察讨论',time:'昨天',preview:'变更后 CPU 峰值 18% → 31%,暂不继续…',tag:'已完成'},
+    {id:4,title:'Nginx 节点降配方案',time:'昨天',preview:'先灰度 2 台 16C32G → 8C16G,观察 7 天…',tag:'已审批'},
+    {id:5,title:'容量准入 · 双十一评估',time:'08-12',preview:'不建议按原申请 10 台,建议新增 4 台…',tag:'已完成'}
+  ];
+  state.homeSessions=sessions;
+  const quickPrompts=[
+    {icon:'◎',title:'发现异常设备',desc:'z-score 离群 · 142 个实例',page:'system'},
+    {icon:'∿',title:'对比本周与上周负载',desc:'容量水位变化 · 一键钻取',page:'peer'},
+    {icon:'!',title:'解释告警疲劳度',desc:'哪些告警已重复 3 次以上',page:'tasks'},
+    {icon:'✓',title:'一行话集群健康',desc:'按重要性级别 P1/P2/P3 汇总',page:'overview'}
+  ];
+  const followUps=[
+    {id:'CAP-1842',title:'GreatDB 磁盘容量风险处置',owner:'陈哲',stage:2},
+    {id:'CAP-1839',title:'Redis 低利用实例缩容验证',owner:'王璐',stage:3},
+    {id:'CAP-1831',title:'Nginx 节点规格降配',owner:'李琦',stage:1}
+  ];
+  const events=[
+    {time:'09:32',tone:'normal',text:'完成第 14 轮数据采集 · 18 个组件 · 142 个实例'},
+    {time:'09:18',tone:'risk',text:'GreatDB 磁盘偏离基线 +18.4% · 预计 6 天触达 90%'},
+    {time:'09:10',tone:'follow',text:'Redis 缩容观察第 3/7 天 · CPU 峰值 31% 在安全区间'},
+    {time:'09:05',tone:'analysis',text:'合并 142 个实例信号 → 3 条治理建议'},
+    {time:'08:18',tone:'normal',text:'CAP-1842 评审状态轮询 · 等待陈哲回复'},
+    {time:'08:07',tone:'risk',text:'GreatDB 单节点 87.6% 与集群均值差异显著'},
+    {time:'08:00',tone:'normal',text:'今日巡检开始 · 取数完成 · 进入分析'}
+  ];
+  state.homeFollowUps=followUps;
+  state.homeEvents=events;
+  const stageLabel=['发现','建议','审批','观察','验证'];
+  const session=sessions[0];
+  main.innerHTML=`
+  <section class="home-status">
+    <span class="home-status-chip live"><span class="home-dot live-dot"></span><b>4 / 4</b> 系统在线</span>
+    <span class="home-status-chip warn"><span class="home-dot"></span><b>6</b> 待处理告警</span>
+    <span class="home-status-chip"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16v10H7l-3 3z"/></svg><b>14</b> 本周会话</span>
+    <span class="home-status-chip"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19l4-10 4 6 4-8 2 12"/></svg><b>653.7k</b> tokens 今日</span>
+  </section>
+  <section class="home-shell home-shell-narrow">
+    <section class="home-chat panel">
+      <div class="panel-head"><div><h2>${session.title}</h2><p>让 Capacity Agent 帮你看数据、出方案、改计划。所有生产变更仍由你审批。</p></div>
+        <div class="home-triggers">
+          <button class="home-trigger" data-open-inspect><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12h4l3-9 4 18 3-9h4"/></svg><span>今日巡检</span><em>3</em></button>
+          <button class="home-trigger" data-open-events><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span>工作事件</span><em>7</em></button>
+        </div>
+      </div>
+      <div class="home-chat-body">
+        <div class="home-msg user"><div class="home-msg-bubble"><b>杨帆</b><small>刚刚</small><p>让我看看今天集群有没有什么异常。</p></div><div class="home-avatar">杨</div></div>
+        <div class="home-msg agent"><div class="home-avatar agent"><span class="agent-eye"></span></div><div class="home-msg-bubble"><b>Capacity Agent</b><small>${new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'})} · 第 14 轮</small><p>好的,我已对 <strong>4 个系统、18 个组件、142 个实例</strong>做完完整性检查。今天有 3 条值得你注意:</p><ul><li><b>P1 · GreatDB</b>:单节点磁盘 87.6%,6 天后触达 90%,节点差值 49.6%。建议先修归档,再评估增加 2 个节点。</li><li><b>P2 · 风控</b>:CPU 30 日持续增长,批处理窗口叠加;建议错峰并观察 7 天。</li><li><b>P3 · 渠道 Nginx</b>:规格高于同类中位数 2.1×,可灰度 2 台由 16C32G 降至 8C16G。</li></ul><p>需要我把 P1 整理成治理评估单,或继续追问任一条吗?</p></div></div>
+      </div>
+      <div class="home-quickgrid">${quickPrompts.map(p=>`<button class="home-quick" data-page="${p.page}"><span class="home-quick-icon">${p.icon}</span><div><b>${p.title}</b><small>${p.desc}</small></div></button>`).join('')}</div>
+      <form class="home-composer" id="home-composer">
+        <textarea rows="2" placeholder="Start anywhere… 按 ⌘+↵ 发送 / 单纯 ↵ 换行"></textarea>
+        <div class="home-composer-foot"><span><span class="home-dot live-dot"></span> claude-sonnet-4-6</span><button type="button" class="btn acid">发送</button></div>
+      </form>
+    </section>
+  </section>`;
+}
+
+function openHomeInspect(){
+  const followups=state.homeFollowUps||[];
+  const events=state.homeEvents||[];
+  const stageLabel=['发现','建议','审批','观察','验证'];
+  const modal=document.querySelector('#inspect-modal');
+  const content=document.querySelector('#inspect-content');
+  content.innerHTML=`
+    <p class="kicker">TODAY · CAPACITY INSPECT</p>
+    <h2 style="font:600 22px var(--display);margin:6px 0 12px">今日巡检 · Capacity Agent 当前跟进</h2>
+    <p style="color:var(--muted);font-size:11px;line-height:1.7;margin:0 0 16px">所有生产变更仍由你审批。下表展示 Agent 正在持续跟进的任务,任何一行点击都能进入治理闭环页查看完整证据。</p>
+    <section class="home-followups">${followups.map(t=>`<div class="home-followup"><div><b>${t.title}</b><small>${t.id} · ${t.owner}</small></div><span class="work-status">${stageLabel[t.stage]||'处理中'}</span></div>`).join('') || '<div class="empty-note">暂无跟进任务</div>'}</section>
+    <p class="kicker" style="margin-top:20px">STATUS SNAPSHOT</p>
+    <div class="home-snapshot">
+      <div><span>系统在线</span><b class="live">4 / 4</b></div>
+      <div><span>待处理告警</span><b class="warn">6</b></div>
+      <div><span>本周会话</span><b>14</b></div>
+      <div><span>tokens 今日</span><b>653.7k</b></div>
+    </div>`;
+  // 先关闭其他 overlay,再打开自己
+  closeOverlays();
+  modal.classList.add('open');
+  modal.removeAttribute('inert');
+  modal.setAttribute('aria-hidden','false');
+  if(scrim)scrim.hidden=false;
+}
+
+function openHomeEvents(){
+  const events=state.homeEvents||[];
+  const modal=document.querySelector('#events-modal');
+  const content=document.querySelector('#events-content');
+  content.innerHTML=`
+    <p class="kicker">LIVE · AGENT WORK EVENTS</p>
+    <h2 style="font:600 22px var(--display);margin:6px 0 12px">Agent 工作事件流</h2>
+    <p style="color:var(--muted);font-size:11px;line-height:1.7;margin:0 0 16px">这是 Capacity Agent 后台真实推进的进度(非动画)。每条事件表示一次取数 / 分析 / 跟进 / 验证动作。</p>
+    <div class="home-events home-events-modal">${events.map(e=>`<div class="home-event"><span class="home-event-time">${e.time}</span><div class="home-event-dot ${e.tone}"></div><p>${e.text}</p></div>`).join('') || '<div class="empty-note">暂无事件</div>'}</div>`;
+  closeOverlays();
+  modal.classList.add('open');
+  modal.removeAttribute('inert');
+  modal.setAttribute('aria-hidden','false');
+  if(scrim)scrim.hidden=false;
+}
+
+function renderKnowledge(){
+  const kbStages=[
+    {key:'risk',name:'异常发现',count:71,active:true},
+    {key:'suggest',name:'处置建议',count:12},
+    {key:'admit',name:'容量准入',count:5},
+    {key:'verify',name:'效果验证',count:8}
+  ];
+  const stageLabel={risk:'发现异常',suggest:'生成建议',verify:'观察验证',admit:'容量准入'};
+  const stageClass={risk:'risk',suggest:'suggest',verify:'verify',admit:'admit'};
+  const knowledge=[
+    {title:'负载均衡健康检查抖动 / 后端节点被踢出',stages:['suggest'],count:23,path:'diagnostics/load-balancer-health-flapping.md'},
+    {title:'DNS 解析失败与解析缓慢',stages:['risk'],count:14,path:'diagnostics/dns-resolution-failure.md'},
+    {title:'文件句柄耗尽（Too Many Open Files）',stages:['risk','suggest'],count:9,path:'diagnostics/fd-exhaustion.md'},
+    {title:'进程 / 容器被 OOM Killer 终止',stages:['risk'],count:31,path:'diagnostics/oom-killed.md'},
+    {title:'Kubernetes 节点 NotReady',stages:['risk'],count:12,path:'diagnostics/k8s-node-notready.md'},
+    {title:'Tempo 链路缺失 / 追踪断链',stages:['risk','verify'],count:7,path:'diagnostics/tempo-missing-spans.md'},
+    {title:'HTTP 5xx 错误率突增',stages:['risk'],count:41,path:'diagnostics/error-rate-5xx.md'},
+    {title:'非对称路由与 rp_filter 丢包',stages:['risk','suggest'],count:6,path:'diagnostics/asymmetric-routing-rpfilter.md'},
+    {title:'IRQ 亲和性失衡（中断被钉在单核）',stages:['risk'],count:4,path:'diagnostics/irq-affinity-imbalance.md'},
+    {title:'NFS 卡死与陈旧文件句柄',stages:['risk'],count:5,path:'diagnostics/nfs-stale-handle.md'},
+    {title:'K8s Pod 卡在 Pending / CrashLoopBackOff',stages:['risk','suggest'],count:18,path:'diagnostics/k8s-pod-stuck.md'},
+    {title:'页缓存压力与回收停顿',stages:['risk','verify'],count:11,path:'diagnostics/page-cache-pressure.md'}
+  ];
+  main.innerHTML=`
+  <section class="kb-layout">
+    <aside class="kb-tree panel">
+      <div class="panel-head"><div><h2>治理知识</h2><p>按治理闭环阶段分类</p></div></div>
+      <div class="kb-tree-body">
+        <div class="kb-section">
+          <div class="kb-section-head"><span class="kb-folder">治理知识</span><i aria-hidden="true">▾</i></div>
+          <div class="kb-section-items">
+            ${kbStages.map(s=>`<div class="kb-item ${s.active?'active':''}"><span class="kb-chev">·</span><span>${s.name}</span><em>${s.count}</em></div>`).join('')}
+          </div>
+        </div>
+      </div>
+      <div class="kb-tree-footer">本周被引用 <b>217</b> 次 · 命中 <b>31</b> 个治理任务</div>
+    </aside>
+    <section class="kb-list panel">
+      <div class="panel-head"><div><h2>诊断手册</h2><p>已发布的诊断手册、异常规则与处置经验 · 是 Agent 在治理闭环中的判断依据</p></div></div>
+      <div class="kb-meta-impact"><span>已发布 <b>96</b> 条</span><i></i><span>本周被 Agent 引用 <b class="kb-meta-ref">217</b> 次</span><i></i><span>命中 <b class="kb-meta-hit">31</b> 个治理任务</span></div>
+      <div class="kb-search kb-search-bar"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m20 20-3.5-3.5"/></svg><input placeholder="搜索「诊断」(与 query_knowledge 工具同源)" /><button class="btn small">Search</button></div>
+      <div class="kb-cards">${knowledge.map(k=>`<article class="kb-card">
+        <div class="kb-card-head">
+          <div class="kb-card-main">
+            <h3>${k.title}</h3>
+            <div class="kb-card-tags">${k.stages.map(s=>`<span class="kb-tag kb-tag-stage ${stageClass[s]}">${stageLabel[s]}</span>`).join('')}</div>
+          </div>
+          <span class="kb-ref-count" title="本周被 Agent 引用次数">× ${k.count}</span>
+        </div>
+        <div class="kb-card-path">${k.path}</div>
+      </article>`).join('')}</div>
+    </section>
+  </section>`;
+}
+
 function renderTasks(){
   main.innerHTML=`
   <section class="panel governance-table-panel"><div class="panel-head"><div><h2>正在治理的事项</h2><p>按工单号、治理任务、当前状态、变更单和 Agent 跟进动作查看</p></div><small>3 ACTIVE</small></div><div class="governance-table-wrap"><table class="governance-table"><thead><tr><th>工单号</th><th>治理任务</th><th>负责人</th><th>当前状态</th><th>变更单号</th><th>变更状态</th><th>治理阶段</th><th>操作</th></tr></thead><tbody>${tasks.map(taskRow).join('')}</tbody></table></div></section>
@@ -188,7 +353,16 @@ function plan(time,title,note,active=false){return `<div class="plan-item ${acti
 function memory(label,title){return `<div class="memory-card"><small>WORKING MEMORY</small><b>${label}</b><p>${title}</p></div>`}
 
 function openAgent(){state.agentOpen=true;drawer.classList.add('open');drawer.removeAttribute('inert');drawer.setAttribute('aria-hidden','false');scrim.hidden=false;renderDrawer()}
-function closeOverlays(){state.agentOpen=false;drawer.classList.remove('open');drawer.setAttribute('inert','');drawer.setAttribute('aria-hidden','true');modal.classList.remove('open');modal.setAttribute('inert','');modal.setAttribute('aria-hidden','true');scrim.hidden=true}
+function closeOverlays(){
+  state.agentOpen=false;
+  if(drawer){drawer.classList.remove('open');drawer.setAttribute('inert','');drawer.setAttribute('aria-hidden','true')}
+  if(modal){modal.classList.remove('open');modal.setAttribute('inert','');modal.setAttribute('aria-hidden','true')}
+  const inspect=document.querySelector('#inspect-modal');
+  const events=document.querySelector('#events-modal');
+  if(inspect){inspect.classList.remove('open');inspect.setAttribute('inert','');inspect.setAttribute('aria-hidden','true')}
+  if(events){events.classList.remove('open');events.setAttribute('inert','');events.setAttribute('aria-hidden','true')}
+  if(scrim)scrim.hidden=true;
+}
 function openEvidence(){modalCard.classList.remove('followup-card');modalContent.innerHTML=`<div class="evidence-head"><small>HOW I REACHED THIS CONCLUSION</small><h2>这不是一句“AI 觉得有风险”</h2><p>Capacity Agent 把计算、判断与行动分开呈现，SRE 可以检查每一层证据。</p></div><div class="evidence-steps"><div class="evidence-step"><span>01 / CALCULATE</span><h3>算法负责算</h3><p>关联 30 日历史，计算动态基线、7 日斜率、节点极差和预计触达阈值时间。</p></div><div class="evidence-step"><span>02 / REASON</span><h3>AI 负责判断</h3><p>结合主备角色、系统等级和治理规则，判断是整体不足、单节点异常还是负载倾斜。</p></div><div class="evidence-step"><span>03 / ACT</span><h3>Agent 负责做</h3><p>生成建议、等待关键审批、创建 JIRA、轮询状态并验证变更后的容量效果。</p></div></div><div class="explain" style="margin-top:18px"><strong>本次结论：</strong>GreatDB 风险置信度 91%。证据包括峰值 87.6%、偏离基线 18.4%、连续 7 日增长和节点极差 49.6%。</div>`;modal.classList.add('open');modal.removeAttribute('inert');modal.setAttribute('aria-hidden','false');scrim.hidden=false}
 function openFollowup(taskId){
   const task=tasks.find(t=>t.id===taskId)||tasks[1];
@@ -207,12 +381,23 @@ function toast(title,body){const el=document.createElement('div');el.className='
 document.addEventListener('click',e=>{
   const page=e.target.closest('[data-page]');if(page){if(page.dataset.systemId)state.selectedSystemId=page.dataset.systemId;state.page=page.dataset.page;closeOverlays();render();return}
   if(e.target.closest('[data-open-agent]')){openAgent();return}
-  if(e.target.closest('[data-close-agent]')||e.target.closest('[data-close-modal]')||e.target===scrim){closeOverlays();return}
+  if(e.target.closest('[data-close-agent]')||e.target.closest('[data-close-modal]')||e.target.closest('[data-close-inspect]')||e.target.closest('[data-close-events]')||e.target===scrim){closeOverlays();return}
   if(e.target.closest('[data-open-evidence]')){openEvidence();return}
+  if(e.target.closest('[data-open-inspect]')){openHomeInspect();return}
+  if(e.target.closest('[data-open-events]')){openHomeEvents();return}
+  const session=e.target.closest('[data-session]');if(session){document.querySelectorAll('.side-session').forEach(b=>b.classList.toggle('current',b===session));toast('会话已切换',`已加载「${session.querySelector('.side-session-body b').textContent}」的历史上下文`);return}
+  const toggle=e.target.closest('#side-session-toggle');if(toggle){
+    const isOpen=toggle.classList.toggle('open');
+    const allSessions=[...document.querySelectorAll('.side-session')];
+    const extras=allSessions.slice(3);
+    extras.forEach(b=>b.hidden=!isOpen);
+    toggle.textContent=isOpen?`Hide ${extras.length} more`:`Show ${extras.length} more`;
+    return;
+  }
   const follow=e.target.closest('[data-open-followup]');if(follow){openFollowup(follow.dataset.openFollowup);return}
   const tab=e.target.closest('[data-agent-tab]');if(tab){state.agentTab=tab.dataset.agentTab;renderDrawer();return}
   const prompt=e.target.closest('[data-prompt]');if(prompt){agentInput.value=prompt.dataset.prompt;agentInput.focus();return}
-  if(e.target.closest('[data-create-task]')){toast('已生成静态演示任务','CAP-1848 已进入“待 SRE 审批”，不会触发真实生产变更。');return}
+  if(e.target.closest('[data-create-task]')){toast('已生成静态演示任务','CAP-1848 已进入”待 SRE 审批”，不会触发真实生产变更。');return}
   if(e.target.closest('[data-create-workorder]')){toast('已准备治理工单','演示环境不会真实提单，请在生产流程中完成变更单创建。');return}
   if(e.target.closest('[data-review]')){toast('Capacity Agent 已完成评估','已结合历史趋势、同类对标与安全余量，建议新增 4 台。');return}
   if(e.target.closest('[data-reset-sim]')){state.simNodes=5;state.simLoad=20;renderSimulator();return}

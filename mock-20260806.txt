@@ -1,0 +1,168 @@
+1. 历史数据
+export default {
+  data: [
+    {
+      code: 0,
+      data: [
+        6.67, 4.41, 6.63, 6.65, 6.67, 6.69, 6.71, 6.73, 6.75, 6.77, 6.79, 6.81,
+        6.83, 6.85, 6.87, 6.89, 6.91, 6.93, 6.95, 6.97, 6.99, 7.01, 7.03, 7.05,
+        5.03, 3.98, 6.39, 6.5, 4.0, 6.6,
+      ],
+      remark: "正常",
+      timeline: [
+        "2026-06-17",
+        "2026-06-18",
+        "2026-06-19",
+        "2026-06-20",
+        "2026-06-21",
+        "2026-06-22",
+        "2026-06-23",
+        "2026-06-24",
+        "2026-06-25",
+        "2026-06-26",
+        "2026-06-27",
+        "2026-06-28",
+        "2026-06-29",
+        "2026-06-30",
+        "2026-07-01",
+        "2026-07-02",
+        "2026-07-03",
+        "2026-07-04",
+        "2026-07-05",
+        "2026-07-06",
+        "2026-07-07",
+        "2026-07-08",
+        "2026-07-09",
+        "2026-07-10",
+        "2026-07-11",
+        "2026-07-12",
+        "2026-07-13",
+        "2026-07-14",
+      ],
+      title: "CPU月度指标",
+    },
+    {
+      code: 0,
+      data: [
+        18.86, 18.88, 18.9, 18.92, 18.94, 18.96, 18.98, 19.0, 19.02, 19.04,
+        19.06, 19.08, 19.1, 19.12, 19.14, 19.16, 19.18, 19.2, 19.22, 19.24,
+        19.26, 19.28, 19.3, 19.32, 18.75, 18.77, 18.79, 18.81, 18.83, 18.85,
+      ],
+      remark: "正常",
+      timeline: [
+        "2026-06-17",
+        "2026-06-18",
+        "2026-06-19",
+        "2026-06-20",
+        "2026-06-21",
+        "2026-06-22",
+        "2026-06-23",
+        "2026-06-24",
+        "2026-06-25",
+        "2026-06-26",
+        "2026-06-27",
+        "2026-06-28",
+        "2026-06-29",
+        "2026-06-30",
+        "2026-07-01",
+        "2026-07-02",
+        "2026-07-03",
+        "2026-07-04",
+        "2026-07-05",
+        "2026-07-06",
+        "2026-07-07",
+        "2026-07-08",
+        "2026-07-09",
+        "2026-07-10",
+        "2026-07-11",
+        "2026-07-12",
+        "2026-07-13",
+        "2026-07-14",
+      ],
+      title: "内存月度指标",
+    },
+  ],
+  meta: {
+    cpu: 64,
+    hostname: "bjc-dasp-hive-krx-0095",
+    idc_code: "BJ-DB",
+    ip: "25.131.187.95",
+    memory: "8",
+    os: "Kylin Linux Advanced Server V10 64bit",
+  },
+};
+
+2.配置文件
+正常：export const resStr = `21.225.125.92执行结果如下\nuser\tnobody;\nworker_processes\tauto;\nerror_log\t/applog/nginx/logs/error.log info;\n#pid\t/applog/nginx/run/nginx.pid;\nworker_rlimit_nofile\t65535;\n\nevents {\n\tuse epoll;\n\tworker_connections 51200;\n\tmulti_accept on;\n}\n\nhttp {\n        include       mime.types;\n        default_type  application/octet-stream;\n        server_names_hash_bucket_size 128;\n        vhost_traffic_status_zone;\n        stream_server_traffic_status_zone;\n                client_header_buffer_size 32k;\n                large_client_header_buffers 4 32k;\n        client_max_body_size 200m;\n                sendfile on;\n        tcp_nopush on;\n                check_shm_size 20m;\n        keepalive_timeout 60;\n                tcp_nodelay on;\n                gzip on;\n                gzip_min_length 1k;\n                gzip_buffers 4 16k;\n                gzip_comp_level 2;\n                gzip_types text/plain application/javascript application/x-javascript text/javascript text/css application/xml application/xml+rss image/png image/jpeg;\n        gzip_vary on;\n                gzip_proxied expired no-cache no-store private auth;\n                gzip_disable "MSIE [1-6]\\.";\n        server_tokens off;\n                log_format main '$remote_addr - $remote_user [$time_local] "$request"' '\n'$status $body_bytes_sent "$http_referer"' '\n'"$http_user_agent" "$http_x_forwarded_for" "$request_time" "$upstream_response_time" "$upstream_addr"'\n\n server {\n# metrics exporter\n                listen 9101;\n\n        location /status {\n                vhost_traffic_status_display;\n vhost_traffic_status_display_format html;\n        }\n\n        location /metrics {\n        stream_server_traffic_status_display;\n stream_server_traffic_status_display_format html;\n        }\n\n        location /dynamic {\n                    dynamic_upstream;\n        }\n        }\n\n        server {\n                listen 80 default_server;\n                server_name localhost;\n                access_log /applog/nginx/logs/access.log main;\n                error timeout invalid_header http_500 http_502 http_503 http_504;\n                \t proxy_set_header Host $host;\n                \t proxy_set_header X-Real-IP $remote_addr;\n                \t proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;\n                \t proxy_connect_timeout 3s;\n                \t proxy_buffering on;\n                \t proxy_read_timeout 300;\n                \t # add_header X-Frame-Options SAMEORIGIN;\n                \t \n        # dps-api-manager-web\n        location /dps-api-manager-web/ {\n        proxy_set_header X-MyProxy-Host http://$host:\n        proxy_set_header Host dps.dbprod-c86-aop.pcomt.prod-krx.cncb;\n        proxy_pass http://dps.dbprod-c86-aop.pcomt.prod-krx.cncb/dps-api-manager-web/;\n        }\n        location /dps-api-manager/ {\n        proxy_set_header X-MyProxy-Host http://$host:\n        proxy_set_header Host dps.dbprod-c86-aop.pcomt.prod-krx.cncb;\n        proxy_pass http://dps.dbprod-c86-aop.pcomt.prod-krx.cncb/dps-api-manager/;\n        }\n        # dps-data-cmdb-web\n        location /dps-data-cmdb-web/ {\n        proxy_set_header X-MyProxy-Host http://$host:\n        proxy_set_header Host dps.dbprod-c86-aop.pcomt.prod-krx.cncb;\n        proxy_pass http://dps.dbprod-c86-aop.pcomt.prod-krx.cncb/dps-data-cmdb-web/;\n        }\n        location /dps-data-cmdb-service/ {\n        proxy_set_header X-MyProxy-Host http://$host:\n        proxy_set_header Host dps.dbprod-c86-aop.pcomt.prod-krx.cncb;\n        proxy_pass http://dps.dbprod-c86-aop.pcomt.prod-krx.cncb/dps-data-cmdb-service/;\n        }\n        # dps-plat-arrange-web\n        location /dps-plat-arrange-web/ {\n        proxy_set_header X-MyProxy-Host \"http://prod-nw-platweb.dps.prod-krx1.cncb:\";\n        proxy_set_header Host dps.dbprod.pcomt.prod-krx.cncb;\n        proxy_pass http://dps.dbprod.pcomt.prod-krx.cncb/dps-plat-arrange-web/;\n        }\n        location /dps-plat-arrange/ {\n        proxy_set_header X-MyProxy-Host \"http://prod-nw-platweb.dps.prod-krx1.cncb:\";\n        proxy_set_header Host dps.dbprod.pcomt.prod-krx.cncb;\n        proxy_pass http://dps.dbprod.pcomt.prod-krx.cncb/dps-plat-arrange/;\n        }\n        location /dps-plat-meta/ {\n        proxy_set_header X-MyProxy-Host \"http://prod-nw-platweb.dps.prod-krx1.cncb:\";\n        proxy_set_header Host dps.dbprod.pcomt.prod-krx.cncb;\n        proxy_pass http://dps.dbprod.pcomt.prod-krx.cncb/dps-plat-meta/;\n        }\n        # dps-canal-manager-web\n        location /dps-canal-manager-web/ {\n        proxy_set_header X-MyProxy-Host \"http://prod-nw-platweb.dps.prod-krx1.cncb:\";\n        proxy_set_header Host dps.dbprod.pcomt.prod-krx.cncb;\n        proxy_pass http://dps.dbprod.pcomt.prod-krx.cncb/dps-canal-manager-web/;\n        }\n        location /dps-canal-manager/ {\n        proxy_set_header X-MyProxy-Host \"http://prod-nw-platweb.dps.prod-krx1.cncb:\";\n        proxy_set_header Host dps.dbprod.pcomt.prod-krx.cncb;\n        proxy_pass http://dps.dbprod.pcomt.prod-krx.cncb/dps-canal-manager/;\n        }\n        \n        \tlocation / {\n\t\troot html;\n\t\tindex index.html index.htm;\n\t}\n        \tlocation = /favicon.ico {\n\t\treturn 200;\n\t}\n        }\n        \n        upstream defaults {\n        \tip_hash;\n\t\t#注：以下IP:port信息需要根据具体提供的IP:端口修改配置\n        \tserver 127.0.0.1:18080 max_fails=3 fail_timeout=30s;\n\t\t#健康检查模块配置\n        \t#check interval=3000 rise=2 fall=5 timeout=1000 default_down=false type=tcp;\n\t}\n        \n        }\n\n        stream {\n\t# for tcp/udp sts monitor moudle\n        server_traffic_status_zone;\n}`;
+
+异常：export let res2 = {
+  message: "仅支持物理机并确认是否上送sn",
+};
+
+3.查看服务器信息
+正常：export let res1 = {
+  物理盘: [
+    {
+      bus: "SATA",
+      firmware: "SX010066",
+      media: "SSD",
+      name: "Disk0",
+      serialnumber: "PADT260604362",
+      size: 447,
+    },
+    {
+      bus: "SATA",
+      firmware: "SX010066",
+      media: "SSD",
+      name: "Disk1",
+      serialnumber: "********",
+      size: 447,
+    },
+    {
+      bus: "SATA",
+      firmware: "SX010066",
+      media: "SSD",
+      name: "Disk2",
+      serialnumber: "********",
+      size: 447,
+    },
+    {
+      bus: "SATA",
+      firmware: "SX010066",
+      media: "SSD",
+      name: "Disk3",
+      serialnumber: "********",
+      size: 447,
+    },
+    {
+      bus: "SATA",
+      firmware: "SX010066",
+      media: "SSD",
+      name: "Disk4",
+      serialnumber: "********",
+      size: 447,
+    },
+  ],
+  逻辑盘: [
+    {
+      controller: "PCIe Card 3 (9560-8i)",
+      disk: "Disk0, Disk1",
+      name: "LogicalDrive237",
+      raidLevel: "RAID 1",
+      raidType: "MegaRAID 9560-8i 4GB",
+      size: "446.63",
+    },
+    {
+      controller: "PCIe Card 3 (9560-8i)",
+      disk: "Disk2, Disk3, Disk4",
+      name: "LogicalDrive238",
+      raidLevel: "RAID 5",
+      raidType: "MegaRAID 9560-8i 4GB",
+      size: "893.26",
+    },
+  ],
+};
+
+异常：export let res2 = {
+  message: "仅支持物理机并确认是否上送sn",
+};

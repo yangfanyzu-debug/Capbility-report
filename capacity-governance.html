@@ -3,13 +3,13 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="theme-color" content="#f4f7f3" />
+  <meta name="theme-color" content="#f3f5f8" />
   <title>Capacity Agent · 容量治理指挥舱</title>
   <link rel="icon" href="data:," />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&amp;family=Noto+Sans+SC:wght@400;500;600;700;800&amp;family=Syne:wght@600;700&amp;display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="./capacity-governance.css?v=20260826-followup-dialog-soft" />
+  <link rel="stylesheet" href="./capacity-governance.css?v=20260826-home-v8" />
 </head>
 <body>
   <a class="skip-link" href="#main">跳至主要内容</a>
@@ -20,18 +20,51 @@
         <span class="brand-orbit"><i></i></span>
         <span><strong>CAPACITY</strong><small>AGENT / 02</small></span>
       </a>
+      <label class="nav-search" aria-label="搜索治理菜单">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m20 20-3.5-3.5"/></svg>
+        <input type="search" placeholder="搜索页面 / 会话" />
+        <kbd>⌘P</kbd>
+      </label>
       <nav id="nav" aria-label="治理导航"></nav>
+      <div class="side-sessions" id="side-sessions" aria-label="最近会话">
+        <div class="side-sessions-head"><span>Sessions</span><em id="side-sessions-count">5</em></div>
+        <button class="side-session current" data-session="1">
+          <span class="side-session-body"><b>工作台 · 今日巡检</b><small>Capacity Agent 已完成 14 轮数据采集…</small></span>
+        </button>
+        <button class="side-session" data-session="2">
+          <span class="side-session-body"><b>GreatDB 磁盘增长排查</b><small>为什么单节点 87.6% 而集群均值稳定?…</small></span>
+        </button>
+        <button class="side-session" data-session="3">
+          <span class="side-session-body"><b>Redis 缩容观察讨论</b><small>变更后 CPU 峰值 18% → 31%,继续观察…</small></span>
+        </button>
+        <button class="side-session" data-session="4" hidden>
+          <span class="side-session-body"><b>Nginx 节点降配方案</b><small>先灰度 2 台 16C32G → 8C16G…</small></span>
+        </button>
+        <button class="side-session" data-session="5" hidden>
+          <span class="side-session-body"><b>容量准入 · 双十一评估</b><small>不建议按原申请 10 台,建议新增 4 台…</small></span>
+        </button>
+        <button class="side-session-toggle" id="side-session-toggle">Show 2 more</button>
+      </div>
       <div class="side-status">
         <span class="live-dot"></span>
         <div><b>自主值守中</b><small>下次取数 明日 08:00</small></div>
       </div>
-      <a class="legacy-link" href="./index.html">← 返回原版本</a>
     </aside>
 
     <section class="stage">
       <header class="topbar">
-        <div class="crumb" id="crumb">我的容量治理</div>
+        <div class="crumb-wrap">
+          <small class="crumb-eyebrow">Capacity Workbench</small>
+          <div class="crumb" id="crumb">我的容量治理</div>
+        </div>
         <div class="top-actions">
+          <button class="icon-btn" aria-label="通知">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 16V11a6 6 0 1 1 12 0v5l1.5 2H4.5L6 16Z"/><path d="M10 20a2 2 0 0 0 4 0"/></svg>
+            <span class="icon-dot" aria-hidden="true"></span>
+          </button>
+          <button class="icon-btn" aria-label="更多菜单">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg>
+          </button>
           <button class="avatar" aria-label="用户：杨帆">杨</button>
         </div>
       </header>
@@ -78,8 +111,20 @@
       <div id="modal-content"></div>
     </div>
   </section>
+  <section class="modal" id="inspect-modal" aria-hidden="true" inert>
+    <div class="modal-card">
+      <button class="icon-close" data-close-inspect aria-label="关闭">×</button>
+      <div id="inspect-content"></div>
+    </div>
+  </section>
+  <section class="modal" id="events-modal" aria-hidden="true" inert>
+    <div class="modal-card">
+      <button class="icon-close" data-close-events aria-label="关闭">×</button>
+      <div id="events-content"></div>
+    </div>
+  </section>
   <div class="scrim" id="scrim" hidden></div>
   <div class="toasts" id="toasts" aria-live="polite"></div>
-  <script src="./capacity-governance.js?v=20260826-followup-dialog-soft"></script>
+  <script src="./capacity-governance.js?v=20260826-home-v8"></script>
 </body>
 </html>
