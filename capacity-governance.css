@@ -70,8 +70,8 @@ main{padding:36px clamp(24px,3vw,48px);max-width:1580px}
 }
 .today-brief:before{display:none}
 .brief-copy,.brief-data{border:1px solid #d8e6de;border-radius:14px;background:rgba(255,255,255,.78);box-shadow:0 9px 24px rgba(35,74,56,.045)}
-.brief-copy{padding:16px 18px}.brief-copy h2{font-size:18px;line-height:1.45;letter-spacing:0;margin:10px 0 8px}.brief-copy p{font-size:12px;line-height:1.75}
-.brief-actions{margin-top:14px}
+.brief-copy{padding:16px 18px;display:flex;flex-direction:column}.brief-copy h2{font-size:22px;line-height:1.42;letter-spacing:0;margin:10px 0 8px}.brief-copy p{font-size:12px;line-height:1.75}
+.brief-actions{margin:auto 0 0;display:flex;justify-content:flex-end}.brief-actions .btn{min-height:32px;padding:0 11px;font-size:12px}
 .brief-data{padding:14px}
 .brief-data-head{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin-bottom:12px}
 .brief-data-head span{font-weight:800;color:var(--ink)}.brief-data-head small{color:var(--faint);font:9px var(--mono)}

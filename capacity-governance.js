@@ -95,7 +95,7 @@ function renderOverview(){
   main.innerHTML=`
   <section class="today-brief">
     <div class="brief-copy"><span class="brief-stamp"><i></i> AI 总结与建议 · 08:32</span><h2>支付系统需要本周内完成处置决策</h2><p>Agent 已将当前 SRE 负责范围内的 <strong>142 个实例信号归并为 3 条治理建议</strong>。GreatDB 磁盘是最高风险；Redis 属于渐进缩容观察；渠道接入平台 Nginx 存在明确降配空间。</p><div class="brief-actions"><button class="btn acid" data-page="system">查看最高风险</button><button class="btn" data-open-evidence>查看判断过程</button></div></div>
-    <div class="brief-data"><div class="brief-data-head"><span>具体数据</span><small>我负责的 3 个系统</small></div><div class="brief-numbers">
+    <div class="brief-data"><div class="brief-data-head"><span>治理指标概览</span><small>我负责的 3 个系统</small></div><div class="brief-numbers">
       ${briefNumber('容量风险','2','项','支付优先处置','risk')}${briefNumber('资源浪费','2','候选','Redis / Nginx','waste')}${briefNumber('负载倾斜','1','集群','先调度后扩容','balance')}${briefNumber('预计可回收','16C','/ 64GB','约 ¥6.1k / 月','save')}
     </div>
     </div>
