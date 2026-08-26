@@ -79,7 +79,13 @@ const collabRecords=[
   {time:'09:10',type:'follow',status:'观察中',title:'Redis 缩容进入效果观察',body:'缩减 1 个节点后，CPU 峰值由 18% 升至 31%，仍处于安全区间；需覆盖完整 7 天和周末批处理窗口。',facts:['18% → 31%','0 告警','第 3/7 天']}
 ];
 
-const state={page:'home',selectedSystemId:'payment',agentOpen:false,agentTab:'log',work:0,progress:36,simNodes:5,simLoad:20,simKind:'shrink'};
+const simTargets={
+  redis:{key:'redis',code:'RDS',system:'统一支付系统',component:'Redis 集群',object:'统一支付 / Redis',mode:'渐进缩容',currentNodes:6,defaultNodes:5,minNodes:4,maxNodes:8,baseCpu:18,baseMem:23,baseDisk:42,unitCost:2150,spec:'8C32G',risk:'低利用',summary:'4 个实例连续 30 日 CPU 与内存峰值低于 25%，适合先缩 1 台并观察。',decision:'建议从 6 台缩至 5 台，观察 7 天覆盖周末批处理窗口；若 CPU P95 仍低于 55%，再评估缩至 4 台。'},
+  greatdb:{key:'greatdb',code:'GDB',system:'统一支付系统',component:'GreatDB 磁盘',object:'统一支付 / GreatDB',mode:'风险处置',currentNodes:6,defaultNodes:8,minNodes:6,maxNodes:10,baseCpu:51,baseMem:58,baseDisk:87.6,unitCost:-3200,spec:'16C64G',risk:'高风险',summary:'greatdb-010 磁盘峰值 87.6%，节点差值 49.6%，不建议直接按集群均值判断。',decision:'先修复归档策略；若 3 天后增速未回落，再增加 2 个节点并重平衡，避免单节点继续逼近 90%。'},
+  nginx:{key:'nginx',code:'NGX',system:'渠道接入平台',component:'Nginx 入口规格',object:'渠道接入 / Nginx',mode:'规格降配',currentNodes:6,defaultNodes:6,minNodes:4,maxNodes:8,baseCpu:19,baseMem:31,baseDisk:38,unitCost:1800,spec:'16C32G → 8C16G',risk:'过度配置',summary:'单实例规格高于同类中位数 2.1×，节点利用率长期低位且分布稳定。',decision:'节点数保持 6 台，先灰度 2 台由 16C32G 降至 8C16G，观察 7 天无异常后再完成整组降配。'}
+};
+
+const state={page:'home',selectedSystemId:'payment',agentOpen:false,agentTab:'log',work:0,progress:36,simNodes:5,simLoad:20,simTarget:'redis'};
 const main=document.querySelector('#main');
 const nav=document.querySelector('#nav');
 const crumb=document.querySelector('#crumb');
@@ -167,11 +173,54 @@ function renderPeer(){
 function bench(label,value,color){return `<div class="bench"><div class="bench-head"><span>${label}</span><b>${value}</b></div><div class="bench-track"><i style="--value:${value};--color:${color}"></i></div></div>`}
 
 function renderSimulator(){
-  const newNodes=state.simNodes, current=6, shrink=newNodes<current, cpu=Math.round(18*current/newNodes), mem=Math.round(23*current/newNodes), saving=(current-newNodes)*2150;
-  main.innerHTML=header('WHAT-IF LAB','扩缩容方案模拟','在创建治理任务前，先看到容量水位、余量、成本和风险如何变化',`<button class="btn" data-reset-sim>重置方案</button><button class="btn acid" data-create-task>采用此方案</button>`)+`
-  <section class="sim-layout"><article class="panel controls"><p class="kicker">SCENARIO CONTROLS</p><div class="control"><label><span>分析对象</span><b>统一支付 / Redis 集群</b></label><div class="choice-row"><button class="choice active">Redis</button><button class="choice">GreatDB</button><button class="choice">Java 应用</button></div></div><div class="control"><label><span>目标节点数</span><b id="node-value">${newNodes} 台</b></label><input id="node-range" type="range" min="3" max="10" value="${newNodes}" /></div><div class="control"><label><span>预估业务增长</span><b id="load-value">+${state.simLoad}%</b></label><input id="load-range" type="range" min="0" max="80" step="5" value="${state.simLoad}" /></div><div class="control"><label><span>节点规格</span><b>8C / 32GB</b></label><div class="choice-row"><button class="choice">4C16G</button><button class="choice active">8C32G</button><button class="choice">16C64G</button></div></div><div class="guardrail">安全约束：核心系统至少保留 4 个节点；缩容后 CPU P95 不高于 65%，内存 P95 不高于 70%；任何方案都需要人工审批。</div></article>
-  <aside class="panel sim-result"><p class="kicker">SIMULATION RESULT</p><h2>${shrink?'建议渐进缩容':'扩容后容量充足'}</h2><div class="before-after"><div class="state-card"><small>当前</small><strong>6 台</strong><span>CPU 18% · MEM 23%</span></div><div class="arrow">→</div><div class="state-card"><small>方案</small><strong>${newNodes} 台</strong><span>CPU ${cpu}% · MEM ${mem}%</span></div></div><div class="forecast"><div><span>业务增长后 CPU</span><b>${Math.round(cpu*(1+state.simLoad/100))}%</b></div><div><span>安全余量</span><b>${Math.max(0,100-Math.round(cpu*(1+state.simLoad/100))-25)}%</b></div><div><span>${saving>=0?'月度节约':'月度新增'}</span><b>¥${Math.abs(saving).toLocaleString()}</b></div></div><div class="decision"><b>置信度 88%</b><p>${shrink?`建议先从 6 台缩至 ${Math.max(5,newNodes)} 台，观察 7 天后再决定是否继续。即便业务增长 ${state.simLoad}%，预测水位仍在安全区间。`:`新增节点后短期容量风险较低，但相对同类集群存在资源冗余。`}</p></div><button class="btn acid" style="width:100%;margin-top:17px" data-create-task>生成治理评估单</button></aside></section>`;
+  const target=simTargets[state.simTarget]||simTargets.redis;
+  const newNodes=Math.min(target.maxNodes,Math.max(target.minNodes,state.simNodes||target.defaultNodes));
+  const loadFactor=1+state.simLoad/100;
+  const nodeFactor=target.currentNodes/newNodes;
+  const cpu=Math.round(target.baseCpu*nodeFactor*loadFactor);
+  const mem=Math.round(target.baseMem*nodeFactor*(1+state.simLoad/140));
+  const disk=target.key==='greatdb'?Math.max(58,Math.round(target.baseDisk-((newNodes-target.currentNodes)*8))):Math.round(target.baseDisk*nodeFactor);
+  const cost=(target.currentNodes-newNodes)*target.unitCost;
+  const safe=cpu<65&&mem<70&&disk<90;
+  const confidence=target.key==='greatdb'?91:target.key==='redis'?88:84;
+  main.innerHTML=header('SIMULATION LAB','容量方案模拟仿真','基于当前 SRE 负责系统的数据，演示调整前后水位、成本、风险和执行路径',`<button class="btn" data-reset-sim>重置方案</button><button class="btn acid" data-create-task>采用此方案</button>`)+`
+  <section class="sim-console">
+    <article class="panel sim-board">
+      <div class="sim-board-head"><div><p class="kicker">CAPACITY DIGITAL TWIN</p><h2>${target.object} · ${target.mode}</h2><span>${target.summary}</span></div><em class="${safe?'ok':'warn'}">${safe?'可进入评估':'需要人工复核'}</em></div>
+      <div class="sim-topology" aria-label="容量模拟拓扑">
+        ${simNode('当前',`${target.currentNodes} 台`,target.spec,'current')}
+        ${simLink('采集基线','30 日趋势 / 同类对标')}
+        ${simNode('仿真',`${newNodes} 台`,`业务增长 +${state.simLoad}%`,'running')}
+        ${simLink('约束校验','P95 / 安全余量 / 成本')}
+        ${simNode('结论',safe?'建议推进':'先复核',`${confidence}% 置信度`,'result')}
+      </div>
+      <div class="sim-metrics">
+        ${simMetric('CPU P95',`${target.baseCpu}%`,`${cpu}%`,cpu<65?'ok':'warn')}
+        ${simMetric('MEM P95',`${target.baseMem}%`,`${mem}%`,mem<70?'ok':'warn')}
+        ${simMetric(target.key==='greatdb'?'磁盘峰值':'资源水位',`${target.baseDisk}%`,`${disk}%`,disk<90?'ok':'warn')}
+        ${simMetric(cost>=0?'月度节约':'月度新增','—',`¥${Math.abs(cost).toLocaleString()}`,cost>=0?'ok':'warn')}
+      </div>
+      <div class="sim-playback">
+        <span style="--i:0"><b>01</b> 读取当前容量快照</span>
+        <span style="--i:1"><b>02</b> 叠加 ${state.simLoad}% 业务增长</span>
+        <span style="--i:2"><b>03</b> 计算调整后 P95 水位</span>
+        <span style="--i:3"><b>04</b> 匹配治理约束和同类基准</span>
+      </div>
+    </article>
+    <aside class="panel sim-inspector">
+      <div class="panel-head"><div><h2>仿真参数</h2><p>系统、组件和治理对象与当前演示数据保持一致</p></div><small>${target.code}</small></div>
+      <div class="sim-targets">${Object.values(simTargets).map(s=>`<button class="sim-target ${s.key===target.key?'active':''}" data-sim-target="${s.key}"><span>${s.code}</span><b>${s.component}</b><small>${s.system} · ${s.risk}</small></button>`).join('')}</div>
+      <div class="control sim-control"><label><span>目标节点数</span><b>${newNodes} 台</b></label><input id="node-range" type="range" min="${target.minNodes}" max="${target.maxNodes}" value="${newNodes}" /></div>
+      <div class="control sim-control"><label><span>预估业务增长</span><b>+${state.simLoad}%</b></label><input id="load-range" type="range" min="0" max="80" step="5" value="${state.simLoad}" /></div>
+      <div class="sim-verdict"><small>AGENT VERDICT</small><h3>${safe?'建议生成治理评估单':'暂不建议直接执行'}</h3><p>${target.decision}</p></div>
+      <div class="guardrail">安全约束：核心系统至少保留 4 个节点；CPU P95 不高于 65%，内存 P95 不高于 70%；任何生产变更都需要人工审批。</div>
+      <button class="btn acid" style="width:100%;margin-top:14px" data-create-task>生成治理评估单</button>
+    </aside>
+  </section>`;
 }
+function simNode(label,value,note,type){return `<div class="sim-node ${type}"><small>${label}</small><strong>${value}</strong><span>${note}</span></div>`}
+function simLink(label,note){return `<div class="sim-link"><i></i><b>${label}</b><span>${note}</span></div>`}
+function simMetric(label,before,after,tone){return `<div class="sim-metric ${tone}"><span>${label}</span><div><b>${before}</b><i>→</i><strong>${after}</strong></div></div>`}
 
 function renderAdmission(){
   main.innerHTML=header('AI CAPACITY REVIEWER','增量容量准入','AI 提出资源方案，人负责关键决策；静态演示不会提交真实申请',`<button class="btn">历史评估</button><button class="btn acid" data-review>重新评估</button>`)+`
@@ -450,10 +499,11 @@ document.addEventListener('click',e=>{
   const follow=e.target.closest('[data-open-followup]');if(follow){openFollowup(follow.dataset.openFollowup);return}
   const tab=e.target.closest('[data-agent-tab]');if(tab){state.agentTab=tab.dataset.agentTab;renderDrawer();return}
   const prompt=e.target.closest('[data-prompt]');if(prompt){agentInput.value=prompt.dataset.prompt;agentInput.focus();return}
+  const simTarget=e.target.closest('[data-sim-target]');if(simTarget){state.simTarget=simTarget.dataset.simTarget;state.simNodes=(simTargets[state.simTarget]||simTargets.redis).defaultNodes;renderSimulator();return}
   if(e.target.closest('[data-create-task]')){toast('已生成静态演示任务','CAP-1848 已进入”待 SRE 审批”，不会触发真实生产变更。');return}
   if(e.target.closest('[data-create-workorder]')){toast('已准备治理工单','演示环境不会真实提单，请在生产流程中完成变更单创建。');return}
   if(e.target.closest('[data-review]')){toast('Capacity Agent 已完成评估','已结合历史趋势、同类对标与安全余量，建议新增 4 台。');return}
-  if(e.target.closest('[data-reset-sim]')){state.simNodes=5;state.simLoad=20;renderSimulator();return}
+  if(e.target.closest('[data-reset-sim]')){const target=simTargets[state.simTarget]||simTargets.redis;state.simNodes=target.defaultNodes;state.simLoad=20;renderSimulator();return}
   if(e.target.closest('[data-verify]')){toast('效果验证正常','Redis 缩容后连续 3 天处于安全水位，将继续观察至第 7 天。');return}
 });
 
