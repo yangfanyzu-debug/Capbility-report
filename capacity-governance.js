@@ -68,7 +68,13 @@ function render(){
 }
 
 function renderOverview(){
-  main.innerHTML=header('MY CAPACITY GOVERNANCE','我负责的系统','2026-08-12 · 3 个生产系统 · 仅展示当前 SRE 负责范围',`<button class="btn ghost">导出日报</button><button class="btn acid" data-open-agent>查看 Agent 工作现场</button>`)+`
+  main.innerHTML=`
+  <section class="today-brief">
+    <div class="brief-copy"><span class="brief-stamp"><i></i> GOVERNANCE SUMMARY · 08:32</span><h2>你负责的 3 个系统中，支付系统需要本周内完成处置决策。</h2><p>Agent 已将当前 SRE 负责范围内的 <strong>142 个实例信号归并为 3 条治理建议</strong>。GreatDB 磁盘是最高风险；Redis 属于渐进缩容观察；渠道接入平台 Nginx 存在明确降配空间。</p><div class="brief-actions"><button class="btn acid" data-page="system">查看最高风险</button><button class="btn" data-open-evidence>查看判断过程</button></div></div>
+    <div class="brief-numbers">
+      ${briefNumber('容量风险','2','项','支付优先处置','risk')}${briefNumber('资源浪费','2','候选','Redis / Nginx','waste')}${briefNumber('负载倾斜','1','集群','先调度后扩容','balance')}${briefNumber('预计可回收','16C','/ 64GB','约 ¥6.1k / 月','save')}
+    </div>
+  </section>
   <div class="grid two"><section class="panel"><div class="panel-head"><div><h2>我负责的系统治理优先级</h2><p>按容量风险、资源浪费、负载倾斜和行动必要性排序</p></div><small>${managedSystems.length} 个系统 · 按优先级排序</small></div><div class="systems">${managedSystems.map(systemRow).join('')}</div></section>
   <aside class="panel"><div class="panel-head"><div><h2>面向我的治理建议</h2><p>服务器信号已归并为负责系统内的可行动结论</p></div><small>3 NEW</small></div><div class="signal-list">
     ${signal('01','单节点增长 + 集群倾斜','GreatDB 最高节点磁盘 87.6%，节点差值 49.6%，不应仅凭集群平均值判断。','system')}
