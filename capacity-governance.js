@@ -65,10 +65,10 @@ const messages=[
 ];
 
 const autonomousJobs=[
-  {phase:'关联 GreatDB 30 日趋势',scope:'统一支付 / GreatDB',target:'bjd-dsi-greatdb-010-kzx',kind:'趋势预测',next:'生成容量风险证据'},
-  {phase:'计算同类组件资源效率',scope:'渠道接入 / Nginx',target:'同类入口规格样本',kind:'资源对标',next:'标记可降配实例'},
-  {phase:'轮询 CAP-1842 评审状态',scope:'治理任务',target:'ACT-CHUG-20260826-0002',kind:'工单跟进',next:'同步变更状态'},
-  {phase:'验证 Redis 缩容后水位',scope:'统一支付 / Redis',target:'CAP-1839 观察期',kind:'效果验证',next:'写入跟进记录'}
+  {phase:'关联 GreatDB 30 日趋势',scope:'统一支付 / GreatDB',target:'bjd-dsi-greatdb-010-kzx',kind:'趋势预测',signal:'磁盘峰值 87.6%，连续 7 日上升',next:'生成容量风险证据'},
+  {phase:'计算同类组件资源效率',scope:'渠道接入 / Nginx',target:'同类入口规格样本',kind:'资源对标',signal:'规格高于同类中位数 2.1×',next:'标记可降配实例'},
+  {phase:'轮询 CAP-1842 评审状态',scope:'治理任务',target:'ACT-CHUG-20260826-0002',kind:'工单跟进',signal:'负责人已提交扩容窗口',next:'同步变更状态'},
+  {phase:'验证 Redis 缩容后水位',scope:'统一支付 / Redis',target:'CAP-1839 观察期',kind:'效果验证',signal:'CPU 峰值 31%，无新增告警',next:'写入跟进记录'}
 ];
 
 const collabRecords=[
@@ -347,7 +347,13 @@ function taskRow(t){const stages=['发现','建议','审批','观察','验证'];
 
 function renderWorkline(){
   const job=autonomousJobs[state.work%autonomousJobs.length];
-  workline.innerHTML=`<span class="live-dot"></span><b>Capacity Agent 自主工作中</b><span>${job.phase} · ${job.scope}</span><span class="work-progress"><i style="width:${state.progress}%"></i></span><span>${state.progress}%</span><button data-open-agent>观察工作现场 →</button>`;
+  workline.innerHTML=`
+    <div class="work-core"><span class="work-orbit"><i></i></span><div><span>CAPACITY AGENT · 自主运行中</span><b>${job.phase}</b></div></div>
+    <div class="work-target"><span>当前对象</span><b>${job.scope}</b><small>${job.target}</small></div>
+    <div class="work-signal"><span>实时上下文</span><b>${job.signal}</b></div>
+    <div class="work-progress-block"><div><span>${job.kind}</span><b>${state.progress}%</b></div><span class="work-progress"><i style="width:${state.progress}%"></i></span></div>
+    <div class="work-stats"><span><b>14</b> 轮</span><span><b>142</b> 实例</span><span><b>3</b> 建议</span></div>
+    <button class="work-detail" data-open-agent>观察工作现场 →</button>`;
   const mini=document.querySelector('#agent-mini-status');
   const pet=document.querySelector('#agent-float');
   mini.textContent=`${job.phase} · ${state.progress}%`;
