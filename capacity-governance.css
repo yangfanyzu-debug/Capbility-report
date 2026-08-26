@@ -123,9 +123,9 @@ main{padding:36px clamp(24px,3vw,48px);max-width:1580px}
 .governance-table tr:last-child td{border-bottom:0}
 .governance-table tbody tr{transition:background .18s}
 .governance-table tbody tr:hover{background:#f7faf8}
-.governance-table .task-title b,.governance-table .task-title small{display:block}
+.governance-table .task-title b{display:block}
 .governance-table .task-title b{font-size:13px}
-.governance-table .task-title small{margin-top:5px;color:var(--acid);font:9px var(--mono)}
+.ticket-no{font:11px var(--mono);letter-spacing:.02em;color:#0e7259;white-space:nowrap}
 .status-pill,.stage-badge{display:inline-flex;align-items:center;min-height:26px;border:1px solid #d4e2da;border-radius:999px;background:#f8fbf9;padding:0 10px;color:#39564a;font-size:11px;white-space:nowrap}
 .work-order-no{font:11px var(--mono);letter-spacing:.02em;color:#263f35;white-space:nowrap}
 .work-status{display:inline-flex;align-items:center;min-height:24px;border:1px solid #b9dccc;border-radius:999px;background:#eaf7f1;color:#0e7259;padding:0 9px;font-size:10px;white-space:nowrap}
