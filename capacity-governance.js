@@ -19,11 +19,35 @@ const systems=[
 const managedSystemIds=new Set(['payment','risk','channel']);
 const managedSystems=systems.filter(s=>managedSystemIds.has(s.id));
 
-const nodes=[
-  {host:'greatdb-010',value:87.6,color:'var(--red)'},{host:'greatdb-011',value:76.1,color:'var(--amber)'},
-  {host:'greatdb-012',value:65.2,color:'var(--mint)'},{host:'greatdb-013',value:42.7,color:'var(--cyan)'},
-  {host:'greatdb-014',value:38.0,color:'var(--cyan)'},{host:'greatdb-015',value:45.1,color:'var(--cyan)'}
-];
+const systemDetails={
+  payment:{
+    component:'GreatDB 磁盘',subject:'bjd-dsi-greatdb-010-kzx / 30 DAYS',
+    notes:{risk:'6 天后磁盘触达 90%',waste:'整体不存在明显冗余',skew:'节点极差 49.6%',priority:'P1 · 本周需要决策'},
+    stats:[['昨日平均','61.6%'],['昨日峰值','87.6%'],['偏离基线','+18.4%'],['预计达 90%','6 天']],
+    nodes:[['greatdb-010',87.6,'var(--red)'],['greatdb-011',76.1,'var(--amber)'],['greatdb-012',65.2,'var(--mint)'],['greatdb-013',42.7,'var(--cyan)'],['greatdb-014',38.0,'var(--cyan)'],['greatdb-015',45.1,'var(--cyan)']],
+    spread:'MAX−MIN 49.6%',cause:'不是集群整体容量不足',
+    body:'6 个节点中仅 1 个进入高水位，另有 2 个节点低于 45%。优先检查分片、归档和节点权重，不建议直接全量扩容。',
+    decision:'先修复归档策略；若 3 天后增速未回落，再增加 2 个节点并重平衡。'
+  },
+  risk:{
+    component:'风控计算集群 CPU',subject:'rsk-score-worker / 30 DAYS',
+    notes:{risk:'30 日持续增长',waste:'低峰仍有回收空间',skew:'批处理节点偏高',priority:'P2 · 观察后决策'},
+    stats:[['昨日平均','52.4%'],['昨日峰值','74.2%'],['偏离基线','+11.7%'],['预计达 80%','14 天']],
+    nodes:[['rsk-calc-01',74.2,'var(--amber)'],['rsk-calc-02',69.8,'var(--amber)'],['rsk-calc-03',58.6,'var(--mint)'],['rsk-calc-04',46.9,'var(--cyan)'],['rsk-calc-05',51.3,'var(--mint)'],['rsk-calc-06',43.5,'var(--cyan)']],
+    spread:'MAX−MIN 30.7%',cause:'增长来自批处理窗口叠加',
+    body:'CPU 增长集中在夜间风控重算窗口，在线流量水位仍稳定。建议先拆分批处理权重并观察峰值是否回落。',
+    decision:'先调低批处理并发并错峰执行；若 7 天后 CPU P95 仍高于 70%，再评估增加 2 个计算节点。'
+  },
+  channel:{
+    component:'Nginx 入口规格',subject:'chn-ingress-nginx / 30 DAYS',
+    notes:{risk:'容量风险较低',waste:'规格高于同类中位数',skew:'节点分布稳定',priority:'P3 · 可排期降配'},
+    stats:[['昨日平均','18.9%'],['昨日峰值','31.4%'],['同类规格','2.1×'],['预计可回收','16C']],
+    nodes:[['chn-nginx-01',31.4,'var(--cyan)'],['chn-nginx-02',28.6,'var(--cyan)'],['chn-nginx-03',25.2,'var(--mint)'],['chn-nginx-04',22.8,'var(--mint)'],['chn-nginx-05',26.1,'var(--mint)'],['chn-nginx-06',24.7,'var(--mint)']],
+    spread:'MAX−MIN 8.6%',cause:'风险低但资源规格偏大',
+    body:'Nginx 节点利用率长期低位且节点分布稳定，主要问题不是风险，而是单实例规格高于同类系统中位数。',
+    decision:'先灰度 2 台由 16C32G 降至 8C16G，观察 7 天无异常后再完成整组降配。'
+  }
+};
 
 const tasks=[
   {id:'CAP-1842',title:'GreatDB 磁盘容量风险处置',owner:'陈哲',stage:2,status:'变更评审',action:'查看证据'},
@@ -38,7 +62,7 @@ const messages=[
   {time:'09:10',title:'Redis 缩容正在观察期',body:'缩减 1 个节点后，CPU 峰值由 18% 升至 31%，仍处安全范围。我会观察满 7 天后再决定是否继续。',tone:'follow'}
 ];
 
-const state={page:'overview',agentOpen:false,agentTab:'log',work:0,progress:36,simNodes:5,simLoad:20,simKind:'shrink'};
+const state={page:'overview',selectedSystemId:'payment',agentOpen:false,agentTab:'log',work:0,progress:36,simNodes:5,simLoad:20,simKind:'shrink'};
 const main=document.querySelector('#main');
 const nav=document.querySelector('#nav');
 const crumb=document.querySelector('#crumb');
@@ -84,17 +108,20 @@ function renderOverview(){
 }
 
 function briefNumber(label,value,unit,note,cls){return `<div class="brief-number ${cls}"><span>${label}</span><strong>${value}</strong>${unit}<small>${note}</small></div>`}
-function systemRow(s){return `<button class="system-row" data-page="system"><span class="system-name"><span class="system-code">${s.code}</span><span><b>${s.name}</b><small>${s.domain} · ${s.hint}</small></span></span>${scoreCell('容量风险',s.risk,'risk')}${scoreCell('资源浪费',s.waste,'waste')}${scoreCell('负载倾斜',s.skew,'skew')}${scoreCell('治理优先',s.priority,'') }<span class="priority ${s.level==='P1'?'high':''}">${s.level}</span><span class="chev">›</span></button>`}
+function systemRow(s){return `<button class="system-row" data-page="system" data-system-id="${s.id}"><span class="system-name"><span class="system-code">${s.code}</span><span><b>${s.name}</b><small>${s.domain} · ${s.hint}</small></span></span>${scoreCell('容量风险',s.risk,'risk')}${scoreCell('资源浪费',s.waste,'waste')}${scoreCell('负载倾斜',s.skew,'skew')}${scoreCell('治理优先',s.priority,'') }<span class="priority ${s.level==='P1'?'high':''}">${s.level}</span><span class="chev">›</span></button>`}
 function scoreCell(label,value,cls){return `<span class="score-cell ${cls}"><span>${label}</span><b>${value}</b></span>`}
 function signal(num,title,body,page){return `<div class="signal"><span class="signal-num">${num}</span><div><b>${title}</b><p>${body}</p><button data-page="${page}">查看分析 →</button></div></div>`}
 
 function renderSystem(){
-  main.innerHTML=header('SYSTEM INTELLIGENCE','统一支付系统','从系统结论下钻至组件、集群和实例的分析证据',`<button class="btn" data-page="overview">返回总览</button><button class="btn acid" data-open-agent>让 Agent 解释</button>`)+`
-  <section class="score-strip">${scoreCard('容量风险',82,'6 天后磁盘触达 90%','var(--red)')}${scoreCard('资源浪费',18,'整体不存在明显冗余','var(--amber)')}${scoreCard('负载倾斜',64,'节点极差 49.6%','var(--cyan)')}${scoreCard('治理优先级',94,'P1 · 本周需要决策','var(--acid)')}</section>
-  <section class="analysis-grid"><article class="panel chart-panel"><div class="chart-title"><div><h2>GreatDB 磁盘 · 动态基线与容量预测</h2><p class="kicker">bjd-dsi-greatdb-010-kzx / 30 DAYS</p></div><div class="legend"><span><i style="background:rgba(97,214,181,.25)"></i>正常区间</span><span><i style="background:var(--cyan)"></i>实际</span><span><i style="background:var(--amber)"></i>预测</span></div></div><div class="chart">${trendChart()}</div><div class="chart-cards">${chartStat('昨日平均','61.6%')}${chartStat('昨日峰值','87.6%')}${chartStat('偏离基线','+18.4%')}${chartStat('预计达 90%','6 天')}</div><div class="explain"><strong>Agent 判断：</strong>风险不是来自单一阈值。当前值同时满足“超过固定水位”“偏离自身正常行为”和“连续增长”三个条件，因此置信度为 91%。</div></article>
-  <aside class="panel"><div class="panel-head"><div><h2>集群节点分布</h2><p>识别整体不足、单节点异常或负载倾斜</p></div><small>MAX−MIN 49.6%</small></div><div class="distribution">${nodes.map(n=>`<div class="node-row"><label>${n.host}</label><span class="node-bar"><i style="--value:${n.value}%;--bar:${n.color}"></i></span><b>${n.value}%</b></div>`).join('')}</div><div class="cause-card"><small>CLUSTER-LEVEL ATTRIBUTION</small><h3>不是集群整体容量不足</h3><p>6 个节点中仅 1 个进入高水位，另有 2 个节点低于 45%。优先检查分片、归档和节点权重，不建议直接全量扩容。</p><div class="decision"><b>建议方案</b><p>先修复归档策略；若 3 天后增速未回落，再增加 2 个节点并重平衡。</p></div></div></aside></section>`;
+  const system=selectedSystem(),detail=systemDetails[system.id];
+  main.innerHTML=systemSwitcher(system)+`
+  <section class="score-strip">${scoreCard('容量风险',system.risk,detail.notes.risk,'var(--red)')}${scoreCard('资源浪费',system.waste,detail.notes.waste,'var(--amber)')}${scoreCard('负载倾斜',system.skew,detail.notes.skew,'var(--cyan)')}${scoreCard('治理优先级',system.priority,detail.notes.priority,'var(--acid)')}</section>
+  <section class="analysis-grid"><article class="panel chart-panel"><div class="chart-title"><div><h2>${detail.component} · 动态基线与容量预测</h2><p class="kicker">${detail.subject}</p></div><div class="legend"><span><i style="background:rgba(97,214,181,.25)"></i>正常区间</span><span><i style="background:var(--cyan)"></i>实际</span><span><i style="background:var(--amber)"></i>预测</span></div></div><div class="chart">${trendChart()}</div><div class="chart-cards">${detail.stats.map(([label,value])=>chartStat(label,value)).join('')}</div><div class="explain"><strong>Agent 判断：</strong>${system.name} 当前治理优先级为 ${system.priority}。${system.hint}，建议先按系统角色和节点分布定位原因，再决定扩容、降配或观察。</div></article>
+  <aside class="panel"><div class="panel-head"><div><h2>集群节点分布</h2><p>识别整体不足、单节点异常或负载倾斜</p></div><small>${detail.spread}</small></div><div class="distribution">${detail.nodes.map(([host,value,color])=>`<div class="node-row"><label>${host}</label><span class="node-bar"><i style="--value:${value}%;--bar:${color}"></i></span><b>${value}%</b></div>`).join('')}</div><div class="cause-card"><small>CLUSTER-LEVEL ATTRIBUTION</small><h3>${detail.cause}</h3><p>${detail.body}</p><div class="decision"><b>建议方案</b><p>${detail.decision}</p></div></div></aside></section>`;
 }
 
+function selectedSystem(){return managedSystems.find(s=>s.id===state.selectedSystemId)||managedSystems[0]}
+function systemSwitcher(system){return `<section class="system-switcher"><label for="system-select"><span>我管理的系统</span><select id="system-select" aria-label="切换我管理的系统">${managedSystems.map(s=>`<option value="${s.id}" ${s.id===system.id?'selected':''}>${s.name} · ${s.domain}</option>`).join('')}</select></label><div><button class="btn" data-page="overview">返回总览</button><button class="btn acid" data-open-agent>让 Agent 解释</button></div></section>`}
 function scoreCard(label,value,note,color){return `<article class="score-card" style="--value:${value}%;--color:${color}"><span>${label}</span><strong>${value}</strong><small>${note}</small></article>`}
 function chartStat(label,value){return `<div class="chart-stat"><span>${label}</span><strong>${value}</strong></div>`}
 function trendChart(){
@@ -160,7 +187,7 @@ function openEvidence(){modalContent.innerHTML=`<div class="evidence-head"><smal
 function toast(title,body){const el=document.createElement('div');el.className='toast';el.innerHTML=`<b>${title}</b><span>${body}</span>`;document.querySelector('#toasts').append(el);setTimeout(()=>el.remove(),3800)}
 
 document.addEventListener('click',e=>{
-  const page=e.target.closest('[data-page]');if(page){state.page=page.dataset.page;closeOverlays();render();return}
+  const page=e.target.closest('[data-page]');if(page){if(page.dataset.systemId)state.selectedSystemId=page.dataset.systemId;state.page=page.dataset.page;closeOverlays();render();return}
   if(e.target.closest('[data-open-agent]')){openAgent();return}
   if(e.target.closest('[data-close-agent]')||e.target.closest('[data-close-modal]')||e.target===scrim){closeOverlays();return}
   if(e.target.closest('[data-open-evidence]')){openEvidence();return}
@@ -173,10 +200,12 @@ document.addEventListener('click',e=>{
 });
 
 document.addEventListener('input',e=>{
+  if(e.target.id==='system-select'){state.selectedSystemId=e.target.value;render()}
   if(e.target.id==='node-range'){state.simNodes=Number(e.target.value);renderSimulator()}
   if(e.target.id==='load-range'){state.simLoad=Number(e.target.value);renderSimulator()}
 });
 
+document.addEventListener('change',e=>{if(e.target.id==='system-select'){state.selectedSystemId=e.target.value;render()}});
 document.querySelector('#agent-form').addEventListener('submit',e=>{e.preventDefault();const text=agentInput.value.trim();if(!text)return;messages.push({time:'刚刚',title:'收到，我已经调整工作上下文',body:`你的要求“${text}”已进入当前计划。我会先验证相关数据和安全约束，再主动汇报结论。`,tone:'user'});agentInput.value='';state.agentTab='log';renderDrawer();drawerContent.scrollTop=drawerContent.scrollHeight;toast('分析方向已更新','Agent 会继续自主工作，并在有结论时主动通知你。')});
 document.querySelector('#date').addEventListener('change',e=>toast('历史快照已切换',`${e.target.value} 的静态容量数据已加载，Agent 结论随日期同步更新。`));
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeOverlays()});
