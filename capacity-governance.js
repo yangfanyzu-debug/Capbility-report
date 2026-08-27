@@ -85,7 +85,7 @@ const simTargets={
   nginx:{key:'nginx',code:'NGX',system:'渠道接入平台',component:'Nginx 入口规格',object:'渠道接入 / Nginx',mode:'规格降配',currentNodes:6,defaultNodes:6,minNodes:4,maxNodes:8,baseCpu:19,baseMem:31,baseDisk:38,unitCost:1800,spec:'16C32G → 8C16G',risk:'过度配置',summary:'单实例规格高于同类中位数 2.1×，节点利用率长期低位且分布稳定。',decision:'节点数保持 6 台，先灰度 2 台由 16C32G 降至 8C16G，观察 7 天无异常后再完成整组降配。'}
 };
 
-const state={page:'home',selectedSystemId:'payment',agentOpen:false,agentTab:'log',work:0,progress:36,simNodes:5,simLoad:20,simTarget:'redis',simType:'物理机',simSpec:'8C32G'};
+const state={page:'overview',selectedSystemId:'payment',agentOpen:false,agentTab:'log',work:0,progress:36,simNodes:5,simLoad:20,simTarget:'redis',simType:'物理机',simSpec:'8C32G'};
 const main=document.querySelector('#main');
 const nav=document.querySelector('#nav');
 const crumb=document.querySelector('#crumb');
@@ -100,7 +100,7 @@ const agentInput=document.querySelector('#agent-input');
 
 function navHTML(){
   const groups=[
-    {label:'AGENT',items:[['home','首页',icons.home,''],['overview','治理总览',icons.overview,'']]},
+    {label:'AGENT',items:[['overview','治理总览',icons.overview,'']]},
     {label:'KNOWLEDGE',items:[['knowledge','知识库',icons.knowledge,''],['peer','同类对标',icons.peer,'']]},
     {label:'DEVICES',items:[['system','系统洞察',icons.system,'3'],['admission','容量准入',icons.admission,'']]},
     {label:'OBSERVABILITY',items:[['simulate','方案模拟',icons.simulate,''],['tasks','治理闭环',icons.tasks,'3']]}
@@ -114,9 +114,9 @@ function header(kicker,title,subtitle,actions=''){
 
 function render(){
   nav.innerHTML=navHTML();
-  const names={home:'首页 · 与 Capacity Agent 对话',overview:'我的容量治理',system:'统一支付系统 / 系统洞察',peer:'同类系统 / 资源对标',simulate:'容量方案 / What-if 模拟',admission:'增量资源 / 容量准入',knowledge:'容量治理 / 知识库',tasks:'治理任务 / 效果验证'};
+  const names={overview:'我的容量治理',system:'统一支付系统 / 系统洞察',peer:'同类系统 / 资源对标',simulate:'容量方案 / What-if 模拟',admission:'增量资源 / 容量准入',knowledge:'容量治理 / 知识库',tasks:'治理任务 / 效果验证'};
   crumb.textContent=names[state.page];
-  ({home:renderHome,overview:renderOverview,system:renderSystem,peer:renderPeer,simulate:renderSimulator,admission:renderAdmission,knowledge:renderKnowledge,tasks:renderTasks}[state.page]||renderHome)();
+  ({overview:renderOverview,system:renderSystem,peer:renderPeer,simulate:renderSimulator,admission:renderAdmission,knowledge:renderKnowledge,tasks:renderTasks}[state.page]||renderOverview)();
   main.focus({preventScroll:true});
 }
 
