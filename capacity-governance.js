@@ -105,7 +105,7 @@ function navHTML(){
     {label:'DEVICES',items:[['system','系统洞察',icons.system,'3'],['admission','容量准入',icons.admission,'']]},
     {label:'OBSERVABILITY',items:[['simulate','方案模拟',icons.simulate,''],['tasks','治理闭环',icons.tasks,'3']]}
   ];
-  return groups.map(g=>`<div class="nav-group"><div class="nav-label">${g.label}</div>${g.items.map(([id,label,icon,count])=>`<button class="nav-item ${state.page===id?'active':''}" data-page="${id}">${icon}<span>${label}</span>${count?`<em>${count}</em>`:''}</button>`).join('')}</div>`).join('');
+  return groups.map(g=>`<div class="nav-group">${g.items.map(([id,label,icon,count])=>`<button class="nav-item ${state.page===id?'active':''}" data-page="${id}">${icon}<span>${label}</span>${count?`<em>${count}</em>`:''}</button>`).join('')}</div>`).join('');
 }
 
 function header(kicker,title,subtitle,actions=''){
