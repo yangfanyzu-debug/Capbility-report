@@ -184,47 +184,43 @@ function renderSimulator(){
   const safe=cpu<65&&mem<70&&disk<90;
   const confidence=target.key==='greatdb'?91:target.key==='redis'?88:84;
   main.innerHTML=header('SIMULATION LAB','容量方案模拟仿真','基于当前 SRE 负责系统的数据，演示调整前后水位、成本、风险和执行路径',`<button class="btn" data-reset-sim>重置方案</button><button class="btn acid" data-create-task>采用此方案</button>`)+`
-  <section class="sim-agent-shell">
-    <header class="sim-agent-head">
-      <div class="sim-agent-title"><span class="sim-agent-glyph"><i></i></span><div><strong>Capacity Agent</strong><small><span></span> 容量仿真同事 · 自主工作中</small></div></div>
-      <button class="sim-agent-close" aria-label="关闭演示面板">×</button>
-    </header>
-    <div class="sim-agent-shift">
-      <div class="sim-shift-card main"><span class="sim-radar"></span><div><small>当前正在做</small><b>${target.mode} · ${target.component}</b><em>${target.system} · ${target.object}</em></div></div>
-      <div class="sim-shift-card"><small>接下来</small><b>关联 30 天基线趋势</b><em>${target.risk} · ${confidence}% 置信度</em></div>
-      <div class="sim-shift-card"><small>今日值守</small><b>08:00 — 18:00</b><em>下次取数 明日 08:00</em></div>
-    </div>
-    <nav class="sim-agent-tabs" aria-label="仿真演示区">
-      <button class="active">共事记录</button>
-      <button>今日计划 <span>4</span></button>
-      <button>工作记忆</button>
-    </nav>
-    <div class="sim-agent-body">
-      <aside class="sim-agent-side">
-        <p>仿真对象</p>
-        <div class="sim-targets dark">${Object.values(simTargets).map(s=>`<button class="sim-target ${s.key===target.key?'active':''}" data-sim-target="${s.key}"><span>${s.code}</span><b>${s.component}</b><small>${s.system} · ${s.risk}</small></button>`).join('')}</div>
-        <div class="control sim-control dark"><label><span>目标节点数</span><b>${newNodes} 台</b></label><input id="node-range" type="range" min="${target.minNodes}" max="${target.maxNodes}" value="${newNodes}" /></div>
-        <div class="control sim-control dark"><label><span>预估业务增长</span><b>+${state.simLoad}%</b></label><input id="load-range" type="range" min="0" max="80" step="5" value="${state.simLoad}" /></div>
-      </aside>
-      <section class="sim-agent-stream">
-        ${simAgentStep('刚刚','建立仿真上下文',`已选择 ${target.object}，当前 ${target.currentNodes} 台，方案 ${newNodes} 台，业务增长假设 +${state.simLoad}%。`,['我会继续盯着',`下次检查 08:48`],0)}
-        ${simAgentStep('刚刚','读取容量基线与趋势',`CPU P95 ${target.baseCpu}%、MEM P95 ${target.baseMem}%、${target.key==='greatdb'?'磁盘峰值':'资源水位'} ${target.baseDisk}%。${target.summary}`,['30 日趋势','同类基准'],1)}
-        ${simAgentStep('刚刚',safe?'形成容量优化建议':'发现需要复核的风险',`调整后预测：CPU P95 ${cpu}%，MEM P95 ${mem}%，${target.key==='greatdb'?'磁盘峰值':'资源水位'} ${disk}%。${cost>=0?`预计可回收 ¥${cost.toLocaleString()} / 月。`:`预计新增成本 ¥${Math.abs(cost).toLocaleString()} / 月。`}`,['我会继续盯着',`置信度 ${confidence}%`],2)}
-        ${simAgentStep('刚刚','治理任务状态更新',target.decision,['生成评估单','等待人工审批'],3)}
-        <div class="sim-agent-thinking"><span>CA</span><div><i></i><i></i><i></i><small>正在结合当前仿真上下文继续推演…</small></div></div>
-      </section>
-    </div>
-    <footer class="sim-agent-footer">
-      <div class="sim-agent-prompts"><button>解释判断</button><button>调整优先级</button><button>追加任务</button></div>
-      <div class="sim-agent-composer"><span>和 Capacity Agent 沟通，追问或调整它的工作方向…</span><button data-create-task>发送</button></div>
-    </footer>
-    <div class="sim-agent-toasts">
-      <div><span>AI</span><b>Capacity Agent · ${safe?'仿真建议已生成':'仿真风险待复核'}</b><p>${target.decision}</p><button>×</button></div>
-      <div><span>AI</span><b>Capacity Agent · 治理任务状态更新</b><p>${target.object} 已进入方案模拟，等待 SRE 确认。</p><button>×</button></div>
-    </div>
+  <section class="sim-console">
+    <article class="panel sim-board">
+      <div class="sim-board-head"><div><p class="kicker">CAPACITY DIGITAL TWIN</p><h2>${target.object} · ${target.mode}</h2><span>${target.summary}</span></div><em class="${safe?'ok':'warn'}">${safe?'可进入评估':'需要人工复核'}</em></div>
+      <div class="sim-topology" aria-label="容量模拟拓扑">
+        ${simNode('当前',`${target.currentNodes} 台`,target.spec,'current')}
+        ${simLink('采集基线','30 日趋势 / 同类对标')}
+        ${simNode('仿真',`${newNodes} 台`,`业务增长 +${state.simLoad}%`,'running')}
+        ${simLink('约束校验','P95 / 安全余量 / 成本')}
+        ${simNode('结论',safe?'建议推进':'先复核',`${confidence}% 置信度`,'result')}
+      </div>
+      <div class="sim-metrics">
+        ${simMetric('CPU P95',`${target.baseCpu}%`,`${cpu}%`,cpu<65?'ok':'warn')}
+        ${simMetric('MEM P95',`${target.baseMem}%`,`${mem}%`,mem<70?'ok':'warn')}
+        ${simMetric(target.key==='greatdb'?'磁盘峰值':'资源水位',`${target.baseDisk}%`,`${disk}%`,disk<90?'ok':'warn')}
+        ${simMetric(cost>=0?'月度节约':'月度新增','—',`¥${Math.abs(cost).toLocaleString()}`,cost>=0?'ok':'warn')}
+      </div>
+      <div class="sim-playback">
+        <span style="--i:0"><b>01</b> 读取当前容量快照</span>
+        <span style="--i:1"><b>02</b> 叠加 ${state.simLoad}% 业务增长</span>
+        <span style="--i:2"><b>03</b> 计算调整后 P95 水位</span>
+        <span style="--i:3"><b>04</b> 匹配治理约束和同类基准</span>
+      </div>
+    </article>
+    <aside class="panel sim-inspector">
+      <div class="panel-head"><div><h2>仿真参数</h2><p>系统、组件和治理对象与当前演示数据保持一致</p></div><small>${target.code}</small></div>
+      <div class="sim-targets">${Object.values(simTargets).map(s=>`<button class="sim-target ${s.key===target.key?'active':''}" data-sim-target="${s.key}"><span>${s.code}</span><b>${s.component}</b><small>${s.system} · ${s.risk}</small></button>`).join('')}</div>
+      <div class="control sim-control"><label><span>目标节点数</span><b>${newNodes} 台</b></label><input id="node-range" type="range" min="${target.minNodes}" max="${target.maxNodes}" value="${newNodes}" /></div>
+      <div class="control sim-control"><label><span>预估业务增长</span><b>+${state.simLoad}%</b></label><input id="load-range" type="range" min="0" max="80" step="5" value="${state.simLoad}" /></div>
+      <div class="sim-verdict"><small>AGENT VERDICT</small><h3>${safe?'建议生成治理评估单':'暂不建议直接执行'}</h3><p>${target.decision}</p></div>
+      <div class="guardrail">安全约束：核心系统至少保留 4 个节点；CPU P95 不高于 65%，内存 P95 不高于 70%；任何生产变更都需要人工审批。</div>
+      <button class="btn acid" style="width:100%;margin-top:14px" data-create-task>生成治理评估单</button>
+    </aside>
   </section>`;
 }
-function simAgentStep(time,title,body,foot,i){return `<article class="sim-agent-step" style="--i:${i}"><span class="sim-step-avatar">CA</span><div class="sim-step-card"><div class="sim-step-head"><b>${title}</b><time>${time}</time></div><p>${body}</p><div class="sim-step-foot"><span>${foot[0]}</span><em>${foot[1]}</em></div></div></article>`}
+function simNode(label,value,note,type){return `<div class="sim-node ${type}"><small>${label}</small><strong>${value}</strong><span>${note}</span></div>`}
+function simLink(label,note){return `<div class="sim-link"><i></i><b>${label}</b><span>${note}</span></div>`}
+function simMetric(label,before,after,tone){return `<div class="sim-metric ${tone}"><span>${label}</span><div><b>${before}</b><i>→</i><strong>${after}</strong></div></div>`}
 
 function renderAdmission(){
   main.innerHTML=header('AI CAPACITY REVIEWER','增量容量准入','AI 提出资源方案，人负责关键决策；静态演示不会提交真实申请',`<button class="btn">历史评估</button><button class="btn acid" data-review>重新评估</button>`)+`
@@ -399,7 +395,7 @@ function renderTasks(){
 function taskRow(t){const stages=['发现','建议','审批','观察','验证'];return `<tr><td><span class="ticket-no">${t.id}</span></td><td><span class="task-title"><b>${t.title}</b></span></td><td>${t.owner}</td><td><span class="status-pill">${t.status}</span></td><td>${t.workOrder?`<span class="work-order-no">${t.workOrder}</span>`:'<span class="empty-cell"></span>'}</td><td>${t.workOrder?`<span class="work-status ${t.workStatus==='实施完成'?'done':''}">${t.workStatus}</span>`:`<button class="btn small" data-create-workorder="${t.id}">去提单</button>`}</td><td><span class="stage-badge">${stages[t.stage]||'处理中'}</span></td><td><span class="table-actions"><button class="btn small" ${t.id==='CAP-1839'?'data-verify':''}>${t.action}</button><button class="btn small" data-open-followup="${t.id}">查看Agent跟进记录</button></span></td></tr>`}
 
 function renderWorkline(){
-  const job=activeWorkJob();
+  const job=autonomousJobs[state.work%autonomousJobs.length];
   workline.innerHTML=`
     <div class="work-core"><span class="work-orbit"><i></i></span><div><span>CAPACITY AGENT · 自主运行中</span><b>${job.phase}</b></div></div>
     <div class="work-target"><span>当前对象</span><b>${job.scope}</b><small>${job.target}</small></div>
@@ -413,19 +409,6 @@ function renderWorkline(){
   pet.classList.remove('speaking');
   void pet.offsetWidth;
   pet.classList.add('speaking');
-}
-function activeWorkJob(){
-  if(state.page==='simulate'){
-    const target=simTargets[state.simTarget]||simTargets.redis;
-    const newNodes=Math.min(target.maxNodes,Math.max(target.minNodes,state.simNodes||target.defaultNodes));
-    const loadFactor=1+state.simLoad/100;
-    const nodeFactor=target.currentNodes/newNodes;
-    const cpu=Math.round(target.baseCpu*nodeFactor*loadFactor);
-    const mem=Math.round(target.baseMem*nodeFactor*(1+state.simLoad/140));
-    const waterline=target.key==='greatdb'?`${Math.max(58,Math.round(target.baseDisk-((newNodes-target.currentNodes)*8)))}% 磁盘峰值`:`CPU ${cpu}% · MEM ${mem}%`;
-    return {phase:`模拟${target.mode}方案`,scope:target.object,target:`${target.component} · ${target.spec}`,kind:'方案仿真',signal:`${newNodes} 台 · 业务增长 +${state.simLoad}% · ${waterline}`};
-  }
-  return autonomousJobs[state.work%autonomousJobs.length];
 }
 
 function renderDrawer(){
@@ -498,7 +481,7 @@ function openFollowup(taskId){
 function toast(title,body){const el=document.createElement('div');el.className='toast';el.innerHTML=`<b>${title}</b><span>${body}</span>`;document.querySelector('#toasts').append(el);setTimeout(()=>el.remove(),3800)}
 
 document.addEventListener('click',e=>{
-  const page=e.target.closest('[data-page]');if(page){if(page.dataset.systemId)state.selectedSystemId=page.dataset.systemId;state.page=page.dataset.page;closeOverlays();render();renderWorkline();return}
+  const page=e.target.closest('[data-page]');if(page){if(page.dataset.systemId)state.selectedSystemId=page.dataset.systemId;state.page=page.dataset.page;closeOverlays();render();return}
   if(e.target.closest('[data-open-agent]')){openAgent();return}
   if(e.target.closest('[data-close-agent]')||e.target.closest('[data-close-modal]')||e.target.closest('[data-close-inspect]')||e.target.closest('[data-close-events]')||e.target===scrim){closeOverlays();return}
   if(e.target.closest('[data-open-evidence]')){openEvidence();return}
@@ -516,18 +499,18 @@ document.addEventListener('click',e=>{
   const follow=e.target.closest('[data-open-followup]');if(follow){openFollowup(follow.dataset.openFollowup);return}
   const tab=e.target.closest('[data-agent-tab]');if(tab){state.agentTab=tab.dataset.agentTab;renderDrawer();return}
   const prompt=e.target.closest('[data-prompt]');if(prompt){agentInput.value=prompt.dataset.prompt;agentInput.focus();return}
-  const simTarget=e.target.closest('[data-sim-target]');if(simTarget){state.simTarget=simTarget.dataset.simTarget;state.simNodes=(simTargets[state.simTarget]||simTargets.redis).defaultNodes;renderSimulator();renderWorkline();return}
+  const simTarget=e.target.closest('[data-sim-target]');if(simTarget){state.simTarget=simTarget.dataset.simTarget;state.simNodes=(simTargets[state.simTarget]||simTargets.redis).defaultNodes;renderSimulator();return}
   if(e.target.closest('[data-create-task]')){toast('已生成静态演示任务','CAP-1848 已进入”待 SRE 审批”，不会触发真实生产变更。');return}
   if(e.target.closest('[data-create-workorder]')){toast('已准备治理工单','演示环境不会真实提单，请在生产流程中完成变更单创建。');return}
   if(e.target.closest('[data-review]')){toast('Capacity Agent 已完成评估','已结合历史趋势、同类对标与安全余量，建议新增 4 台。');return}
-  if(e.target.closest('[data-reset-sim]')){const target=simTargets[state.simTarget]||simTargets.redis;state.simNodes=target.defaultNodes;state.simLoad=20;renderSimulator();renderWorkline();return}
+  if(e.target.closest('[data-reset-sim]')){const target=simTargets[state.simTarget]||simTargets.redis;state.simNodes=target.defaultNodes;state.simLoad=20;renderSimulator();return}
   if(e.target.closest('[data-verify]')){toast('效果验证正常','Redis 缩容后连续 3 天处于安全水位，将继续观察至第 7 天。');return}
 });
 
 document.addEventListener('input',e=>{
   if(e.target.id==='system-select'){state.selectedSystemId=e.target.value;render()}
-  if(e.target.id==='node-range'){state.simNodes=Number(e.target.value);renderSimulator();renderWorkline()}
-  if(e.target.id==='load-range'){state.simLoad=Number(e.target.value);renderSimulator();renderWorkline()}
+  if(e.target.id==='node-range'){state.simNodes=Number(e.target.value);renderSimulator()}
+  if(e.target.id==='load-range'){state.simLoad=Number(e.target.value);renderSimulator()}
 });
 
 document.addEventListener('change',e=>{if(e.target.id==='system-select'){state.selectedSystemId=e.target.value;render()}});
