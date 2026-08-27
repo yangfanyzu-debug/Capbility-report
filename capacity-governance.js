@@ -180,7 +180,7 @@ function renderSimulator(){
   const sim=simulateCapacity(target,newNodes,state.simLoad,spec);
   const safe=sim.cpuPeak<65&&sim.memPeak<70&&sim.diskPeak<90;
   const decisionTitle=safe?'整体水位处于可评估区间':'当前方案需要人工复核';
-  main.innerHTML=header('SIMULATION LAB','容量方案模拟仿真','基于当前 SRE 负责系统的数据，演示调整前后水位、成本、风险和执行路径',`<button class="btn" data-reset-sim>重置方案</button><button class="btn acid" data-create-task>采用此方案</button>`)+`
+  main.innerHTML=`
   <section class="sim-workbench">
     <aside class="panel sim-config-card">
       <div class="panel-head"><div><h2>选择分析对象</h2><p>对象来自当前 SRE 负责范围，保持演示数据一致</p></div><small>${target.code}</small></div>
