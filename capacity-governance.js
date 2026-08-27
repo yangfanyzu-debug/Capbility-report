@@ -81,11 +81,6 @@ const collabRecords=[
   {time:'09:10',type:'follow',status:'观察中',title:'Redis 缩容进入效果观察',body:'缩减 1 个节点后，CPU 峰值由 18% 升至 31%，仍处于安全区间；需覆盖完整 7 天和周末批处理窗口。',facts:['18% → 31%','0 告警','第 3/7 天']}
 ];
 
-const simTargets={
-  redis:{key:'redis',code:'RDS',system:'统一支付系统',component:'Redis 集群',object:'统一支付 / Redis',mode:'渐进缩容',currentNodes:6,defaultNodes:5,minNodes:4,maxNodes:8,baseCpu:18,baseMem:23,baseDisk:42,unitCost:2150,spec:'8C32G',risk:'低利用',summary:'4 个实例连续 30 日 CPU 与内存峰值低于 25%，适合先缩 1 台并观察。',decision:'建议从 6 台缩至 5 台，观察 7 天覆盖周末批处理窗口；若 CPU P95 仍低于 55%，再评估缩至 4 台。'},
-  greatdb:{key:'greatdb',code:'GDB',system:'统一支付系统',component:'GreatDB 磁盘',object:'统一支付 / GreatDB',mode:'风险处置',currentNodes:6,defaultNodes:8,minNodes:6,maxNodes:10,baseCpu:51,baseMem:58,baseDisk:87.6,unitCost:-3200,spec:'16C64G',risk:'高风险',summary:'greatdb-010 磁盘峰值 87.6%，节点差值 49.6%，不建议直接按集群均值判断。',decision:'先修复归档策略；若 3 天后增速未回落，再增加 2 个节点并重平衡，避免单节点继续逼近 90%。'},
-  nginx:{key:'nginx',code:'NGX',system:'渠道接入平台',component:'Nginx 入口规格',object:'渠道接入 / Nginx',mode:'规格降配',currentNodes:6,defaultNodes:6,minNodes:4,maxNodes:8,baseCpu:19,baseMem:31,baseDisk:38,unitCost:1800,spec:'16C32G → 8C16G',risk:'过度配置',summary:'单实例规格高于同类中位数 2.1×，节点利用率长期低位且分布稳定。',decision:'节点数保持 6 台，先灰度 2 台由 16C32G 降至 8C16G，观察 7 天无异常后再完成整组降配。'}
-};
 
 const state={page:'overview',selectedSystemId:'payment',agentOpen:false,agentTab:'log',work:0,progress:36,simNodes:5,simLoad:20,simTarget:'redis',simType:'物理机',simSpec:'8C32G'};
 const main=document.querySelector('#main');
@@ -116,7 +111,7 @@ function header(kicker,title,subtitle,actions=''){
 
 function render(){
   nav.innerHTML=navHTML();
-  const names={overview:'我的容量治理',system:'统一支付系统 / 系统洞察',peer:'同类系统 / 资源对标',simulate:'容量方案 / What-if 模拟',admission:'增量资源 / 容量准入',knowledge:'容量治理 / 知识库',tasks:'治理任务 / 效果验证'};
+  const names={overview:'我的容量治理',system:'统一支付系统 / 系统洞察',peer:'同类系统 / 资源对标',simulate:'容量方案 / 方案模拟',admission:'增量资源 / 容量准入',knowledge:'容量治理 / 知识库',tasks:'治理任务 / 效果验证'};
   crumb.textContent=names[state.page];
   ({overview:renderOverview,system:renderSystem,peer:renderPeer,simulate:renderSimulator,admission:renderAdmission,knowledge:renderKnowledge,tasks:renderTasks}[state.page]||renderOverview)();
   main.focus({preventScroll:true});
@@ -174,102 +169,618 @@ function renderPeer(){
 }
 function bench(label,value,color){return `<div class="bench"><div class="bench-head"><span>${label}</span><b>${value}</b></div><div class="bench-track"><i style="--value:${value};--color:${color}"></i></div></div>`}
 
+/* ============ 方案模拟 · 三步向导（自 模拟仿真.html 迁移） ============ */
+const wzApps={
+  "ITSM-2026-0812-001":{
+    title:"A系统进行信创改造申请资源", reason:"A系统进行信创改造申请资源，需要10台虚拟机",
+    business:"支持用户信息的查询", scenario:"信创改造", system:"A系统", type:"改造",
+    equip:[
+      {name:"ES组件",count:"10台虚拟机",spec:"4C16G100G",comp:"es"},
+      {name:"MySQL",count:"3台虚拟机",spec:"4C16G100G",comp:"mysql"}
+    ]
+  },
+  "ITSM-2026-0813-002":{
+    title:"B系统新增扩容申请资源", reason:"B系统新增业务模块，需申请8台虚拟机",
+    business:"支持订单数据的查询与处理", scenario:"新增系统", system:"B系统", type:"新增",
+    equip:[
+      {name:"B系统-Web",count:"8台虚拟机",spec:"8C32G200G",comp:"es"}
+    ]
+  }
+};
+const wzModuleMenu=[
+  {label:'ES 组件',children:[
+    {label:'基础组件',children:[{label:'es-001',value:'es-001'},{label:'es-002',value:'es-002'}]},
+    {label:'查询组件',children:[{label:'es-search',value:'es-search'}]}
+  ]},
+  {label:'HBase',children:[
+    {label:'存储层',children:[{label:'hbase-001',value:'hbase-001'},{label:'hbase-002',value:'hbase-002'}]}
+  ]},
+  {label:'MySQL',children:[
+    {label:'主库',children:[{label:'mysql-001',value:'mysql-001'},{label:'mysql-002',value:'mysql-002'}]}
+  ]}
+];
+const wzModuleBase={
+  "es-001":{cpu:64,mem:62},"es-002":{cpu:60,mem:58},
+  "hbase-001":{cpu:66,mem:70},"hbase-002":{cpu:58,mem:62},
+  "mysql-001":{cpu:72,mem:75},"mysql-002":{cpu:68,mem:70},
+  "ES组件":{cpu:64,mem:62},
+  "MySQL":{cpu:72,mem:75},
+  "es-search":{cpu:55,mem:60}
+};
+const wzHistPeaks={"es-001":{cpu:30,mem:50,disk:60},"mysql-001":{cpu:10,mem:40,disk:50}};
+const wzRecs={"es-001":{type:"虚拟机",cpu:2,mem:14,countMax:10,count:10},"mysql-001":{type:"虚拟机",cpu:2,mem:12,countMax:3,count:3}};
+let wzNo='',wzApp=null,wzModules=[],wzStep=1,wzActiveMod=0,wzAdopted={},wzSimRun={},wzBusy=false;
+const wzW=840,wzH=170,wzPL=34,wzPR=8,wzPTop=12,wzPB=24,wzPW=wzW-wzPL-wzPR,wzPH=wzH-wzPTop-wzPB;
+const WZ_SLIDER={cpu:{min:1,max:4},mem:{min:1,max:16},disk:{min:10,max:100},count:{min:1,max:10}};
+
 function renderSimulator(){
-  const target=simTargets[state.simTarget]||simTargets.redis;
-  const newNodes=Math.min(target.maxNodes,Math.max(target.minNodes,state.simNodes||target.defaultNodes));
-  const type=state.simType||'物理机';
-  const spec=state.simSpec||target.spec;
-  const sim=simulateCapacity(target,newNodes,state.simLoad,spec);
-  const safe=sim.cpuPeak<65&&sim.memPeak<70&&sim.diskPeak<90;
-  const decisionTitle=safe?'整体水位处于可评估区间':'当前方案需要人工复核';
-  main.innerHTML=`
-  <section class="sim-workbench">
-    <aside class="panel sim-config-card">
-      <div class="panel-head"><div><h2>选择分析对象</h2><p>对象来自当前 SRE 负责范围，保持演示数据一致</p></div><small>${target.code}</small></div>
-      <div class="sim-object-grid">
-        ${Object.values(simTargets).map(s=>`<button class="sim-object ${s.key===target.key?'active':''}" data-sim-target="${s.key}"><span>${s.code}</span><b>${s.system}</b><small>${s.component} · ${s.risk}</small></button>`).join('')}
-      </div>
-      <div class="sim-select-grid">
-        ${simSelect('系统',target.system,['统一支付系统','实时风控系统','渠道接入平台'])}
-        ${simSelect('组件',target.component,[target.component,'应用服务','入口网关','缓存集群'])}
-        ${simSelect('集群',simClusterName(target),[simClusterName(target),'prod-a','prod-b'])}
-      </div>
-      <div class="sim-section-title">资源方案</div>
-      <div class="sim-select-grid two">
-        ${simSelect('机器类型',type,['物理机','虚拟机','容器'], 'sim-type')}
-        ${simSelect('机器规格',spec,simSpecOptions(target), 'sim-spec')}
-      </div>
-      <div class="sim-recommend">模型推荐 <b>${target.spec}</b>，建议先模拟节点数和业务流量，再决定是否生成治理评估单。</div>
-      <div class="sim-slider">
-        <label><span>机器数量</span><small>最低 ${target.minNodes} · 最高 ${target.maxNodes} · 推荐 <b>${target.defaultNodes}</b> 台 · 当前 <b>${newNodes}</b> 台</small></label>
-        <input id="node-range" type="range" min="${target.minNodes}" max="${target.maxNodes}" value="${newNodes}" />
-      </div>
-      <div class="sim-slider">
-        <label><span>业务流量</span><small>最低 0% · 最高 80% · 当前 <b>+${state.simLoad}%</b></small></label>
-        <input id="load-range" type="range" min="0" max="80" step="5" value="${state.simLoad}" />
-      </div>
-      <div class="sim-history">
-        <div class="sim-section-title">历史资源配置</div>
-        <div class="sim-history-grid">
-          <span><b>机器类型</b>${type}</span><span><b>机器规格</b>${target.spec}</span>
-          <span><b>机器数量</b>${target.currentNodes}</span><span><b>基线流量</b>100%</span>
+  const steps=['获取申请单|ITSM 申请单与模块','方案仿真|仿真参数调整','审核报告|生成完整报告'];
+  main.innerHTML=`<section class="wz-stepper">${steps.map((st,i)=>{const parts=st.split('|');return `${i?'<div class="connector"></div>':''}<div class="step" data-step="${i+1}"><div class="num">${i+1}</div><div class="lbl"><b>${parts[0]}</b><small>${parts[1]}</small></div></div>`}).join('')}</section>
+  <section class="wz-panel" id="step1">
+    <div class="panel-head"><span class="en">第 1 步</span><span class="zh">获取 ITSM 申请单</span></div>
+    <div class="hero">
+      <div class="fld"><label>申请单号</label><div class="select"><select id="appSel">
+        <option value="">— 请选择申请单号 —</option>
+        <option value="ITSM-2026-0812-001">ITSM-2026-0812-001（A 系统信创改造）</option>
+        <option value="ITSM-2026-0813-002">ITSM-2026-0813-002（B 系统新增扩容）</option>
+      </select></div></div>
+      <button class="btn acid" id="btnLoad">加载申请单</button>
+    </div>
+    <div id="appContent"></div>
+    <div class="foot-actions"><button class="btn" id="btnResetApp">重置</button><div class="spacer"></div><button class="btn acid" id="btnNext1" disabled>下一步：方案仿真</button></div>
+  </section>
+  <section class="wz-panel" id="step2" hidden>
+    <div class="panel-head"><span class="en">第 2 步</span><span class="zh">方案仿真 · 仿真参数调整</span></div>
+    <div class="mod-tabs" id="modTabs"></div>
+    <div class="sim-grid">
+      <div class="sim-charts">
+        <div class="chart-card"><div class="ch-head"><span class="t">CPU使用率</span><span class="unit">近24小时</span><div class="lg"><span class="h"><i></i>历史数据</span><span class="s"><i></i>仿真数据</span></div><span class="peak" id="peakCpu"></span></div><div class="chart2" id="chartCpu"></div></div>
+        <div class="chart-card"><div class="ch-head"><span class="t">内存使用率</span><span class="unit">近24小时</span><div class="lg"><span class="h"><i></i>历史数据</span><span class="s"><i></i>仿真数据</span></div><span class="peak" id="peakMem"></span></div><div class="chart2" id="chartMem"></div></div>
+        <div class="chart-card"><div class="ch-head"><span class="t">磁盘使用率</span><span class="unit">近一个月</span><div class="lg"><span class="h"><i></i>历史数据</span><span class="s"><i></i>仿真数据</span></div><span class="peak" id="peakDisk"></span></div><div class="chart2" id="chartDisk"></div></div>
+        <div class="sim-loading" id="simLoading" hidden>
+          <div class="spinner"></div>
+          <div class="txt">AI 智能仿真模拟中…</div>
+          <div class="sub">正在基于历史数据与业务参数进行容量仿真推演，请稍候…</div>
         </div>
       </div>
-      <div class="guardrail sim-basis"><b>分析依据：</b>依据历史资源使用率与业务峰值波动进行容量拟合，并结合系统规格、节点数量和安全阈值测算目标水位。任何方案变更均需人工审批。</div>
-    </aside>
-    <section class="sim-result-col">
-      <div class="sim-summary-strip">
-        ${simMiniMetric('CPU 峰值',`${sim.cpuPeak}%`,sim.cpuPeak<65?'ok':'warn')}
-        ${simMiniMetric('内存峰值',`${sim.memPeak}%`,sim.memPeak<70?'ok':'warn')}
-        ${simMiniMetric(target.key==='greatdb'?'磁盘峰值':'资源水位',`${sim.diskPeak}%`,sim.diskPeak<90?'ok':'warn')}
-        ${simMiniMetric(sim.cost>=0?'月度节约':'月度新增',`¥${Math.abs(sim.cost).toLocaleString()}`,sim.cost>=0?'ok':'warn')}
-      </div>
-      ${simChartCard('CPU 使用率','cpu',sim.histCpu,sim.simCpu,sim.cpuPeak)}
-      ${simChartCard('内存使用率','mem',sim.histMem,sim.simMem,sim.memPeak)}
-      ${simChartCard(target.key==='greatdb'?'磁盘使用率':'资源水位','disk',sim.histDisk,sim.simDisk,sim.diskPeak)}
-      <article class="panel sim-conclusion">
-        <div class="panel-head"><div><h2>分析结论</h2><p>点击仿真或调整参数后自动刷新，采用方案仅生成静态演示任务</p></div><small>${safe?'可评估':'需复核'}</small></div>
-        <div class="sim-conclusion-box"><b>${decisionTitle}</b><p>${simConclusion(target,type,spec,newNodes,state.simLoad,sim)}</p></div>
-        <div class="brief-actions"><button class="btn acid" data-run-sim>仿真</button><button class="btn" data-reset-sim>重置方案</button><button class="btn acid" data-create-task>采用此方案</button></div>
-      </article>
-    </section>
+      <aside class="sim-params">
+        <div class="param-title">仿真参数调整</div>
+        <div class="fld"><label>机器类型</label><div class="select"><select id="pType">
+          <option>物理机</option><option>虚拟机</option><option>容器</option></select></div></div>
+        <div class="slider-block">
+          <div class="slider-label"><span>机器CPU</span><span class="side"><span id="pCpuSide"></span>　当前 <b id="pCpuVal"></b><span class="rec" id="pCpuRec"></span></span></div>
+          <div class="range"><span class="rail" id="pCpuRail"></span><span class="mark" id="pCpuMark"></span><input type="range" id="pCpu" min="1" max="4" value="4"></div>
+        </div>
+        <div class="slider-block">
+          <div class="slider-label"><span>机器内存</span><span class="side"><span id="pMemSide"></span>　当前 <b id="pMemVal"></b><span class="rec" id="pMemRec"></span></span></div>
+          <div class="range"><span class="rail" id="pMemRail"></span><span class="mark" id="pMemMark"></span><input type="range" id="pMem" min="1" max="16" value="16"></div>
+        </div>
+        <div class="slider-block">
+          <div class="slider-label"><span>机器磁盘</span><span class="side"><span id="pDiskSide"></span>　当前 <b id="pDiskVal"></b><span class="rec" id="pDiskRec"></span></span></div>
+          <div class="range"><span class="rail" id="pDiskRail"></span><span class="mark" id="pDiskMark"></span><input type="range" id="pDisk" min="10" max="100" value="100"></div>
+        </div>
+        <div class="slider-block">
+          <div class="slider-label"><span>机器数量</span><span class="side"><span id="pCountSide"></span>　当前 <b id="pCountVal"></b><span class="rec" id="pCountRec"></span></span></div>
+          <div class="range"><span class="rail" id="pCountRail"></span><span class="mark" id="pCountMark"></span><input type="range" id="pCount" min="1" max="10" value="10"></div>
+        </div>
+        <div class="risk-box r-low" id="riskBox">当前方案风险：<b>低风险</b></div>
+        <div class="tip-box"><b>分析依据：</b><br>1、依据历史资源使用率与业务峰值波动，进行容量拟合；<br>2、结合系统规格与节点数量，测算目标水位。<br><span style="color:#8a7a4a;">任何方案变更均需人工审批。</span></div>
+        <div class="param-actions">
+          <button class="btn acid" id="btnSim">仿真</button>
+          <button class="btn" id="btnSimReset">重置方案</button>
+          <button class="btn acid" id="btnAdopt">采用此方案</button>
+        </div>
+      </aside>
+    </div>
+    <div class="foot-actions"><button class="btn" id="btnPrev1">上一步</button><div class="spacer"></div><button class="btn acid" id="btnNext2">下一步：生成审核报告</button></div>
+  </section>
+  <section class="wz-panel" id="step3" hidden>
+    <div class="panel-head"><span class="en">第 3 步</span><span class="zh">生成审核报告</span></div>
+    <div class="wz-report" id="report"></div>
+    <div class="foot-actions"><button class="btn" id="btnPrev2">上一步</button><div class="spacer"></div><button class="btn" id="btnPrint">导出 / 打印</button><button class="btn acid" id="btnRestart">审核通过</button></div>
   </section>`;
+  if(!wzApp)wzStep=1;
+  wzGo(wzStep);
 }
-function simSelect(label,value,options,id=''){return `<label class="sim-field"><span>${label}</span><select ${id?`id="${id}"`:''}>${options.map(o=>`<option ${o===value?'selected':''}>${o}</option>`).join('')}</select></label>`}
-function simSpecOptions(target){return target.key==='greatdb'?['8C32G','16C64G','32C128G']:target.key==='nginx'?['4C8G','8C16G','16C32G']:['4C16G','8C32G','16C64G']}
-function simClusterName(target){return target.key==='greatdb'?'bjd-dsi-greatdb-010-kzx':target.key==='nginx'?'chn-ingress-nginx':'pay-redis-prod'}
-function specFactor(spec){
-  if(spec.includes('32C'))return 1.55;
-  if(spec.includes('16C64G'))return 1.35;
-  if(spec.includes('16C32G'))return 1.25;
-  if(spec.includes('8C32G'))return 1.12;
-  if(spec.includes('8C16G'))return 1.08;
-  if(spec.includes('4C'))return .94;
-  return 1;
+
+function wzGo(n){
+  wzStep=n;
+  ['step1','step2','step3'].forEach((id,i)=>{const el=document.getElementById(id);if(el)el.hidden=(i+1)!==n;});
+  document.querySelectorAll('.wz-stepper .step').forEach(st=>{
+    const d=parseInt(st.getAttribute('data-step'),10);
+    st.classList.toggle('active',d===n);
+    st.classList.toggle('done',d<n);
+  });
+  document.querySelectorAll('.wz-stepper .connector').forEach((c,i)=>c.classList.toggle('done',i<n-1));
+  if(n===2)wzRenderSim();
+  if(n===3)wzRenderReport();
+  window.scrollTo({top:0});
 }
-function dailySeries(base,seed=0){return Array.from({length:31},(_,i)=>Math.max(1,Math.min(96,Math.round(base+Math.sin((i+seed)/2.6)*6+Math.sin((i+seed)/1.45+2.2)*3.5+Math.sin(i/5+.4)*4+(i/30)*4))))}
-function simulateCapacity(target,nodes,flow,spec){
-  const load=1+flow/100,nodeFactor=target.currentNodes/nodes,specAdj=specFactor(spec);
-  const next=(base,extra=1)=>Math.max(3,Math.min(95,base*nodeFactor*load*extra/specAdj));
-  const diskBase=target.key==='greatdb'?Math.max(56,target.baseDisk-((nodes-target.currentNodes)*7)):target.baseDisk*nodeFactor;
-  const histCpu=dailySeries(target.baseCpu,1),histMem=dailySeries(target.baseMem,5),histDisk=dailySeries(target.baseDisk,9);
-  const simCpu=dailySeries(next(target.baseCpu),2),simMem=dailySeries(next(target.baseMem,1+flow/220),6),simDisk=dailySeries(target.key==='greatdb'?diskBase:next(target.baseDisk,.92),10);
-  return {histCpu,histMem,histDisk,simCpu,simMem,simDisk,cpuPeak:Math.max(...simCpu),memPeak:Math.max(...simMem),diskPeak:Math.max(...simDisk),cpuAvg:avg(simCpu),memAvg:avg(simMem),diskAvg:avg(simDisk),cost:(target.currentNodes-nodes)*Math.abs(target.unitCost)};
+
+/* ---------- 第 1 步 ---------- */
+function wzEquipSummary(){let s=[];for(let i=0;i<wzApp.equip.length;i++){const e=wzApp.equip[i];s.push((i+1)+'、'+e.name+' '+e.count+'，规格是 '+e.spec);}return s.join('；');}
+function wzParseSpec(spec){const m=spec.match(/(\d+)C(\d+)G(\d+)G/);return m?{cpu:+m[1],mem:+m[2],disk:+m[3]}:null;}
+function wzEquipMax(){
+  const mx={cpu:0,mem:0,disk:0,count:0};
+  if(!wzApp)return {cpu:4,mem:16,disk:100,count:10};
+  for(const it of wzApp.equip){
+    const sp=wzParseSpec(it.spec);
+    if(sp){mx.cpu=Math.max(mx.cpu,sp.cpu);mx.mem=Math.max(mx.mem,sp.mem);mx.disk=Math.max(mx.disk,sp.disk);}
+    const m=it.count.match(/^(\d+)/);
+    if(m)mx.count=Math.max(mx.count,parseInt(m[1],10));
+  }
+  if(!mx.cpu){mx.cpu=4;mx.mem=16;mx.disk=100;}
+  if(!mx.count)mx.count=10;
+  return mx;
 }
-function avg(arr){return Math.round(arr.reduce((a,b)=>a+b,0)/arr.length)}
-function simMiniMetric(label,value,tone){return `<div class="sim-mini ${tone}"><span>${label}</span><b>${value}</b></div>`}
-function simChartCard(title,id,hist,sim,peak){return `<article class="panel sim-chart-card"><div class="sim-chart-head"><h2>${title}</h2><div class="sim-legend"><span class="hist"><i></i>历史数据</span><span class="forecast"><i></i>仿真数据</span></div><em>峰值 ${peak}%</em></div><div class="sim-line-chart">${simSvg(id,hist,sim)}<div class="sim-tip">历史 ${hist[30]}% · 仿真 ${sim[30]}%</div></div></article>`}
-function simSvg(id,hist,sim){
-  const W=520,H=154,pl=34,pr=10,pt=14,pb=24,w=W-pl-pr,h=H-pt-pb,toX=i=>pl+i*w/30,toY=v=>pt+(1-v/100)*h;
-  const pts=arr=>arr.map((v,i)=>({x:toX(i),y:toY(v)}));
-  const path=points=>points.reduce((d,p,i)=>i?`${d} L${p.x.toFixed(1)},${p.y.toFixed(1)}`:`M${p.x.toFixed(1)},${p.y.toFixed(1)}`,'');
-  const area=points=>`${path(points)} L${points[points.length-1].x.toFixed(1)},${pt+h} L${points[0].x.toFixed(1)},${pt+h} Z`;
+function wzDefaultPathFor(comp){return {es:[0,0,0],hbase:[1,0,0],mysql:[2,0,0]}[comp]||[0,0,0];}
+
+function wzRenderDetail(){
+  const a=wzApp,c=document.getElementById('appContent');
+  const tag=a.type==='改造'?'信创改造':'新增系统';
+  const rows=
+    '<div class="ar"><span class="k">标题</span><span class="v">'+a.title+'</span></div>'+
+    '<div class="ar right"><span class="k">申请场景</span><span class="v">'+a.scenario+'</span></div>'+
+    '<div class="ar"><span class="k">系统名称</span><span class="v">'+a.system+'</span></div>'+
+    '<div class="ar right"><span class="k">支撑业务</span><span class="v">'+a.business+'</span></div>'+
+    '<div class="ar full"><span class="k">申请原因</span><span class="v">'+a.reason+'</span></div>';
+  const info='<div class="sp-block"><div class="sp-title">申请单内容 <span class="tag">'+tag+'</span></div><div class="app-rows">'+rows+'</div></div>';
+  let list='<div class="sp-block"><div class="sec-title">设备清单</div><div class="equip-list">';
+  if(a.type==='新增'){
+    a.equip.forEach((it,i)=>{
+      list+='<div class="equip-item"><div class="eq-info"><span class="eq-idx">'+(i+1)+'、</span><span class="eq-name">'+it.name+'</span> <span>'+it.count+'</span>，规格是 <span class="eq-spec">'+it.spec+'</span></div></div>';
+    });
+    list+='</div><div class="module-note">新增系统：新增模块不涉及旧模块选择，无需配置模块。</div>';
+  }else{
+    a.equip.forEach((it,i)=>{
+      list+='<div class="equip-item" data-idx="'+i+'">'+
+        '<div class="eq-info"><span class="eq-idx">'+(i+1)+'、</span><span class="eq-name">'+it.name+'</span> <span>'+it.count+'</span>，规格是 <span class="eq-spec">'+it.spec+'</span></div>'+
+        '<div class="eq-mod"><span class="mod-label">选择涉及模块</span>'+
+          '<div class="cascader" data-idx="'+i+'"></div>'+
+          '<a class="detail-link" data-idx="'+i+'">查看详情</a>'+
+        '</div></div>';
+    });
+    list+='</div><div class="module-note">请选择涉及到的模块（多级菜单，逐级选择到具体实例），选中模块将用于历史数据采集与容量仿真。</div>';
+  }
+  list+='</div>';
+  c.innerHTML=info+list;
+  wzMountCascaders();
+}
+function wzMountCascaders(){
+  document.querySelectorAll('#appContent .detail-link').forEach(ln=>{
+    ln.addEventListener('click',()=>{
+      const item=wzApp.equip[parseInt(ln.getAttribute('data-idx'),10)];
+      toast('设备详情',item.name+'｜'+item.count+'｜规格：'+item.spec);
+    });
+  });
+  document.querySelectorAll('#appContent .cascader').forEach(el=>{
+    const idx=parseInt(el.getAttribute('data-idx'),10);
+    const item=wzApp.equip[idx];
+    el.innerHTML='<div class="casc-trigger"><span class="casc-path"></span><span class="casc-arrow">▾</span></div><div class="casc-panel" hidden></div>';
+    wzInitCascader(el,wzModuleMenu,wzDefaultPathFor(item.comp),val=>{
+      el.setAttribute('data-val',val);
+      wzRebuildSelected();
+    });
+  });
+  wzRebuildSelected();
+}
+function wzOptionsAt(menu,path,level){let opts=menu;for(let i=0;i<level;i++){if(!opts||path[i]==null)return [];const n=opts[path[i]];if(!n||!n.children)return [];opts=n.children;}return opts||[];}
+function wzLeafAt(menu,path){let opts=menu,node=null;for(let i=0;i<path.length;i++){if(!opts||path[i]==null)return null;node=opts[path[i]];if(!node)return null;opts=node.children;}return node;}
+function wzPathLabels(menu,path){const labels=[];let opts=menu;for(let i=0;i<path.length;i++){if(!opts||path[i]==null)break;const n=opts[path[i]];if(!n)break;labels.push(n.label);opts=n.children;}return labels;}
+function wzInitCascader(root,menu,defaultPath,onChange){
+  const path=defaultPath.slice();
+  const trigger=root.querySelector('.casc-trigger'),pathEl=root.querySelector('.casc-path'),panel=root.querySelector('.casc-panel');
+  function render(){
+    const labels=wzPathLabels(menu,path);
+    pathEl.textContent=labels.length?labels.join(' › '):'请选择模块';
+    let h='';
+    for(let lv=0;lv<=path.length;lv++){
+      const opts=wzOptionsAt(menu,path,lv);
+      if(!opts.length)break;
+      const curIdx=(lv<path.length)?path[lv]:-1;
+      h+='<div class="casc-col">';
+      opts.forEach((node,j)=>{
+        const has=node.children&&node.children.length;
+        h+='<div class="casc-node'+(j===curIdx?' sel':'')+'" data-lv="'+lv+'" data-idx="'+j+'"><span>'+node.label+'</span>'+(has?'<span class="carr">›</span>':'')+'</div>';
+      });
+      h+='</div>';
+      if(lv>=path.length||path[lv]==null||!opts[path[lv]]||!opts[path[lv]].children)break;
+    }
+    panel.innerHTML=h;
+  }
+  trigger.addEventListener('click',ev=>{
+    ev.stopPropagation();
+    document.querySelectorAll('#appContent .casc-panel').forEach(pp=>{if(pp!==panel)pp.hidden=true;});
+    panel.hidden=!panel.hidden;if(!panel.hidden)render();
+  });
+  panel.addEventListener('click',e=>{
+    const node=e.target.closest('.casc-node');if(!node)return;
+    e.stopPropagation();
+    const lv=parseInt(node.getAttribute('data-lv'),10),idx=parseInt(node.getAttribute('data-idx'),10);
+    const opts=wzOptionsAt(menu,path,lv);const chosen=opts[idx];
+    path=path.slice(0,lv);path.push(idx);
+    if(chosen.children&&chosen.children.length){render();}
+    else{render();panel.hidden=true;onChange(chosen.value||chosen.label);}
+  });
+  const leaf=wzLeafAt(menu,path);
+  if(leaf)root.setAttribute('data-val',leaf.value||leaf.label);
+  render();
+}
+function wzRebuildSelected(){
+  wzModules=[];
+  document.querySelectorAll('#appContent .cascader').forEach(el=>{
+    const val=el.getAttribute('data-val');if(val)wzModules.push(val);
+  });
+  const b=document.getElementById('btnNext1');
+  if(b&&wzApp)b.disabled=(wzApp.type==='改造'&&wzModules.length===0);
+}
+function wzLoadApp(){
+  const no=document.getElementById('appSel').value;
+  if(!no){toast('请先选择申请单号','在下拉框中挑选一条 ITSM 申请单后再点击加载。');return;}
+  wzApp=wzApps[no];wzNo=no;
+  wzModules=[];wzAdopted={};wzSimRun={};wzActiveMod=0;
+  wzRenderDetail();wzSetupSliders();
+  document.getElementById('btnNext1').disabled=false;
+  toast('申请单已加载',no+' · 可选择涉及模块后进入方案仿真。');
+}
+function wzResetApp(){
+  wzApp=null;wzNo='';wzModules=[];wzAdopted={};wzSimRun={};
+  document.getElementById('appSel').value='';
+  document.getElementById('appContent').innerHTML='';
+  document.getElementById('btnNext1').disabled=true;
+  toast('已重置','申请单选择已清空。');
+}
+
+/* ---------- 第 2 步：仿真 ---------- */
+function wzReadParams(){return {cpu:+document.getElementById('pCpu').value,mem:+document.getElementById('pMem').value,disk:+document.getElementById('pDisk').value,count:+document.getElementById('pCount').value};}
+function wzMakeHourly(base,seed){
+  const a=[];
+  for(let i=0;i<24;i++){
+    const day=Math.exp(-Math.pow(i-11,2)/22)*0.5+Math.exp(-Math.pow(i-16,2)/14)*0.45;
+    const w=Math.sin(i/3+seed)*0.05+Math.sin(i/1.7+seed+1)*0.04;
+    a.push(Math.max(1,Math.min(96,Math.round(base*(0.48+day+w)))));
+  }
+  return a;
+}
+function wzMakeMod(base,seed){
+  const a=[];
+  for(let i=0;i<31;i++){
+    const w=Math.sin(i/2.6+seed)*7+Math.sin(i/1.4+2.5+seed)*4+Math.sin(i/5+0.5+seed)*5;
+    a.push(Math.max(1,Math.min(96,Math.round(base+w+(i/30)*5))));
+  }
+  return a;
+}
+function wzScaleTo(arr,target){const mx=Math.max.apply(null,arr);if(!mx)return arr;return arr.map(v=>Math.max(1,Math.min(96,Math.round(v*target/mx))));}
+function wzHistForIdx(idx,kind){
+  const m=wzModules.length?wzModules[idx]:null;
+  const b=m?wzModuleBase[m]:null;
+  let arr;
+  if(kind==='cpu')arr=wzMakeHourly(b?b.cpu:52,idx+1);
+  else if(kind==='mem')arr=wzMakeHourly(b?b.mem:56,idx+2);
+  else arr=wzMakeMod(45,idx+3);
+  const pk=m?wzHistPeaks[m]:null;
+  if(pk)arr=wzScaleTo(arr,pk[kind]);
+  return arr;
+}
+function wzHistCPU(){return wzHistForIdx(wzActiveMod,'cpu');}
+function wzHistMEM(){return wzHistForIdx(wzActiveMod,'mem');}
+function wzHistDISK(){return wzHistForIdx(wzActiveMod,'disk');}
+function wzMtypeFactor(){const t=document.getElementById('pType').value;return t==='物理机'?1:(t==='虚拟机'?1.08:1.15);}
+function wzSimCurve(h,param,count,ref){const factor=(ref/param)*(WZ_SLIDER.count.max/Math.max(count,1))*wzMtypeFactor();return h.map(v=>Math.max(1,Math.min(96,Math.round(v*factor))));}
+function wzSimKey(){return wzModules.length?wzModules[wzActiveMod]:'_default_';}
+function wzSimOn(){return !!wzSimRun[wzSimKey()];}
+function wzPt(arr){const n=arr.length,step=wzPW/(n-1),pts=[];for(let i=0;i<n;i++)pts.push({x:wzPL+i*step,y:wzPTop+(1-arr[i]/100)*wzPH});return pts;}
+function wzCurve(pts){
+  if(pts.length<2)return '';
+  let d='M'+pts[0].x.toFixed(1)+','+pts[0].y.toFixed(1);
+  for(let i=0;i<pts.length-1;i++){
+    const p0=pts[Math.max(0,i-1)],p1=pts[i],p2=pts[i+1],p3=pts[Math.min(pts.length-1,i+2)];
+    const cx=p1.x+(p2.x-p0.x)/6,cy=p1.y+(p2.y-p0.y)/6,cx2=p2.x-(p3.x-p1.x)/6,cy2=p2.y-(p3.y-p1.y)/6;
+    d+='C'+cx.toFixed(1)+','+cy.toFixed(1)+' '+cx2.toFixed(1)+','+cy2.toFixed(1)+' '+p2.x.toFixed(1)+','+p2.y.toFixed(1);
+  }
+  return d;
+}
+function wzArea(pts){const p=wzCurve(pts),last=pts[pts.length-1],first=pts[0];return p+' L'+last.x.toFixed(1)+','+(wzPTop+wzPH).toFixed(1)+' L'+first.x.toFixed(1)+','+(wzPTop+wzPH).toFixed(1)+' Z';}
+function wzToXUnused(){return wzPL;}
+void wzToXUnused;
+function wzMaxOf(a){return Math.max.apply(null,a);}
+function wzDrawChart2(id,hist,sim,peakId,unit,showSim){
+  const el=document.getElementById(id);if(!el)return;
+  const n=hist.length,hp=wzPt(hist),sp=wzPt(sim),step=wzPW/(n-1);
+  let g,s='';
+  for(g=0;g<=4;g++){const gy=wzPTop+(1-g/4)*wzPH;s+='<line x1="'+wzPL+'" y1="'+gy+'" x2="'+(wzW-wzPR)+'" y2="'+gy+'" stroke="#e9edf4" stroke-width="1"/><text x="'+(wzPL-7)+'" y="'+(gy+3)+'" text-anchor="end" font-size="9" fill="#9098a7">'+(g*25)+'%</text>';}
+  const ticks=unit==='hour'?[[0,'0时'],[6,'6时'],[12,'12时'],[18,'18时'],[23,'24时']]:[[0,'1日'],[7,'8日'],[14,'15日'],[21,'22日'],[30,'31日']];
+  for(g=0;g<ticks.length;g++)s+='<text x="'+(wzPL+ticks[g][0]*step)+'" y="'+(wzH-6)+'" text-anchor="middle" font-size="9" fill="#9098a7">'+ticks[g][1]+'</text>';
+  s+='<defs><linearGradient id="gd'+id+'" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2f5d91" stop-opacity="0.12"/><stop offset="1" stop-color="#2f5d91" stop-opacity="0"/></linearGradient></defs>';
+  s+='<path d="'+wzArea(hp)+'" fill="rgba(47,93,145,0.05)" stroke="none"/>';
+  s+='<path d="'+wzCurve(hp)+'" fill="none" stroke="#2f5d91" stroke-width="2"/>';
+  if(showSim){
+    s+='<path d="'+wzArea(sp)+'" fill="url(#gd'+id+')" stroke="none"/>';
+    s+='<path d="'+wzCurve(sp)+'" fill="none" stroke="#8ca1bd" stroke-width="2" stroke-dasharray="5,3"/>';
+  }
+  el.innerHTML='<svg viewBox="0 0 '+wzW+' '+wzH+'">'+s+'</svg><div class="tip"></div>';
+  const svgEl=el.querySelector('svg'),tipEl=el.querySelector('.tip');
+  svgEl.addEventListener('mousemove',ev=>{
+    const rect=el.getBoundingClientRect(),vx=(ev.clientX-rect.left)/rect.width*wzW;
+    if(vx<wzPL||vx>wzW-wzPR){tipEl.style.opacity=0;return;}
+    const i=Math.max(0,Math.min(n-1,Math.round((vx-wzPL)/wzPW*(n-1))));
+    tipEl.innerHTML='<span class="date">'+(unit==='hour'?i+'时':(i+1)+'日')+'</span>'+(showSim?('历史 '+hist[i]+'% · 仿真 '+sim[i]+'%'):('历史 '+hist[i]+'%'));
+    tipEl.style.left=(ev.clientX-rect.left)+'px';tipEl.style.top=(ev.clientY-rect.top-10)+'px';tipEl.style.opacity=1;
+  });
+  svgEl.addEventListener('mouseleave',()=>{tipEl.style.opacity=0;});
+  document.getElementById(peakId).textContent=showSim?('仿真峰值 '+wzMaxOf(sim)+'%'):('历史峰值 '+wzMaxOf(hist)+'%');
+  const leg=el.closest('.chart-card').querySelector('.lg .s');
+  if(leg)leg.style.opacity=showSim?1:0.35;
+}
+function wzRenderSimCharts(){
+  const p=wzReadParams();
+  const on=wzSimOn();
+  wzDrawChart2('chartCpu',wzHistCPU(),wzSimCurve(wzHistCPU(),p.cpu,p.count,WZ_SLIDER.cpu.max),'peakCpu','hour',on);
+  wzDrawChart2('chartMem',wzHistMEM(),wzSimCurve(wzHistMEM(),p.mem,p.count,WZ_SLIDER.mem.max),'peakMem','hour',on);
+  wzDrawChart2('chartDisk',wzHistDISK(),wzSimCurve(wzHistDISK(),p.disk,p.count,WZ_SLIDER.disk.max),'peakDisk','day',on);
+  wzUpdateRisk();
+}
+function wzSetupSliders(){
+  const mx=wzEquipMax();
+  WZ_SLIDER.cpu.max=mx.cpu;WZ_SLIDER.mem.max=mx.mem;WZ_SLIDER.disk.max=mx.disk;
+  const m=wzModules.length?wzModules[wzActiveMod]:null;
+  const r0=(m&&wzRecs[m])?wzRecs[m]:{};
+  WZ_SLIDER.count.max=(r0.countMax!=null)?r0.countMax:10;
+  if(r0.type)document.getElementById('pType').value=r0.type;
+  const pCpu=document.getElementById('pCpu'),pMem=document.getElementById('pMem'),pDisk=document.getElementById('pDisk'),pCount=document.getElementById('pCount');
+  pCpu.min=WZ_SLIDER.cpu.min;pCpu.max=mx.cpu;pCpu.step=1;
+  pMem.min=WZ_SLIDER.mem.min;pMem.max=mx.mem;pMem.step=1;
+  pDisk.min=WZ_SLIDER.disk.min;pDisk.max=mx.disk;pDisk.step=10;
+  pCount.min=WZ_SLIDER.count.min;pCount.max=WZ_SLIDER.count.max;pCount.step=1;
+  const r=wzComputeRecParams();
+  pCpu.value=r.cpu;pMem.value=r.mem;pDisk.value=r.disk;pCount.value=r.count;
+}
+function wzUpdateRail(inp,railId,min,max){const rail=document.getElementById(railId);if(rail)rail.style.width=((inp.value-min)/(max-min)*100)+'%';}
+function wzComputeRecParams(){
+  const peak=Math.max(wzMaxOf(wzHistCPU()),wzMaxOf(wzHistMEM()));
+  const m=wzModules.length?wzModules[wzActiveMod]:null;
+  const r=(m&&wzRecs[m])?wzRecs[m]:{};
+  return {
+    cpu:(r.cpu!=null)?r.cpu:WZ_SLIDER.cpu.max,
+    mem:(r.mem!=null)?r.mem:WZ_SLIDER.mem.max,
+    disk:(r.disk!=null)?r.disk:WZ_SLIDER.disk.max,
+    count:(r.count!=null)?r.count:WZ_SLIDER.count.max,
+    peak:peak
+  };
+}
+function wzUpdateRisk(){
+  const p=wzReadParams();
+  let peaks;
+  if(wzSimOn()){
+    peaks=[wzMaxOf(wzSimCurve(wzHistCPU(),p.cpu,p.count,WZ_SLIDER.cpu.max)),wzMaxOf(wzSimCurve(wzHistMEM(),p.mem,p.count,WZ_SLIDER.mem.max)),wzMaxOf(wzSimCurve(wzHistDISK(),p.disk,p.count,WZ_SLIDER.disk.max))];
+  }else{
+    peaks=[wzMaxOf(wzHistCPU()),wzMaxOf(wzHistMEM()),wzMaxOf(wzHistDISK())];
+  }
+  const maxp=Math.max.apply(null,peaks);
+  const el=document.getElementById('riskBox');if(!el)return;
+  const lv=maxp>=85?'high':(maxp>=70?'mid':'low');
+  const txt=maxp>=85?'建议增大机器规格或增加机器数量':(maxp>=70?'建议监控峰值并预留余量':'处于安全区间');
+  el.className='risk-box r-'+lv;
+  el.innerHTML='当前方案风险：<b>'+(lv==='high'?'高风险':(lv==='mid'?'中风险':'低风险'))+'</b>　预测峰值约 '+maxp+'%，'+txt;
+}
+function wzUpdateParamUI(){
+  const pCpu=document.getElementById('pCpu'),pMem=document.getElementById('pMem'),pDisk=document.getElementById('pDisk'),pCount=document.getElementById('pCount');
+  document.getElementById('pCpuVal').textContent=pCpu.value;
+  document.getElementById('pMemVal').textContent=pMem.value;
+  document.getElementById('pDiskVal').textContent=pDisk.value;
+  document.getElementById('pCountVal').textContent=pCount.value;
+  wzUpdateRail(pCpu,'pCpuRail',WZ_SLIDER.cpu.min,WZ_SLIDER.cpu.max);
+  wzUpdateRail(pMem,'pMemRail',WZ_SLIDER.mem.min,WZ_SLIDER.mem.max);
+  wzUpdateRail(pDisk,'pDiskRail',WZ_SLIDER.disk.min,WZ_SLIDER.disk.max);
+  wzUpdateRail(pCount,'pCountRail',WZ_SLIDER.count.min,WZ_SLIDER.count.max);
+  document.getElementById('pCpuSide').innerHTML='最低：'+WZ_SLIDER.cpu.min+'　最高：'+WZ_SLIDER.cpu.max+' 核';
+  document.getElementById('pMemSide').innerHTML='最低：'+WZ_SLIDER.mem.min+'　最高：'+WZ_SLIDER.mem.max+' GB';
+  document.getElementById('pDiskSide').innerHTML='最低：'+WZ_SLIDER.disk.min+'　最高：'+WZ_SLIDER.disk.max+' GB';
+  document.getElementById('pCountSide').innerHTML='最低：'+WZ_SLIDER.count.min+'　最高：'+WZ_SLIDER.count.max+' 台';
+  const r=wzComputeRecParams();
+  document.getElementById('pCpuRec').textContent='（推荐 '+r.cpu+' 核）';
+  document.getElementById('pMemRec').textContent='（推荐 '+r.mem+' GB）';
+  document.getElementById('pDiskRec').textContent='（推荐 '+r.disk+' GB）';
+  document.getElementById('pCountRec').textContent='（推荐 '+r.count+' 台）';
+  const pct=(val,cfg)=>((val-cfg.min)/(cfg.max-cfg.min)*100)+'%';
+  document.getElementById('pCpuMark').style.left=pct(+pCpu.value,WZ_SLIDER.cpu);
+  document.getElementById('pMemMark').style.left=pct(+pMem.value,WZ_SLIDER.mem);
+  document.getElementById('pDiskMark').style.left=pct(+pDisk.value,WZ_SLIDER.disk);
+  document.getElementById('pCountMark').style.left=pct(+pCount.value,WZ_SLIDER.count);
+  wzUpdateRisk();
+}
+function wzRenderTabs(){
+  const tb=document.getElementById('modTabs');if(!tb)return;
+  if(!wzModules.length){tb.innerHTML='';return;}
+  const all=wzModules.every(m=>!!wzAdopted[m]);
+  let h='';
+  wzModules.forEach((m,i)=>{
+    const ad=!!wzAdopted[m];
+    h+='<div class="mod-tab'+(i===wzActiveMod?' active':'')+(ad?' adopted':'')+'" data-mod-i="'+i+'"><span class="idx">模块'+(i+1)+'</span>'+m+(ad?'<span class="ck">✓</span>':'')+'</div>';
+  });
+  h+=all?'<span class="tab-hint ok">全部模块已采用 ✓</span>':'<span class="tab-hint">未采用的模块为灰色标签，点右侧「采用此方案」后变蓝 ✓</span>';
+  tb.innerHTML=h;
+}
+function wzRenderSim(){wzRenderTabs();wzSetupSliders();wzUpdateParamUI();wzRenderSimCharts();}
+function wzRunSim(){
+  if(wzBusy)return;
+  wzBusy=true;
+  const btn=document.getElementById('btnSim');
+  btn.disabled=true;btn.textContent='仿真中…';
+  document.getElementById('simLoading').hidden=false;
+  setTimeout(()=>{
+    wzSimRun[wzSimKey()]=true;
+    wzRenderSimCharts();
+    document.getElementById('simLoading').hidden=true;
+    btn.disabled=false;btn.textContent='仿真';
+    wzBusy=false;
+  },1800);
+}
+function wzAdoptCurrent(){
+  if(!wzModules.length){toast('当前无涉及模块','新增申请单无需逐模块采用，可直接进入下一步生成报告。');return;}
+  wzAdopted[wzModules[wzActiveMod]]=true;
+  wzRenderTabs();
+  const done=wzModules.filter(m=>!!wzAdopted[m]).length;
+  const all=done===wzModules.length;
+  toast(all?'已采用全部方案':'已采用 '+(wzActiveMod+1)+' 号模块的方案',all?('共 '+wzModules.length+' 个模块全部采用 ✓ 可进入下一步生成报告。'):('还有 '+(wzModules.length-done)+' 个模块待采用。'));
+}
+
+/* ---------- 第 3 步：报告 ---------- */
+function wzChartSnapURL(hist,sim,unit){
+  const W2=300,H2=120,P2=28,PR2=6,PT2=8,PB2=18,PW2=W2-P2-PR2,PH2=H2-PT2-PB2;
+  const n=hist.length,st=PW2/(n-1);
+  const pts=arr=>arr.map((v,i)=>({x:P2+i*st,y:PT2+(1-v/100)*PH2}));
+  const crv=ps=>{
+    if(ps.length<2)return '';
+    let d='M'+ps[0].x.toFixed(1)+','+ps[0].y.toFixed(1);
+    for(let i=0;i<ps.length-1;i++){
+      const p0=ps[Math.max(0,i-1)],p1=ps[i],p2=ps[i+1],p3=ps[Math.min(ps.length-1,i+2)];
+      d+='C'+(p1.x+(p2.x-p0.x)/6).toFixed(1)+','+(p1.y+(p2.y-p0.y)/6).toFixed(1)+' '+(p2.x-(p3.x-p1.x)/6).toFixed(1)+','+(p2.y-(p3.y-p1.y)/6).toFixed(1)+' '+p2.x.toFixed(1)+','+p2.y.toFixed(1);
+    }
+    return d;
+  };
+  const area=ps=>{const q=crv(ps),l=ps[ps.length-1],f=ps[0];return q+' L'+l.x.toFixed(1)+','+(PT2+PH2).toFixed(1)+' L'+f.x.toFixed(1)+','+(PT2+PH2).toFixed(1)+' Z';};
   const hp=pts(hist),sp=pts(sim);
-  const grid=[0,25,50,75,100].map(v=>`<line x1="${pl}" y1="${toY(v)}" x2="${W-pr}" y2="${toY(v)}"/><text x="${pl-8}" y="${toY(v)+3}">${v}%</text>`).join('');
-  const ticks=[0,7,14,21,30].map(i=>`<text class="tick" x="${toX(i)}" y="${H-6}">${i+1}日</text>`).join('');
-  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${id} 历史和仿真使用率曲线"><defs><linearGradient id="sim-${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2f5d91" stop-opacity=".16"/><stop offset="1" stop-color="#2f5d91" stop-opacity="0"/></linearGradient></defs><g class="grid">${grid}${ticks}</g><path class="area hist" d="${area(hp)}"/><path class="line hist" d="${path(hp)}"/><path class="area sim" d="${area(sp)}" fill="url(#sim-${id})"/><path class="line sim" d="${path(sp)}"/><circle cx="${sp[30].x}" cy="${sp[30].y}" r="4"/></svg>`;
+  let g,s='';
+  for(g=0;g<=4;g++){const gy=PT2+(1-g/4)*PH2;s+='<line x1="'+P2+'" y1="'+gy+'" x2="'+(W2-PR2)+'" y2="'+gy+'" stroke="#e5eaf1" stroke-width="1"/><text x="'+(P2-4)+'" y="'+(gy+3)+'" text-anchor="end" font-size="7" fill="#9098a7">'+(g*25)+'%</text>';}
+  const ticks=unit==='hour'?[[0,'0时'],[6,'6时'],[12,'12时'],[18,'18时'],[23,'24时']]:[[0,'1日'],[8,'8日'],[15,'15日'],[22,'22日'],[30,'31日']];
+  for(g=0;g<ticks.length;g++)s+='<text x="'+(P2+ticks[g][0]*st)+'" y="'+(H2-5)+'" text-anchor="middle" font-size="7" fill="#9098a7">'+ticks[g][1]+'</text>';
+  s+='<path d="'+area(hp)+'" fill="rgba(47,93,145,0.08)" stroke="none"/>';
+  s+='<path d="'+crv(hp)+'" fill="none" stroke="#2f5d91" stroke-width="1.6"/>';
+  s+='<path d="'+crv(sp)+'" fill="none" stroke="#8ca1bd" stroke-width="1.4" stroke-dasharray="4,3"/>';
+  return 'data:image/svg+xml;charset=utf-8,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 '+W2+' '+H2+'">'+s+'</svg>');
 }
-function simConclusion(target,type,spec,nodes,flow,sim){return `使用 ${type} / ${spec}，机器数量 ${nodes} 台、业务流量 +${flow}%：CPU 使用率峰值约 ${sim.cpuPeak}%，均值约 ${sim.cpuAvg}%；内存峰值约 ${sim.memPeak}%，均值约 ${sim.memAvg}%；${target.key==='greatdb'?'磁盘':'资源水位'}峰值约 ${sim.diskPeak}%，均值约 ${sim.diskAvg}%。${target.decision}`}
+function wzRenderReport(){
+  const a=wzApp,d=document.getElementById('report');
+  if(!a){toast('尚未加载申请单','请回到第 1 步先加载一条 ITSM 申请单。');wzGo(1);return;}
+  const pv=wzReadParams();
+  const repMods=a.type==='改造'?wzModules.slice():a.equip.map(e=>e.name);
+  const isNew=a.type==='新增';
+  let modularow='',shotHTML='';
+  repMods.forEach((m,k)=>{
+    const hc=wzHistForIdx(k,'cpu'),hm=wzHistForIdx(k,'mem'),hd=wzHistForIdx(k,'disk');
+    const sc=wzSimCurve(hc,pv.cpu,pv.count,WZ_SLIDER.cpu.max),sm=wzSimCurve(hm,pv.mem,pv.count,WZ_SLIDER.mem.max),sd=wzSimCurve(hd,pv.disk,pv.count,WZ_SLIDER.disk.max);
+    const histCell=isNew?'<span style="color:#9098a7;">—</span>':(wzMaxOf(hc)+'% / '+wzMaxOf(hm)+'%');
+    modularow+='<tr><td>'+m+'</td><td>'+histCell+'</td><td>'+wzMaxOf(sc)+'% / '+wzMaxOf(sm)+'%</td></tr>';
+    shotHTML+='<div class="mod-shot"><div class="ms-title">'+m+' · 仿真结果截图</div><div class="ms-charts">'+
+      '<div class="ms-item"><div class="ms-cap">CPU使用率 · 近24小时</div><img src="'+wzChartSnapURL(hc,sc,'hour')+'"></div>'+
+      '<div class="ms-item"><div class="ms-cap">内存使用率 · 近24小时</div><img src="'+wzChartSnapURL(hm,sm,'hour')+'"></div>'+
+      '<div class="ms-item"><div class="ms-cap">磁盘使用率 · 近一个月</div><img src="'+wzChartSnapURL(hd,sd,'day')+'"></div>'+
+      '</div></div>';
+  });
+  const newNote=isNew?'<div class="r-note" style="margin-top:8px;">注：新增扩容不涉及历史数据，仿真依据通用标准进行仿真。</div>':'';
+  const shotSec=shotHTML?('<div class="r-sec">三、模块仿真结果截图</div>'+shotHTML):'';
+  const confSec=shotHTML?'<div class="r-sec">四、配置确认</div>':'<div class="r-sec">三、配置确认</div>';
+  let confRow='';
+  repMods.forEach(m=>{
+    const r=wzRecs[m]||{};
+    const c=(r.cpu!=null)?r.cpu:pv.cpu;
+    const mm=(r.mem!=null)?r.mem:pv.mem;
+    const dd=(r.disk!=null)?r.disk:pv.disk;
+    const cc=(r.count!=null)?r.count:pv.count;
+    const tt=r.type||document.getElementById('pType').value;
+    confRow+='<tr><td>'+m+'</td><td>'+tt+'</td><td>'+c+' 核 / '+mm+' GB / '+dd+' GB</td><td>'+cc+' 台</td></tr>';
+  });
+  d.innerHTML=
+    '<h3>容量方案 · 审核报告</h3>'+
+    '<div class="r-meta">报告编号：AUDIT-'+a.system+'-0821　|　生成时间：2026/08/12　|　生成人：容量 Agent</div>'+
+    '<div class="r-sec">一、申请单信息</div>'+
+    '<div class="r-grid">'+
+    '<div class="kv"><span class="k">申请单号</span><span class="v">'+wzNo+'</span></div>'+
+    '<div class="kv"><span class="k">申请场景</span><span class="v">'+a.scenario+'</span></div>'+
+    '<div class="kv full"><span class="k">标题</span><span class="v">'+a.title+'</span></div>'+
+    '<div class="kv full"><span class="k">申请原因</span><span class="v">'+a.reason+'</span></div>'+
+    '<div class="kv"><span class="k">支撑业务</span><span class="v">'+a.business+'</span></div>'+
+    '<div class="kv"><span class="k">系统名称</span><span class="v">'+a.system+'</span></div>'+
+    '<div class="kv full"><span class="k">设备清单</span><span class="v">'+wzEquipSummary()+'</span></div>'+
+    '</div>'+
+    '<div class="r-sec">二、涉及模块（历史数据源）</div>'+
+    '<table class="r-table"><tr><th>模块名称</th><th>历史峰值（CPU/内存）</th><th>仿真峰值（CPU/内存）</th></tr>'+modularow+'</table>'+newNote+
+    shotSec+confSec+
+    '<table class="r-table"><tr><th>组件/模块</th><th>机器类型</th><th>机器规格</th><th>机器数量</th></tr>'+confRow+'</table>'+
+    '<div class="r-note">结论：按当前设备清单与历史负载仿真并调整参数后，各组件所需机器规格与数量已确认（见上表），可满足业务需求并预留合理余量。</div>'+
+    '<div class="r-sign"><span>申请人：杨帆</span><span>审核人：____________</span><span>审批：____________</span></div>';
+}
+
+/* ---------- 向导交互监听 ---------- */
+document.addEventListener('click',e=>{
+  if(!e.target.closest('#main'))return;
+  if(document.getElementById('appContent')&&!e.target.closest('.cascader')){
+    document.querySelectorAll('#appContent .casc-panel').forEach(p=>p.hidden=true);
+  }
+  if(!document.getElementById('step1'))return;
+  const step=e.target.closest('.wz-stepper .step');
+  if(step){
+    const d=parseInt(step.getAttribute('data-step'),10);
+    if(d===wzStep)return;
+    if(d<wzStep){wzGo(d);return;}
+    if(!wzApp){toast('请先完成第 1 步','需要先加载一条 ITSM 申请单才能进入仿真。');return;}
+    if(d===2&&wzApp.type==='改造'&&wzModules.length===0){toast('请先选择涉及模块','在设备清单中为每个组件选择涉及模块。');return;}
+    wzGo(d);return;
+  }
+  const modTab=e.target.closest('[data-mod-i]');
+  if(modTab){
+    wzActiveMod=parseInt(modTab.getAttribute('data-mod-i'),10);
+    wzRenderTabs();wzSetupSliders();wzUpdateParamUI();wzRenderSimCharts();
+    return;
+  }
+  const id=e.target.id;
+  if(id==='btnLoad'){wzLoadApp();return;}
+  if(id==='btnResetApp'){wzResetApp();return;}
+  if(id==='btnNext1'){
+    if(!wzApp)return;
+    if(wzApp.type==='改造'&&wzModules.length===0){toast('请至少选择 1 个涉及模块','多级菜单逐级选到具体实例即可计入。');return;}
+    wzGo(2);return;
+  }
+  if(id==='btnPrev1'){wzGo(1);return;}
+  if(id==='btnNext2'){
+    if(wzModules.length&&!wzModules.every(m=>!!wzAdopted[m])){
+      const left=wzModules.filter(m=>!wzAdopted[m]);
+      toast('还有模块未采用方案',left.join('、')+'。请切换到对应模块标签并点击「采用此方案」（标签变蓝 ✓）。');
+      return;
+    }
+    const rb=document.getElementById('riskBox');
+    if(rb&&rb.classList.contains('r-high'))toast('高风险提醒','当前为高风险方案，建议增大机器规格或增加机器数量后再归档。');
+    wzGo(3);return;
+  }
+  if(id==='btnPrev2'){wzGo(2);return;}
+  if(id==='btnSim'){wzRunSim();return;}
+  if(id==='btnSimReset'){
+    const r=wzComputeRecParams();
+    document.getElementById('pCpu').value=r.cpu;
+    document.getElementById('pMem').value=r.mem;
+    document.getElementById('pDisk').value=r.disk;
+    document.getElementById('pCount').value=r.count;
+    wzUpdateParamUI();wzRenderSimCharts();
+    toast('已重置为推荐参数','依据该模块历史负载重新给出规格建议。');
+    return;
+  }
+  if(id==='btnAdopt'){wzAdoptCurrent();return;}
+  if(id==='btnPrint'){window.print();return;}
+  if(id==='btnRestart'){
+    if(!confirm('审核通过后方案将归档，并重新开始新的容量方案，确定通过？'))return;
+    wzApp=null;wzNo='';wzModules=[];wzAdopted={};wzSimRun={};
+    document.getElementById('appSel').value='';
+    document.getElementById('appContent').innerHTML='';
+    document.getElementById('btnNext1').disabled=true;
+    wzGo(1);
+    toast('审核通过','方案已归档（演示环境不会触发真实生产变更）。');
+    return;
+  }
+});
+document.addEventListener('input',e=>{
+  const ids=['pCpu','pMem','pDisk','pCount'];
+  if(ids.includes(e.target.id)){
+    const cfg=e.target.id==='pCpu'?WZ_SLIDER.cpu:(e.target.id==='pMem'?WZ_SLIDER.mem:(e.target.id==='pDisk'?WZ_SLIDER.disk:WZ_SLIDER.count));
+    wzUpdateRail(e.target,e.target.id+'Rail',cfg.min,cfg.max);
+    wzUpdateParamUI();wzRenderSimCharts();
+  }
+});
+document.addEventListener('change',e=>{
+  if(e.target.id==='pType'&&document.getElementById('step2')){
+    wzUpdateParamUI();wzRenderSimCharts();
+  }
+});
 
 function renderAdmission(){
   main.innerHTML=header('容量准入评估','增量容量准入','AI 提出资源方案，人负责关键决策；静态演示不会提交真实申请',`<button class="btn">历史评估</button><button class="btn acid" data-review>重新评估</button>`)+`
@@ -460,11 +971,9 @@ function renderWorkline(){
   pet.classList.add('speaking');
 }
 function activeWorkJob(){
-  if(state.page==='simulate'){
-    const target=simTargets[state.simTarget]||simTargets.redis;
-    const newNodes=Math.min(target.maxNodes,Math.max(target.minNodes,state.simNodes||target.defaultNodes));
-    const sim=simulateCapacity(target,newNodes,state.simLoad,state.simSpec||target.spec);
-    return {phase:`模拟${target.mode}方案`,scope:target.object,target:`${target.component} · ${state.simSpec||target.spec}`,kind:'方案仿真',signal:`${newNodes} 台 · 业务增长 +${state.simLoad}% · CPU ${sim.cpuPeak}% / MEM ${sim.memPeak}%`,next:'刷新仿真曲线'};
+  if(state.page==='simulate'&&wzApp){
+    const stage=wzStep===3?'生成审核报告':(wzStep===2?'仿真参数调整':'申请单解析');
+    return {phase:'容量方案 · '+stage,scope:wzApp.system+' / 方案模拟',target:wzNo,kind:'方案模拟',signal:(wzModules.length?wzModules.join(' / '):'未选择模块')+' · '+(Object.keys(wzAdopted).length)+'/'+(wzModules.length||0)+' 模块已采用',next:wzStep===3?'生成审核报告':'调整参数并仿真'};
   }
   return autonomousJobs[state.work%autonomousJobs.length];
 }
@@ -583,25 +1092,18 @@ document.addEventListener('click',e=>{
   const follow=e.target.closest('[data-open-followup]');if(follow){openFollowup(follow.dataset.openFollowup);return}
   const tab=e.target.closest('[data-agent-tab]');if(tab){state.agentTab=tab.dataset.agentTab;renderDrawer();return}
   const prompt=e.target.closest('[data-prompt]');if(prompt){agentInput.value=prompt.dataset.prompt;agentInput.focus();return}
-  const simTarget=e.target.closest('[data-sim-target]');if(simTarget){state.simTarget=simTarget.dataset.simTarget;const target=simTargets[state.simTarget]||simTargets.redis;state.simNodes=target.defaultNodes;state.simSpec=target.spec;renderSimulator();renderWorkline();return}
-  if(e.target.closest('[data-run-sim]')){toast('仿真已刷新','已按当前机器规格、节点数和业务流量重新计算三项资源曲线。');renderSimulator();return}
   if(e.target.closest('[data-create-task]')){toast('已生成静态演示任务','CAP-1848 已进入"待 SRE 审批"，不会触发真实生产变更。');return}
   if(e.target.closest('[data-create-workorder]')){toast('已准备治理工单','演示环境不会真实提单，请在生产流程中完成变更单创建。');return}
   if(e.target.closest('[data-review]')){toast('Capacity Agent 已完成评估','已结合历史趋势、同类对标与安全余量，建议新增 4 台。');return}
-  if(e.target.closest('[data-reset-sim]')){const target=simTargets[state.simTarget]||simTargets.redis;state.simNodes=target.defaultNodes;state.simLoad=20;state.simType='物理机';state.simSpec=target.spec;renderSimulator();renderWorkline();return}
   if(e.target.closest('[data-verify]')){toast('效果验证正常','Redis 缩容后连续 3 天处于安全水位，将继续观察至第 7 天。');return}
 });
 
 document.addEventListener('input',e=>{
   if(e.target.id==='system-select'){state.selectedSystemId=e.target.value;render()}
-  if(e.target.id==='node-range'){state.simNodes=Number(e.target.value);renderSimulator();renderWorkline()}
-  if(e.target.id==='load-range'){state.simLoad=Number(e.target.value);renderSimulator();renderWorkline()}
 });
 
 document.addEventListener('change',e=>{
   if(e.target.id==='system-select'){state.selectedSystemId=e.target.value;render()}
-  if(e.target.id==='sim-type'){state.simType=e.target.value;renderSimulator();renderWorkline()}
-  if(e.target.id==='sim-spec'){state.simSpec=e.target.value;renderSimulator();renderWorkline()}
 });
 document.querySelector('#agent-form').addEventListener('submit',e=>{e.preventDefault();const text=agentInput.value.trim();if(!text)return;messages.push({time:'刚刚',title:'收到，我已经调整工作上下文',body:`你的要求"${text}"已进入当前计划。我会先验证相关数据和安全约束，再主动汇报结论。`,tone:'user'});agentInput.value='';state.agentTab='log';renderDrawer();drawerContent.scrollTop=drawerContent.scrollHeight;toast('分析方向已更新','Agent 会继续自主工作，并在有结论时主动通知你。')});
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeOverlays()});

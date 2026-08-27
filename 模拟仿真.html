@@ -1,0 +1,993 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>方案模拟</title>
+<style>
+  :root{
+    --bg:#f4f4f1; --card:#ffffff; --border:#e7e7e2; --border2:#efefec;
+    --text:#1c2420; --muted:#7c857f; --muted2:#a2a8a3;
+    --green:#0d7350; --green-deep:#0e7a52; --green-soft:#e6f4ee; --green-line:#c6e6d6;
+    --amber-bg:#f8f3e4; --amber-border:#e8dcba; --amber-text:#7a6a3a;
+    --shadow:0 1px 2px rgba(20,25,22,.04), 0 3px 12px rgba(20,25,22,.05);
+    --radius:16px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html,body{height:100%;}
+  body{font-family:-apple-system,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+    background:var(--bg);color:var(--text);font-size:13px;line-height:1.5;-webkit-font-smoothing:antialiased;}
+  button{font-family:inherit;cursor:pointer;}
+  a{color:inherit;text-decoration:none;}
+  .app{display:flex;height:100vh;}
+
+  .topbar{position:sticky;top:0;z-index:10;display:flex;align-items:center;justify-content:space-between;
+    height:52px;padding:0 26px;background:var(--card);border-bottom:1px solid var(--border);}
+  .topbar .brand{display:flex;align-items:center;gap:10px;font-weight:800;letter-spacing:.12em;}
+  .topbar .brand .mark{width:26px;height:26px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#4fd39f,#0d7350);}
+  .crumbs{font-size:13px;color:var(--muted);}
+  .crumbs b{color:var(--text);font-weight:600;margin-left:6px;}
+  .topbar-right{display:flex;align-items:center;gap:12px;}
+  .pill-chip{display:flex;align-items:center;gap:8px;background:#fafaf8;border:1px solid var(--border);border-radius:999px;padding:7px 13px;font-size:12px;}
+  .pill-chip .k{color:var(--muted);}
+  .pill-chip .v{font-weight:600;}
+  .user-chip{display:flex;align-items:center;gap:9px;}
+  .avatar{width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#f2d3a0,#d9a86b);display:flex;align-items:center;justify-content:center;font-weight:700;color:#fff;font-size:12px;}
+  .user-chip .mi{font-size:12.5px;font-weight:600;line-height:1.1;}
+  .user-chip .mn{font-size:10.5px;color:var(--muted);}
+
+  .aside{width:212px;flex-shrink:0;background:#fbfbfa;border-right:1px solid var(--border);
+    display:flex;flex-direction:column;padding:20px 14px 18px;gap:20px;overflow-y:auto;}
+  .aside-label{font-size:10px;letter-spacing:.16em;color:var(--muted2);padding:0 8px;font-weight:700;}
+  .nav{display:flex;flex-direction:column;gap:3px;}
+  .nav-item{display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:10px;color:#4a534d;font-size:13px;font-weight:500;position:relative;}
+  .nav-item svg{width:17px;height:17px;stroke:#8a928c;flex-shrink:0;}
+  .nav-item .badge{margin-left:auto;background:#ececea;color:#7c857f;font-size:11px;padding:0 7px;border-radius:8px;line-height:18px;}
+  .nav-item:hover{background:#f1f1ee;}
+  .nav-item.active{background:var(--green-soft);color:var(--green);font-weight:600;}
+  .nav-item.active svg{stroke:var(--green);}
+  .nav-item.active::before{content:"";position:absolute;left:-14px;top:8px;bottom:8px;width:3px;border-radius:3px;background:var(--green);}
+  .aside .grow{flex:1;}
+  .watch-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:11px 13px;box-shadow:var(--shadow);}
+  .watch-card .s1{display:flex;align-items:center;gap:8px;font-weight:700;font-size:12.5px;}
+  .dot{width:8px;height:8px;border-radius:50%;background:#22c07a;box-shadow:0 0 0 3px rgba(34,192,122,.18);}
+  .watch-card .s2{color:var(--muted);font-size:11.5px;margin-top:6px;}
+  .back-link{display:flex;align-items:center;gap:7px;color:var(--muted);font-size:12px;padding:2px 8px;}
+  .back-link:hover{color:var(--green);}
+
+  .main{flex:1;display:flex;flex-direction:column;overflow-y:auto;}
+  .content{width:100%;max-width:1360px;margin:0 auto;padding:18px 28px 40px;}
+
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;border-radius:10px;font-size:13px;font-weight:600;border:1px solid transparent;padding:9px 18px;transition:.15s;}
+  .btn-ghost{background:var(--card);border-color:var(--border);color:var(--text);}
+  .btn-ghost:hover{border-color:#dcdcd6;background:#fafaf8;}
+  .btn-primary{background:var(--green);color:#fff;box-shadow:0 1px 3px rgba(13,115,80,.25);}
+  .btn-primary:hover{background:var(--green-deep);}
+  .btn-primary:disabled{background:#b6ccC0;cursor:not-allowed;box-shadow:none;}
+  .btn-block{width:100%;}
+
+  .card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);}
+  .panel{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);padding:18px 22px;}
+  .panel-head{display:flex;align-items:baseline;gap:10px;padding-bottom:16px;border-bottom:1px solid var(--border2);margin-bottom:20px;}
+  .panel-head .en{font-size:10.5px;letter-spacing:.14em;color:var(--green);font-weight:700;}
+  .panel-head .zh{font-size:16px;font-weight:750;}
+
+  /* Steps */
+  .stepper{display:flex;align-items:center;background:var(--card);border:1px solid var(--border);border-radius:14px;
+    padding:14px 22px;box-shadow:var(--shadow);margin-bottom:18px;}
+  .step{display:flex;align-items:center;gap:11px;cursor:pointer;}
+  .step .num{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;
+    font-size:13px;background:#ececea;color:var(--muted);border:1px solid var(--border);}
+  .step.active .num{background:var(--green);color:#fff;border-color:var(--green);}
+  .step.done .num{background:var(--green-soft);color:var(--green);border-color:var(--green-line);}
+  .step .lbl{display:flex;flex-direction:column;line-height:1.25;}
+  .step .lbl b{font-size:13.5px;font-weight:700;}
+  .step .lbl small{font-size:11px;color:var(--muted);}
+  .step.active .lbl b{color:var(--green);}
+  .step.done .lbl b{color:var(--text);}
+  .connector{flex:1;height:2px;background:var(--border);margin:0 16px;}
+  .connector.done{background:var(--green-line);}
+
+  .fld{display:flex;flex-direction:column;gap:6px;}
+  .fld label{font-size:12px;color:var(--muted);}
+  .select{position:relative;}
+  .select select{-webkit-appearance:none;appearance:none;width:100%;height:36px;border:1px solid var(--border);border-radius:10px;
+    background:#fff;padding:0 30px 0 12px;font-size:12.5px;color:var(--text);outline:none;cursor:pointer;font-family:inherit;}
+  .select select:focus{border-color:var(--green-line);box-shadow:0 0 0 3px rgba(13,115,80,.08);}
+  .select::after{content:"▾";position:absolute;right:11px;top:50%;transform:translateY(-50%);color:var(--muted2);font-size:11px;pointer-events:none;}
+
+  .hero{display:flex;align-items:flex-end;gap:14px;flex-wrap:wrap;margin-bottom:18px;}
+  .hero .fld{width:300px;}
+  .foot-actions{display:flex;gap:10px;justify-content:flex-end;padding-top:16px;border-top:1px solid var(--border2);margin-top:20px;}
+  .foot-actions .spacer{flex:1;}
+
+  .detail{background:#f7f7f4;border:1px solid var(--border2);border-radius:12px;padding:16px 18px;margin-bottom:18px;}
+  .detail .d-title{font-weight:700;font-size:13.5px;margin-bottom:12px;display:flex;align-items:center;gap:8px;}
+  .detail .d-title .tag{font-size:10.5px;color:#fff;background:var(--green);border-radius:5px;padding:2px 8px;font-weight:600;}
+  .detail .d-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px 22px;}
+  .detail .kv{font-size:12.5px;}
+  .detail .kv .k{color:var(--muted);margin-right:6px;}
+  .detail .kv .v{font-weight:600;color:var(--text);}
+  .detail .kv.full{grid-column:1/-1;}
+
+  .sec-title{font-size:14px;font-weight:700;margin-bottom:10px;}
+  .module-note{font-size:12px;color:var(--amber-text);background:var(--amber-bg);border:1px solid var(--amber-border);
+    border-radius:9px;padding:9px 12px;margin-bottom:12px;line-height:1.6;}
+  .module-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:10px;}
+  .mod-opt{display:flex;align-items:center;gap:9px;border:1px solid var(--border);border-radius:10px;padding:11px 13px;cursor:pointer;
+    font-size:12.5px;transition:.15s;background:#fff;user-select:none;}
+  .mod-opt:hover{border-color:var(--green-line);}
+  .mod-opt .box{width:18px;height:18px;border-radius:5px;border:1.5px solid #c9cdc9;flex-shrink:0;display:flex;align-items:center;justify-content:center;color:#fff;font-size:11px;}
+  .mod-opt.on{border-color:var(--green);background:var(--green-soft);}
+  .mod-opt.on .box{background:var(--green);border-color:var(--green);}
+  .mod-opt .m-note{color:var(--muted2);font-size:11px;margin-left:auto;}
+  .sel-count{color:var(--green);font-weight:600;font-size:12px;margin-left:8px;}
+
+  /* Step 2 */
+  .s2-grid{display:grid;grid-template-columns:1.25fr 1fr;gap:18px;align-items:start;}
+  @media(max-width:1000px){.s2-grid{grid-template-columns:1fr;}}
+  .sub{background:#fff;border:1px solid var(--border);border-radius:12px;padding:15px 17px;}
+  .sub .sub-title{font-size:13px;font-weight:700;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;}
+  .sub .sub-title .lg{display:flex;gap:14px;font-size:11px;color:var(--muted);font-weight:500;}
+  .sub .sub-title .lg i{display:inline-block;width:14px;height:3px;border-radius:2px;margin-right:5px;vertical-align:middle;}
+  .sub .sub-title .lg .c i{background:var(--green);}
+  .sub .sub-title .lg .m i{background:#9aa09b;}
+  .chart{position:relative;height:180px;}
+  .chart svg{width:100%;height:100%;display:block;}
+  .tip{position:absolute;pointer-events:none;background:#1c2420;color:#fff;font-size:11px;padding:5px 8px;border-radius:6px;transform:translate(-50%,-120%);white-space:nowrap;opacity:0;transition:opacity .1s;z-index:3;}
+  .tip .date{color:#9fb0a8;margin-right:6px;}
+  .mod-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;}
+  .mod-chips span{font-size:11px;background:var(--green-soft);color:var(--green);border:1px solid var(--green-line);border-radius:6px;padding:2px 8px;}
+
+  .cfg-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;font-size:12.5px;color:#4a534d;font-weight:600;}
+  .cfg-row .val{color:var(--muted);font-weight:500;}
+  .cfg-row .val b{color:var(--green);font-weight:700;}
+  .cfg-row .rec{font-size:11px;color:var(--muted2);font-weight:500;}
+  .range{position:relative;height:24px;display:flex;align-items:center;margin-bottom:16px;}
+  .range input[type=range]{width:100%;height:5px;background:#e3e3dd;border-radius:5px;outline:none;-webkit-appearance:none;appearance:none;}
+  .range input[type=range]::-webkit-slider-thumb{width:19px;height:19px;border-radius:50%;background:#fff;border:2px solid var(--green);box-shadow:0 1px 3px rgba(0,0,0,.18);-webkit-appearance:none;margin-top:-7px;cursor:pointer;}
+  .range input[type=range]::-moz-range-thumb{width:17px;height:17px;border-radius:50%;background:#fff;border:2px solid var(--green);box-shadow:0 1px 3px rgba(0,0,0,.18);cursor:pointer;}
+  .range .rail{position:absolute;left:0;top:50%;transform:translateY(-50%);height:5px;border-radius:5px;background:var(--green);pointer-events:none;}
+  .rec-box{background:var(--green-soft);border:1px solid var(--green-line);border-radius:11px;padding:12px 14px;margin-bottom:16px;}
+  .rec-box .r-title{font-size:11px;color:var(--green);font-weight:700;letter-spacing:.05em;margin-bottom:8px;}
+  .rec-box .r-val{font-size:22px;font-weight:800;color:var(--green);}
+  .rec-box .r-val small{font-size:12px;font-weight:600;color:#5a8070;}
+  .rec-box .r-sub{font-size:11.5px;color:var(--muted);margin-top:4px;}
+
+  /* Step 3 report */
+  .report{background:#fdfdfc;border:1px solid var(--border2);border-radius:12px;padding:22px 24px;}
+  .report h3{font-size:16px;font-weight:800;margin-bottom:4px;}
+  .report .r-meta{color:var(--muted);font-size:11.5px;margin-bottom:18px;}
+  .report .r-sec{font-size:12.5px;font-weight:700;color:var(--green);border-left:3px solid var(--green);padding-left:9px;margin:16px 0 10px;}
+  .report .r-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px 24px;font-size:12.5px;}
+  .report .r-grid.full{grid-template-columns:1fr;}
+  .report .kv .k{color:var(--muted);margin-right:6px;}
+  .report .kv .v{font-weight:600;}
+  .report .r-table{width:100%;border-collapse:collapse;font-size:12px;margin-top:6px;}
+  .report .r-table th,.report .r-table td{border:1px solid var(--border);padding:7px 10px;text-align:left;}
+  .report .r-table th{background:#f3f3f0;font-weight:700;}
+  .report .r-note{background:var(--amber-bg);border:1px solid var(--amber-border);color:var(--amber-text);border-radius:9px;padding:9px 12px;font-size:12px;margin-top:12px;}
+  .report .r-sign{display:flex;justify-content:space-between;margin-top:20px;font-size:12px;color:var(--muted);}
+  .mod-shot{border:1px solid var(--border2);border-radius:10px;padding:12px 14px;margin-top:10px;background:#fbfbf9;}
+  .mod-shot .ms-title{font-size:12.5px;font-weight:700;color:var(--green);margin-bottom:10px;}
+  .mod-shot .ms-charts{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;}
+  @media(max-width:900px){.mod-shot .ms-charts{grid-template-columns:1fr;}}
+  .mod-shot .ms-item{border:1px solid var(--border);border-radius:8px;padding:8px;background:#fff;}
+  .mod-shot .ms-cap{font-size:11px;color:var(--muted);text-align:center;margin-bottom:6px;}
+  .mod-shot .ms-item img{width:100%;height:auto;display:block;}
+  /* 仿真环节 */
+  .sim-grid{display:grid;grid-template-columns:2.5fr 1fr;gap:16px;align-items:start;}
+  @media(max-width:1000px){.sim-grid{grid-template-columns:1fr;}}
+  .sim-charts{position:relative;display:flex;flex-direction:column;gap:10px;}
+  .sim-loading{position:absolute;inset:0;z-index:6;background:rgba(255,255,255,.93);border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;}
+  .sim-loading[hidden]{display:none;}
+  .sim-loading .spinner{width:36px;height:36px;border-radius:50%;border:3px solid var(--green-line);border-top-color:var(--green);animation:spin .8s linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+  .sim-loading .txt{font-size:13.5px;font-weight:700;color:var(--green);}
+  .sim-loading .sub{font-size:11.5px;color:var(--muted);}
+  .chart-card{background:#fff;border:1px solid var(--border);border-radius:12px;padding:10px 15px 6px;}
+  .chart-card .ch-head{display:flex;align-items:center;gap:12px;margin-bottom:6px;}
+  .chart-card .ch-head .t{font-size:13.5px;font-weight:700;}
+  .chart-card .ch-head .unit{font-size:11px;color:var(--muted);background:#f3f3f0;border-radius:5px;padding:1px 8px;font-weight:500;}
+  .mod-tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;}
+  .mod-tab{display:flex;align-items:center;gap:7px;border:1px solid var(--border);border-radius:9px;padding:7px 14px;font-size:12.5px;font-weight:600;color:#9aa09b;cursor:pointer;background:#f6f6f3;transition:.15s;}
+  .mod-tab:hover{border-color:var(--green-line);color:#4a534d;}
+  .mod-tab.adopted{background:var(--green-soft);border-color:var(--green-line);color:var(--green);}
+  .mod-tab .ck{font-size:11px;font-weight:700;color:var(--green);}
+  .mod-tab .idx{font-size:10.5px;color:var(--muted2);}
+  .mod-tab.adopted .idx{color:var(--green);}
+  .mod-tab.active{background:var(--green);border-color:var(--green);color:#fff;box-shadow:0 1px 3px rgba(13,115,80,.3);}
+  .mod-tab.active .idx{color:#e4f7ee;}
+  .mod-tab.active .ck{color:#fff;}
+  .tab-hint{font-size:11px;color:var(--muted);margin-left:auto;align-self:center;white-space:nowrap;}
+  .tab-hint.ok{color:var(--green);font-weight:600;}
+  .chart-card .ch-head .lg{display:flex;gap:14px;font-size:11px;color:var(--muted);margin-left:auto;}
+  .chart-card .ch-head .lg i{display:inline-block;width:14px;height:3px;border-radius:2px;margin-right:5px;vertical-align:middle;}
+  .chart-card .ch-head .lg .h i{background:var(--green);}
+  .chart-card .ch-head .lg .s i{background:#9aa09b;}
+  .chart-card .ch-head .peak{font-size:12px;font-weight:700;color:var(--green);}
+  .chart2{position:relative;height:170px;}
+  .chart2 svg{width:100%;height:100%;display:block;}
+  .sim-params{background:#fff;border:1px solid var(--border);border-radius:12px;padding:14px 16px;display:flex;flex-direction:column;gap:12px;}
+  .param-title{font-size:15px;font-weight:750;}
+  .param-grid{display:grid;grid-template-columns:1fr;gap:12px;}
+  .slider-block{width:100%;}
+  .slider-label{display:flex;align-items:center;justify-content:space-between;margin-bottom:7px;font-size:12.5px;color:#4a534d;font-weight:600;}
+  .slider-label .side{color:var(--muted);font-weight:500;}
+  .slider-label .side b{color:var(--green);font-weight:700;}
+  .range{position:relative;height:22px;display:flex;align-items:center;}
+  .range input[type=range]{width:100%;height:5px;background:#e3e3dd;border-radius:5px;outline:none;-webkit-appearance:none;appearance:none;}
+  .range input[type=range]::-webkit-slider-thumb{width:18px;height:18px;border-radius:50%;background:#fff;border:2px solid var(--green);box-shadow:0 1px 3px rgba(0,0,0,.18);-webkit-appearance:none;margin-top:-6px;cursor:pointer;}
+  .range input[type=range]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;background:#fff;border:2px solid var(--green);cursor:pointer;}
+  .range .rail{position:absolute;left:0;top:50%;transform:translateY(-50%);height:5px;border-radius:5px;background:var(--green);pointer-events:none;}
+  .range .mark{position:absolute;top:50%;transform:translate(-50%,-50%);width:9px;height:9px;border-radius:50%;background:#e8a13c;box-shadow:0 0 0 3px rgba(232,161,60,.22);pointer-events:none;z-index:2;}
+  .slider-label .rec{font-size:11px;color:var(--green);font-weight:600;margin-left:6px;}
+  .risk-box{border-radius:9px;padding:9px 12px;font-size:12px;line-height:1.6;border:1px solid;}
+  .risk-box.r-low{background:#eef7f2;border-color:#d5ecdf;color:#2e6b4f;}
+  .risk-box.r-mid{background:#f8f3e4;border-color:#e8dcba;color:#7a6a3a;}
+  .risk-box.r-high{background:#fbeae6;border-color:#eec8bd;color:#a04a34;}
+  .risk-box b{font-weight:700;}
+  @media print{
+    body{background:#fff;}
+    .aside,.topbar,.stepper,.foot-actions,.hero,.panel-head{display:none!important;}
+    .panel:not(#step3){display:none!important;}
+    .content{max-width:100%;padding:0;margin:0;}
+    .main{overflow:visible;display:block;}
+    .panel{box-shadow:none;border:none;padding:0;}
+    .report{box-shadow:none;border:none;padding:0;}
+  }
+  .param-actions{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;padding-top:6px;border-top:1px solid var(--border2);}
+  .param-actions .btn{flex:1;min-width:88px;}
+  .tip-box{background:#f8f3e4;border:1px solid #e8dcba;border-radius:10px;padding:11px 13px;font-size:12px;line-height:1.7;color:#7a6a3a;}
+  .tip-box b{color:#6a5a2c;font-weight:700;}
+  /* 申请单内容 & 设备清单 */
+  .sp-block{background:#fff;border:1px solid var(--border);border-radius:12px;padding:14px 18px;margin-bottom:16px;}
+  .sp-block .d-title{font-weight:700;font-size:13.5px;margin-bottom:12px;display:flex;align-items:center;gap:8px;}
+  .sp-block .d-title .tag{font-size:10.5px;color:#fff;background:var(--green);border-radius:5px;padding:2px 8px;font-weight:600;}
+  .app-rows{display:grid;grid-template-columns:1fr 1fr;gap:11px 22px;}
+  .ar{font-size:12.5px;color:var(--text);}
+  .ar .k{color:var(--muted);margin-right:7px;}
+  .ar .v{font-weight:600;}
+  .ar.right{grid-column:2;justify-self:end;text-align:right;}
+  .ar.full{grid-column:1/-1;}
+  .sec-title{font-size:14px;font-weight:700;}
+  .equip-list{border:1px solid var(--border);border-radius:10px;padding:0 16px;margin-top:12px;background:#fff;}
+  .equip-item{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:13px 0;border-bottom:1px solid var(--border2);}
+  .equip-item:last-child{border-bottom:none;}
+  .eq-info{flex:1;font-size:12.5px;color:var(--text);}
+  .eq-info .eq-idx{color:var(--muted);margin-right:4px;}
+  .eq-info .eq-name{font-weight:700;}
+  .eq-info .eq-spec{font-weight:600;color:#5a635d;}
+  .eq-mod{display:flex;align-items:center;gap:11px;flex-shrink:0;}
+  .mod-label{font-size:12px;color:var(--muted);}
+  .mod-check{display:flex;align-items:center;gap:8px;border:1px solid var(--border);border-radius:9px;padding:7px 11px;cursor:pointer;font-size:12px;font-weight:600;color:#4a534d;transition:.15s;background:#fff;}
+  .mod-check:hover{border-color:var(--green-line);}
+  .mod-check .box{width:16px;height:16px;border-radius:4px;border:1.5px solid #c9cdc9;display:flex;align-items:center;justify-content:center;color:#fff;font-size:11px;flex-shrink:0;}
+  .mod-check.on{border-color:var(--green);background:var(--green-soft);color:var(--green);}
+  .mod-check.on .box{background:var(--green);border-color:var(--green);}
+  .detail-link{font-size:11px;color:#4a6ae0;white-space:nowrap;}
+  .module-note{font-size:12px;color:var(--amber-text);background:var(--amber-bg);border:1px solid var(--amber-border);border-radius:9px;padding:9px 12px;margin-top:12px;line-height:1.6;}
+  .cascade{display:flex;align-items:center;gap:6px;}
+  .cascade select{height:32px;border:1px solid var(--border);border-radius:8px;background:#fff;padding:0 9px;font-size:12px;color:var(--text);outline:none;cursor:pointer;font-family:inherit;}
+  .cascade select:focus{border-color:var(--green-line);}
+  .cascade .carr{color:var(--muted2);font-size:13px;}
+  /* 多级菜单 cascader */
+  .cascader{position:relative;min-width:238px;}
+  .casc-trigger{display:flex;align-items:center;justify-content:space-between;gap:8px;border:1px solid var(--border);border-radius:9px;background:#fff;padding:8px 11px;font-size:12px;cursor:pointer;color:#4a534d;}
+  .casc-trigger:hover{border-color:var(--green-line);}
+  .casc-path{font-size:12px;color:var(--text);}
+  .casc-arrow{color:var(--muted2);font-size:9px;transform:rotate(180deg);}
+  .casc-panel{position:absolute;top:calc(100% + 6px);left:0;display:flex;gap:4px;background:#fff;border:1px solid var(--border);border-radius:11px;box-shadow:0 8px 28px rgba(0,0,0,.10);padding:8px;z-index:40;}
+  .casc-panel[hidden]{display:none;}
+  .casc-col{display:flex;flex-direction:column;min-width:124px;max-height:240px;overflow-y:auto;border-right:1px solid var(--border2);padding-right:6px;margin-right:4px;}
+  .casc-col:last-child{border-right:none;padding-right:0;margin-right:0;}
+  .casc-node{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:12px;color:#4a534d;padding:7px 9px;border-radius:7px;cursor:pointer;white-space:nowrap;}
+  .casc-node:hover{background:#f1f1ee;}
+  .casc-node.sel{background:var(--green-soft);color:var(--green);font-weight:600;}
+  .casc-node .carr{color:var(--muted2);font-size:11px;}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <aside class="aside">
+    <div class="aside-label">GOVERNANCE DESK</div>
+    <nav class="nav">
+      <a class="nav-item" href="#"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z"/></svg>治理总览</a>
+      <a class="nav-item" href="#"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 3v18M3 12h18"/></svg>系统洞察 <span class="badge">3</span></a>
+      <a class="nav-item" href="#"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M4 20V8M10 20V4M16 20v-8M22 20H2"/></svg>同类对标</a>
+      <a class="nav-item active" href="#"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M5 5h14v14H5zM5 12h14"/></svg>方案模拟</a>
+      <a class="nav-item" href="#"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M5 5h14v14H5zM5 12h14M12 5v14"/></svg>容量准入</a>
+      <a class="nav-item" href="#"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M4 6h16M4 12h16M4 18h10"/></svg>治理闭环 <span class="badge">3</span></a>
+    </nav>
+    <div class="grow"></div>
+    <div class="watch-card"><div class="s1"><span class="dot"></span>自主值守中</div><div class="s2">下次回放 明日 08:00</div></div>
+    <div class="back-link">← 返回旧版本</div>
+  </aside>
+
+  <div class="main">
+    <div class="topbar">
+      <div class="brand"><span class="mark"></span>CAPACITY</div>
+      <div class="crumbs">容量方案 <span>/</span><b>方案模拟</b></div>
+      <div class="topbar-right">
+        <div class="pill-chip"><span class="k">数据日期</span><span class="v">2026/08/12</span></div>
+        <div class="user-chip"><span class="avatar">杨</span><span><div class="mi">杨</div><div class="mn">计算与容量资源效率</div></span></div>
+      </div>
+    </div>
+
+    <div class="content">
+
+      <!-- 步骤条 -->
+      <div class="stepper">
+        <div class="step active" data-step="1"><div class="num">1</div><div class="lbl"><b>获取申请单</b><small>ITSM 申请单 &amp; 模块</small></div></div>
+        <div class="connector"></div>
+        <div class="step" data-step="2"><div class="num">2</div><div class="lbl"><b>方案仿真</b><small>仿真参数调整</small></div></div>
+        <div class="connector"></div>
+        <div class="step" data-step="3"><div class="num">3</div><div class="lbl"><b>审核报告</b><small>生成完整报告</small></div></div>
+      </div>
+
+      <!-- STEP 1 获取申请单 -->
+      <div class="panel" id="step1">
+        <div class="panel-head"><span class="en">STEP 1</span><span class="zh">获取 ITSM 申请单</span></div>
+        <div class="hero">
+          <div class="fld"><label>申请单号</label><div class="select"><select id="appSel">
+            <option value="">— 请选择申请单号 —</option>
+            <option value="ITSM-2026-0812-001">ITSM-2026-0812-001（A 系统信创改造）</option>
+            <option value="ITSM-2026-0813-002">ITSM-2026-0813-002（B 系统新增扩容）</option>
+          </select></div></div>
+          <button class="btn btn-primary" id="btnLoad">加载申请单</button>
+        </div>
+
+        <div id="appContent"></div>
+
+        <div class="foot-actions">
+          <button class="btn btn-ghost" id="btnResetApp">重置</button>
+          <div class="spacer"></div>
+          <button class="btn btn-primary" id="btnNext1" disabled>下一步：方案仿真</button>
+        </div>
+      </div>
+
+      <!-- STEP 2 方案仿真 -->
+      <div class="panel" id="step2" hidden>
+        <div class="panel-head"><span class="en">STEP 2</span><span class="zh">方案仿真 · 仿真参数调整</span></div>
+        <div class="mod-tabs" id="modTabs"></div>
+        <div class="sim-grid">
+          <div class="sim-charts">
+            <div class="chart-card">
+              <div class="ch-head"><span class="t">CPU使用率</span><span class="unit">近24小时</span><div class="lg"><span class="h"><i></i>历史数据</span><span class="s"><i></i>仿真数据</span></div><span class="peak" id="peakCpu"></span></div>
+              <div class="chart2" id="chartCpu"></div>
+            </div>
+            <div class="chart-card">
+              <div class="ch-head"><span class="t">内存使用率</span><span class="unit">近24小时</span><div class="lg"><span class="h"><i></i>历史数据</span><span class="s"><i></i>仿真数据</span></div><span class="peak" id="peakMem"></span></div>
+              <div class="chart2" id="chartMem"></div>
+            </div>
+            <div class="chart-card">
+              <div class="ch-head"><span class="t">磁盘使用率</span><span class="unit">近一个月</span><div class="lg"><span class="h"><i></i>历史数据</span><span class="s"><i></i>仿真数据</span></div><span class="peak" id="peakDisk"></span></div>
+              <div class="chart2" id="chartDisk"></div>
+            </div>
+            <div class="sim-loading" id="simLoading" hidden>
+              <div class="spinner"></div>
+              <div class="txt">AI 智能仿真模拟中…</div>
+              <div class="sub">正在基于历史数据与业务参数进行容量仿真推演，请稍候…</div>
+            </div>
+          </div>
+
+          <div class="sim-params">
+            <div class="param-title">仿真参数调整</div>
+            <div class="param-grid">
+              <div class="fld"><label>机器类型</label><div class="select"><select id="pType">
+                <option>物理机</option><option>虚拟机</option><option>容器</option></select></div></div>
+            </div>
+
+            <div class="slider-block">
+              <div class="slider-label"><span>机器CPU</span><span class="side"><span id="pCpuSide">最低：1　最高：4 核</span>　当前 <b id="pCpuVal">4</b><span class="rec" id="pCpuRec"></span></span></div>
+              <div class="range"><span class="rail" id="pCpuRail"></span><span class="mark" id="pCpuMark"></span><input type="range" id="pCpu" min="1" max="4" value="4"></div>
+            </div>
+            <div class="slider-block">
+              <div class="slider-label"><span>机器内存</span><span class="side"><span id="pMemSide">最低：1　最高：16 GB</span>　当前 <b id="pMemVal">16</b><span class="rec" id="pMemRec"></span></span></div>
+              <div class="range"><span class="rail" id="pMemRail"></span><span class="mark" id="pMemMark"></span><input type="range" id="pMem" min="1" max="16" value="16"></div>
+            </div>
+            <div class="slider-block">
+              <div class="slider-label"><span>机器磁盘</span><span class="side"><span id="pDiskSide">最低：10　最高：100 GB</span>　当前 <b id="pDiskVal">100</b><span class="rec" id="pDiskRec"></span></span></div>
+              <div class="range"><span class="rail" id="pDiskRail"></span><span class="mark" id="pDiskMark"></span><input type="range" id="pDisk" min="10" max="100" value="100"></div>
+            </div>
+            <div class="slider-block">
+              <div class="slider-label"><span>机器数量</span><span class="side"><span id="pCountSide">最低：1　最高：10 台</span>　当前 <b id="pCountVal">10</b><span class="rec" id="pCountRec"></span></span></div>
+              <div class="range"><span class="rail" id="pCountRail"></span><span class="mark" id="pCountMark"></span><input type="range" id="pCount" min="1" max="10" value="10"></div>
+            </div>
+
+            <div class="risk-box" id="riskBox">当前方案风险：<b>低风险</b></div>
+
+            <div class="tip-box">
+              <b>分析依据：</b><br>1、依据历史资源使用率与业务峰值波动，进行容量拟合；<br>2、结合系统规格与节点数量，测算目标水位。<br><span style="color:#8a7a4a;">任何方案变更均需人工审批。</span>
+            </div>
+
+            <div class="param-actions">
+              <button class="btn btn-primary" id="btnSim">仿真</button>
+              <button class="btn btn-ghost" id="btnSimReset">重置方案</button>
+              <button class="btn btn-primary" id="btnAdopt">采用此方案</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="foot-actions">
+          <button class="btn btn-ghost" id="btnPrev1">上一步</button>
+          <div class="spacer"></div>
+          <button class="btn btn-primary" id="btnNext2">下一步：生成审核报告</button>
+        </div>
+      </div>
+
+      <!-- STEP 3 审核报告 -->
+      <div class="panel" id="step3" hidden>
+        <div class="panel-head"><span class="en">STEP 3</span><span class="zh">生成审核报告</span></div>
+        <div class="report" id="report"></div>
+        <div class="foot-actions">
+          <button class="btn btn-ghost" id="btnPrev2">上一步</button>
+          <div class="spacer"></div>
+          <button class="btn btn-ghost" id="btnPrint">导出 / 打印</button>
+          <button class="btn btn-primary" id="btnRestart">审核通过</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  // ---------- 数据 ----------
+  var APPS = {
+    "ITSM-2026-0812-001":{
+      title:"A系统进行信创改造申请资源", reason:"A系统进行信创改造申请资源，需要10台虚拟机",
+      business:"支持用户信息的查询", scenario:"信创改造", system:"A系统", type:"改造",
+      equip:[
+        {name:"ES组件",count:"10台虚拟机",spec:"4C16G100G",comp:"es"},
+        {name:"MySQL",count:"3台虚拟机",spec:"4C16G100G",comp:"mysql"}
+      ]
+    },
+    "ITSM-2026-0813-002":{
+      title:"B系统新增扩容申请资源", reason:"B系统新增业务模块，需申请8台虚拟机",
+      business:"支持订单数据的查询与处理", scenario:"新增系统", system:"B系统", type:"新增",
+      equip:[
+        {name:"B系统-Web",count:"8台虚拟机",spec:"8C32G200G",comp:"es"}
+      ]
+    }
+  };
+  var OLD_MODULES = ["用户信息模块","订单处理模块","权限认证模块","缓存加速模块","报表分析模块","日志采集模块"];
+  var COMPONENTS = {"es":["es-001","es-002"],"hbase":["hbase-001","hbase-002"],"mysql":["mysql-001","mysql-002"]};
+  var MODULE_BASE = {
+    "es-001":{cpu:64,mem:62},"es-002":{cpu:60,mem:58},
+    "hbase-001":{cpu:66,mem:70},"hbase-002":{cpu:58,mem:62},
+    "mysql-001":{cpu:72,mem:75},"mysql-002":{cpu:68,mem:70},
+    "ES组件":{cpu:64,mem:62},
+    "MySQL":{cpu:72,mem:75},
+    "用户信息模块":{cpu:52,mem:58},
+    "订单处理模块":{cpu:70,mem:74},
+    "权限认证模块":{cpu:45,mem:40},
+    "缓存加速模块":{cpu:62,mem:66},
+    "报表分析模块":{cpu:48,mem:55},
+    "日志采集模块":{cpu:40,mem:48}
+  };
+  var HIST_PEAKS={"es-001":{cpu:30,mem:50,disk:60},"mysql-001":{cpu:10,mem:40,disk:50}};
+  var RECS={"es-001":{type:"虚拟机",cpu:2,mem:14,countMax:10,count:10},"mysql-001":{type:"虚拟机",cpu:2,mem:12,countMax:3,count:3}};
+
+  var currentApp=null, currentNo='', selectedModules=[], currentStep=1, activeModIdx=0, adoptedFlags={}, simRunFlags={};
+
+  // ---------- 曲线 ----------
+  function makeMod(base,seed){
+    var a=[];
+    for(var i=0;i<31;i++){
+      var w=Math.sin(i/2.6+seed)*7+Math.sin(i/1.4+2.5+seed)*4+Math.sin(i/5+0.5+seed)*5;
+      var v=base+w+(i/30)*5; v=Math.max(1,Math.min(96,v)); a.push(Math.round(v));
+    }
+    return a;
+  }
+  function scaleTo(arr,target){var mx=Math.max.apply(null,arr);if(!mx)return arr;return arr.map(function(v){return Math.max(1,Math.min(96,Math.round(v*target/mx)));});}
+  var W=840,H=170,PL=34,PR=8,PT=12,PB=24,PW=W-PL-PR,PH=H-PT-PB;
+  function pt(arr){var n=arr.length,step=PW/(n-1),pts=[];for(var i=0;i<n;i++){pts.push({x:PL+i*step,y:PT+(1-arr[i]/100)*PH});}return pts;}
+  function path(pts){
+    if(pts.length<2)return '';
+    var d='M'+pts[0].x.toFixed(1)+','+pts[0].y.toFixed(1);
+    for(var i=0;i<pts.length-1;i++){
+      var p0=pts[Math.max(0,i-1)],p1=pts[i],p2=pts[i+1],p3=pts[Math.min(pts.length-1,i+2)];
+      var cx=p1.x+(p2.x-p0.x)/6,cy=p1.y+(p2.y-p0.y)/6,cx2=p2.x-(p3.x-p1.x)/6,cy2=p2.y-(p3.y-p1.y)/6;
+      d+='C'+cx.toFixed(1)+','+cy.toFixed(1)+' '+cx2.toFixed(1)+','+cy2.toFixed(1)+' '+p2.x.toFixed(1)+','+p2.y.toFixed(1);
+    }
+    return d;
+  }
+  function areaPath(pts){var p=path(pts),last=pts[pts.length-1],first=pts[0];return p+' L'+last.x.toFixed(1)+','+(PT+PH).toFixed(1)+' L'+first.x.toFixed(1)+','+(PT+PH).toFixed(1)+' Z';}
+  function toX(i){return PL+i*(PW/30);}
+
+  function drawChart(id,cpu,mem){
+    var el=document.getElementById(id);
+    if(!cpu){el.innerHTML='<div style="color:#a2a8a3;font-size:12px;text-align:center;padding-top:70px;">加载申请单并选择模块后显示历史数据</div>';return;}
+    var hp=pt(cpu),mp=pt(mem),s='';
+    var g;
+    for(g=0;g<=4;g++){var gy=PT+(1-g/4)*PH;s+='<line x1="'+PL+'" y1="'+gy+'" x2="'+(W-PR)+'" y2="'+gy+'" stroke="#ededeb" stroke-width="1"/><text x="'+(PL-7)+'" y="'+(gy+3)+'" text-anchor="end" font-size="9" fill="#a2a8a3">'+(g*25)+'%</text>';}
+    var xt=[0,7,14,21,30];
+    for(g=0;g<xt.length;g++){s+='<text x="'+toX(xt[g])+'" y="'+(H-6)+'" text-anchor="middle" font-size="9" fill="#a2a8a3">'+(xt[g]+1)+'日</text>';}
+    s+='<defs><linearGradient id="hc" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0d7350" stop-opacity="0.13"/><stop offset="1" stop-color="#0d7350" stop-opacity="0"/></linearGradient></defs>';
+    s+='<path d="'+areaPath(hp)+'" fill="url(#hc)" stroke="none"/>';
+    s+='<path d="'+path(hp)+'" fill="none" stroke="#0d7350" stroke-width="2"/>';
+    s+='<path d="'+path(mp)+'" fill="none" stroke="#9aa09b" stroke-width="2" stroke-dasharray="5,3"/>';
+    el.innerHTML='<svg viewBox="0 0 '+W+' '+H+'">'+s+'</svg><div class="tip"></div>';
+    var svgEl=el.querySelector('svg'),tip=el.querySelector('.tip');
+    svgEl.addEventListener('mousemove',function(ev){
+      var rect=el.getBoundingClientRect(),vx=(ev.clientX-rect.left)/rect.width*W;
+      if(vx<PL||vx>W-PR){tip.style.opacity=0;return;}
+      var i=Math.max(0,Math.min(30,Math.round((vx-PL)/PW*30)));
+      tip.innerHTML='<span class="date">'+(i+1)+'日</span>CPU '+cpu[i]+'% · 内存 '+mem[i]+'%';
+      tip.style.left=(ev.clientX-rect.left)+'px';tip.style.top=(ev.clientY-rect.top-10)+'px';tip.style.opacity=1;
+    });
+    svgEl.addEventListener('mouseleave',function(){tip.style.opacity=0;});
+  }
+
+  function aggregateCPU(){var a=[],i,k;
+    for(i=0;i<24;i++){var t=0;for(k=0;k<selectedModules.length;k++){t+=histForIdx(k,'cpu')[i];}a.push(Math.round(t/selectedModules.length));}return a;}
+  function aggregateMEM(){var a=[],i,k;
+    for(i=0;i<24;i++){var t=0;for(k=0;k<selectedModules.length;k++){t+=histForIdx(k,'mem')[i];}a.push(Math.round(t/selectedModules.length));}return a;}
+
+  function maxOf(a){return Math.max.apply(null,a);}
+  function computeRec(){
+    var cpu=aggregateCPU(),mem=aggregateMEM();
+    var peak=Math.max(maxOf(cpu),maxOf(mem));
+    var ratio=Math.max(0.5,Math.min(1.6, peak/60));
+    var cpuCores=Math.max(2,Math.min(16,Math.round(4*ratio)));
+    var memGB=Math.max(8,Math.min(64,Math.round(8*ratio/2)*2));
+    var diskGB=Math.max(100,Math.min(500,Math.round(50*ratio/50)*50));
+    return {peak:peak,cpu:cpuCores,mem:memGB,disk:diskGB};
+  }
+
+  // ---------- 步骤控制 ----------
+  function go(n){
+    currentStep=n;
+    ['step1','step2','step3'].forEach(function(id,i){document.getElementById(id).hidden=(i+1)!==n;});
+    var steps=document.querySelectorAll('.step');
+    steps.forEach(function(s){
+      var d=parseInt(s.getAttribute('data-step'),10);
+      s.classList.toggle('active',d===n);
+      s.classList.toggle('done',d<n);
+    });
+    var cons=document.querySelectorAll('.connector');
+    cons.forEach(function(c,i){c.classList.toggle('done',i<n-1);});
+    if(n===2)renderSim();
+    if(n===3)renderReport();
+    window.scrollTo(0,0);
+  }
+
+  // ---------- STEP 1 ----------
+  document.getElementById('btnLoad').addEventListener('click',function(){
+    var no=document.getElementById('appSel').value;
+    if(!no){alert('请先选择申请单号');return;}
+    currentApp=APPS[no];
+    currentNo=no;
+    selectedModules=[];
+    adoptedFlags={};simRunFlags={};
+    renderDetail();
+    setupSliders();
+    document.getElementById('btnNext1').disabled=false;
+  });
+  function equipSummary(){var s=[],i;for(i=0;i<currentApp.equip.length;i++){var e=currentApp.equip[i];s.push((i+1)+'、'+e.name+' '+e.count+'，规格是 '+e.spec);}return s.join('；');}
+  function totalVM(){var t=0,i;for(i=0;i<currentApp.equip.length;i++){var m=currentApp.equip[i].count.match(/^(\d+)/);t+=m?parseInt(m[1],10):0;}return t;}
+  function parseSpec(spec){var m=spec.match(/(\d+)C(\d+)G(\d+)G/);return m?{cpu:+m[1],mem:+m[2],disk:+m[3]}:null;}
+  function equipMax(){var mx={cpu:0,mem:0,disk:0,count:0},i,s,m;if(!currentApp)return {cpu:4,mem:16,disk:100,count:10};for(i=0;i<currentApp.equip.length;i++){s=parseSpec(currentApp.equip[i].spec);if(s){mx.cpu=Math.max(mx.cpu,s.cpu);mx.mem=Math.max(mx.mem,s.mem);mx.disk=Math.max(mx.disk,s.disk);}m=currentApp.equip[i].count.match(/^(\d+)/);if(m){mx.count=Math.max(mx.count,parseInt(m[1],10));}}if(!mx.cpu){mx.cpu=4;mx.mem=16;mx.disk=100;}if(!mx.count){mx.count=10;}return mx;}
+  var MODULE_MENU=[
+    {label:'ES 组件',children:[
+      {label:'基础组件',children:[{label:'es-001',value:'es-001'},{label:'es-002',value:'es-002'}]},
+      {label:'查询组件',children:[{label:'es-search',value:'es-search'}]}
+    ]},
+    {label:'HBase',children:[
+      {label:'存储层',children:[{label:'hbase-001',value:'hbase-001'},{label:'hbase-002',value:'hbase-002'}]}
+    ]},
+    {label:'MySQL',children:[
+      {label:'主库',children:[{label:'mysql-001',value:'mysql-001'},{label:'mysql-002',value:'mysql-002'}]}
+    ]}
+  ];
+  function defaultPathFor(comp){return {es:[0,0,0],hbase:[1,0,0],mysql:[2,0,0]}[comp]||[0,0,0];}
+  function renderDetail(){
+    var a=currentApp,c=document.getElementById('appContent');
+    var tag=a.type==='改造'?'信创改造':'新增系统';
+    var rows=
+      '<div class="ar"><span class="k">标题</span><span class="v">'+a.title+'</span></div>'+
+      '<div class="ar right"><span class="k">申请场景</span><span class="v">'+a.scenario+'</span></div>'+
+      '<div class="ar"><span class="k">系统名称</span><span class="v">'+a.system+'</span></div>'+
+      '<div class="ar right"><span class="k">支撑业务</span><span class="v">'+a.business+'</span></div>'+
+      '<div class="ar full"><span class="k">申请原因</span><span class="v">'+a.reason+'</span></div>';
+    var info='<div class="sp-block"><div class="d-title">申请单内容 <span class="tag">'+tag+'</span></div><div class="app-rows">'+rows+'</div></div>';
+    if(a.type==='新增'){selectedModules=[];}
+    var list='<div class="sp-block"><div class="sec-title">设备清单</div><div class="equip-list">';
+    if(a.type==='新增'){
+      a.equip.forEach(function(it,i){
+        list+='<div class="equip-item"><div class="eq-info"><span class="eq-idx">'+(i+1)+'、</span><span class="eq-name">'+it.name+'</span> <span>'+it.count+'</span>，规格是 <span class="eq-spec">'+it.spec+'</span></div></div>';
+      });
+      list+='</div><div class="module-note">新增系统：新增模块不涉及旧模块选择，无需配置模块。</div>';
+    } else {
+      a.equip.forEach(function(it,i){
+        list+='<div class="equip-item" data-idx="'+i+'">'+
+          '<div class="eq-info"><span class="eq-idx">'+(i+1)+'、</span><span class="eq-name">'+it.name+'</span> <span>'+it.count+'</span>，规格是 <span class="eq-spec">'+it.spec+'</span></div>'+
+          '<div class="eq-mod"><span class="mod-label">选择涉及模块</span>'+
+            '<div class="cascader" data-idx="'+i+'"></div>'+
+            '<a class="detail-link" data-idx="'+i+'">查看详情</a>'+
+          '</div>'+
+        '</div>';
+      });
+      list+='</div><div class="module-note">请选择涉及到的模块（多级菜单，逐级选择到具体实例），选中模块将用于历史数据采集与容量仿真。</div>';
+    }
+    list+='</div>';
+    c.innerHTML=info+list;
+    mountCascaders();
+  }
+  function mountCascaders(){
+    document.querySelectorAll('#appContent .detail-link').forEach(function(ln){
+      ln.addEventListener('click',function(){
+        var item=currentApp.equip[parseInt(ln.getAttribute('data-idx'),10)];
+        alert('设备：'+item.name+'｜'+item.count+'｜规格：'+item.spec);
+      });
+    });
+    document.querySelectorAll('#appContent .cascader').forEach(function(el){
+      var idx=parseInt(el.getAttribute('data-idx'),10);
+      var item=currentApp.equip[idx];
+      el.innerHTML='<div class="casc-trigger"><span class="casc-path"></span><span class="casc-arrow">▾</span></div><div class="casc-panel" hidden></div>';
+      initCascader(el,MODULE_MENU,defaultPathFor(item.comp),function(val){
+        el.setAttribute('data-val',val);
+        rebuildSelected();
+      });
+    });
+    rebuildSelected();
+  }
+  function optionsAt(menu,path,level){var opts=menu,i;for(i=0;i<level;i++){if(!opts||path[i]==null)return [];var n=opts[path[i]];if(!n||!n.children)return [];opts=n.children;}return opts||[];}
+  function leafAt(menu,path){var opts=menu,node=null,i;for(i=0;i<path.length;i++){if(!opts||path[i]==null)return null;node=opts[path[i]];if(!node)return null;opts=node.children;}return node;}
+  function pathLabels(menu,path){var labels=[],opts=menu,i;for(i=0;i<path.length;i++){if(!opts||path[i]==null)break;var n=opts[path[i]];if(!n)break;labels.push(n.label);opts=n.children;}return labels;}
+  function initCascader(root,menu,defaultPath,onChange){
+    var path=defaultPath.slice();
+    var trigger=root.querySelector('.casc-trigger'),pathEl=root.querySelector('.casc-path'),panel=root.querySelector('.casc-panel');
+    function render(){
+      var labels=pathLabels(menu,path);
+      pathEl.textContent=labels.length?labels.join(' › '):'请选择模块';
+      var h='',lv;
+      for(lv=0;lv<=path.length;lv++){
+        var opts=optionsAt(menu,path,lv);
+        if(!opts.length)break;
+        var curIdx=(lv<path.length)?path[lv]:-1;
+        h+='<div class="casc-col">';
+        opts.forEach(function(node,j){
+          var has=node.children&&node.children.length;
+          h+='<div class="casc-node'+(j===curIdx?' sel':'')+'" data-lv="'+lv+'" data-idx="'+j+'"><span>'+node.label+'</span>'+(has?'<span class="carr">›</span>':'')+'</div>';
+        });
+        h+='</div>';
+        if(lv>=path.length||path[lv]==null||!opts[path[lv]]||!opts[path[lv]].children)break;
+      }
+      panel.innerHTML=h;
+    }
+    trigger.addEventListener('click',function(){
+      document.querySelectorAll('#appContent .casc-panel').forEach(function(p){if(p!==panel)p.hidden=true;});
+      panel.hidden=!panel.hidden;if(!panel.hidden)render();
+    });
+    panel.addEventListener('click',function(e){
+      var node=e.target.closest('.casc-node');if(!node)return;
+      var lv=parseInt(node.getAttribute('data-lv'),10),idx=parseInt(node.getAttribute('data-idx'),10);
+      var opts=optionsAt(menu,path,lv);var chosen=opts[idx];
+      path=path.slice(0,lv);path.push(idx);
+      if(chosen.children&&chosen.children.length){render();}
+      else{render();panel.hidden=true;onChange(chosen.value||chosen.label);}
+    });
+    var leaf=leafAt(menu,path);
+    if(leaf){root.setAttribute('data-val',leaf.value||leaf.label);}
+    render();
+  }
+  function rebuildSelected(){
+    selectedModules=[];
+    document.querySelectorAll('#appContent .cascader').forEach(function(el){
+      var val=el.getAttribute('data-val');if(val)selectedModules.push(val);
+    });
+    document.getElementById('btnNext1').disabled=(currentApp.type==='改造'&&selectedModules.length===0);
+  }
+  document.getElementById('btnResetApp').addEventListener('click',function(){
+    currentApp=null;selectedModules=[];adoptedFlags={};simRunFlags={};
+    document.getElementById('appSel').value='';
+    document.getElementById('appContent').innerHTML='';
+    document.getElementById('btnNext1').disabled=true;
+  });
+  document.getElementById('btnNext1').addEventListener('click',function(){
+    if(!currentApp)return;
+    if(currentApp.type==='改造' && selectedModules.length===0){alert('请至少选择 1 个涉及模块');return;}
+    go(2);
+  });
+
+  // ---------- STEP 2 (仿真参数调整) ----------
+  function readParams(){return {cpu:parseInt(document.getElementById('pCpu').value,10),mem:parseInt(document.getElementById('pMem').value,10),disk:parseInt(document.getElementById('pDisk').value,10),count:parseInt(document.getElementById('pCount').value,10)};}
+  function hourlyBase(arr){return Math.round(arr.reduce(function(x,y){return x+y;},0)/arr.length);}
+  function makeHourly(base,seed){
+    var a=[];
+    for(var i=0;i<24;i++){
+      var day=Math.exp(-Math.pow(i-11,2)/22)*0.5+Math.exp(-Math.pow(i-16,2)/14)*0.45;
+      var w=Math.sin(i/3+seed)*0.05+Math.sin(i/1.7+seed+1)*0.04;
+      var v=base*(0.48+day+w);
+      v=Math.max(1,Math.min(96,Math.round(v)));
+      a.push(v);
+    }
+    return a;
+  }
+  function modData(){if(!selectedModules.length)return null;return MODULE_BASE[selectedModules[activeModIdx]]||{cpu:52,mem:56};}
+  function renderTabs(){
+    var tb=document.getElementById('modTabs');
+    if(!selectedModules.length){tb.innerHTML='';return;}
+    var all=selectedModules.every(function(m){return !!adoptedFlags[m];});
+    var h='';
+    selectedModules.forEach(function(m,i){
+      var ad=!!adoptedFlags[m];
+      h+='<div class="mod-tab'+(i===activeModIdx?' active':'')+(ad?' adopted':'')+'" data-i="'+i+'"><span class="idx">模块'+(i+1)+'</span>'+m+(ad?'<span class="ck">✓</span>':'')+'</div>';
+    });
+    h+=all?'<span class="tab-hint ok">全部模块已采用 ✓</span>':'<span class="tab-hint">未采用模块为灰色，点击「采用此方案」后变绿 ✓</span>';
+    tb.innerHTML=h;
+    tb.querySelectorAll('.mod-tab').forEach(function(t){
+      t.addEventListener('click',function(){
+        activeModIdx=parseInt(t.getAttribute('data-i'),10);
+        renderTabs();setupSliders();updateParamUI();renderSimCharts();
+      });
+    });
+  }
+  function histForIdx(idx,kind){
+    var m=selectedModules.length?selectedModules[idx]:null;
+    var b=m?MODULE_BASE[m]:null;
+    var arr;
+    if(kind==='cpu'){arr=makeHourly(b?b.cpu:52,idx+1);}
+    else if(kind==='mem'){arr=makeHourly(b?b.mem:56,idx+2);}
+    else{arr=makeMod(45,idx+3);}
+    var pk=m?HIST_PEAKS[m]:null;
+    if(pk){arr=scaleTo(arr,pk[kind]);}
+    return arr;
+  }
+  function histCPU(){return histForIdx(activeModIdx,'cpu');}
+  function histMEM(){return histForIdx(activeModIdx,'mem');}
+  function histDISK(){return histForIdx(activeModIdx,'disk');}
+  function mtypeFactor(){var t=document.getElementById('pType').value;return t==='物理机'?1:(t==='虚拟机'?1.08:1.15);}
+  function simCurve(h,param,count,ref){var factor=(ref/param)*(SLIDER_CFG.count.max/count)*mtypeFactor();return h.map(function(v){return Math.max(1,Math.min(96,Math.round(v*factor)));});}
+  function simKey(){return selectedModules.length?selectedModules[activeModIdx]:'_default_';}
+  function simOn(){return !!simRunFlags[simKey()];}
+  function renderSimCharts(){
+    var p=readParams();
+    var hC=histCPU(),hM=histMEM(),hD=histDISK();
+    var on=simOn();
+    drawChart2('chartCpu',hC,simCurve(hC,p.cpu,p.count,SLIDER_CFG.cpu.max),'peakCpu','hour',on);
+    drawChart2('chartMem',hM,simCurve(hM,p.mem,p.count,SLIDER_CFG.mem.max),'peakMem','hour',on);
+    drawChart2('chartDisk',hD,simCurve(hD,p.disk,p.count,SLIDER_CFG.disk.max),'peakDisk','day',on);
+    updateRisk();
+  }
+  function renderSim(){renderTabs();setupSliders();updateParamUI();renderSimCharts();}
+  function drawChart2(id,hist,sim,peakId,unit,showSim){
+    var n=hist.length,el=document.getElementById(id),hp=pt(hist),sp=pt(sim),s='',step=PW/(n-1),g2;
+    for(g2=0;g2<=4;g2++){var gy=PT+(1-g2/4)*PH;s+='<line x1="'+PL+'" y1="'+gy+'" x2="'+(W-PR)+'" y2="'+gy+'" stroke="#ededeb" stroke-width="1"/><text x="'+(PL-7)+'" y="'+(gy+3)+'" text-anchor="end" font-size="9" fill="#a2a8a3">'+(g2*25)+'%</text>';}
+    var ticks=unit==='hour'?[[0,'0时'],[6,'6时'],[12,'12时'],[18,'18时'],[23,'24时']]:[[0,'1日'],[7,'8日'],[14,'15日'],[21,'22日'],[30,'31日']];
+    for(g2=0;g2<ticks.length;g2++){s+='<text x="'+(PL+ticks[g2][0]*step)+'" y="'+(H-6)+'" text-anchor="middle" font-size="9" fill="#a2a8a3">'+ticks[g2][1]+'</text>';}
+    s+='<defs><linearGradient id="gd'+id+'" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0d7350" stop-opacity="0.12"/><stop offset="1" stop-color="#0d7350" stop-opacity="0"/></linearGradient></defs>';
+    s+='<path d="'+areaPath(hp)+'" fill="rgba(13,115,80,0.05)" stroke="none"/>';
+    s+='<path d="'+path(hp)+'" fill="none" stroke="#0d7350" stroke-width="2"/>';
+    if(showSim){
+      s+='<path d="'+areaPath(sp)+'" fill="url(#gd'+id+')" stroke="none"/>';
+      s+='<path d="'+path(sp)+'" fill="none" stroke="#9aa09b" stroke-width="2" stroke-dasharray="5,3"/>';
+    }
+    el.innerHTML='<svg viewBox="0 0 '+W+' '+H+'">'+s+'</svg><div class="tip"></div>';
+    var svgEl=el.querySelector('svg'),tip=el.querySelector('.tip');
+    svgEl.addEventListener('mousemove',function(ev){var rect=el.getBoundingClientRect(),vx=(ev.clientX-rect.left)/rect.width*W;if(vx<PL||vx>W-PR){tip.style.opacity=0;return;}var i=Math.max(0,Math.min(n-1,Math.round((vx-PL)/PW*(n-1))));tip.innerHTML='<span class="date">'+(unit==='hour'?i+'时':(i+1)+'日')+'</span>'+(showSim?('历史 '+hist[i]+'% · 仿真 '+sim[i]+'%'):('历史 '+hist[i]+'%'));tip.style.left=(ev.clientX-rect.left)+'px';tip.style.top=(ev.clientY-rect.top-10)+'px';tip.style.opacity=1;});
+    svgEl.addEventListener('mouseleave',function(){tip.style.opacity=0;});
+    document.getElementById(peakId).textContent=showSim?('仿真峰值 '+maxOf(sim)+'%'):('历史峰值 '+maxOf(hist)+'%');
+    var sLeg=el.closest('.chart-card').querySelector('.lg .s');
+    if(sLeg){sLeg.style.opacity=showSim?1:0.35;}
+  }
+  var pCpu=document.getElementById('pCpu'),pMem=document.getElementById('pMem'),pDisk=document.getElementById('pDisk'),pCount=document.getElementById('pCount');
+  var SLIDER_CFG={cpu:{min:1,max:4},mem:{min:1,max:16},disk:{min:10,max:100},count:{min:1,max:10}};
+  function setupSliders(){
+    var mx=equipMax();
+    SLIDER_CFG.cpu.max=mx.cpu;SLIDER_CFG.mem.max=mx.mem;SLIDER_CFG.disk.max=mx.disk;
+    var m=selectedModules.length?selectedModules[activeModIdx]:null;
+    var r0=(m&&RECS[m])?RECS[m]:{};
+    SLIDER_CFG.count.max=(r0.countMax!=null)?r0.countMax:10;
+    if(r0.type){document.getElementById('pType').value=r0.type;}
+    pCpu.min=1;pCpu.max=mx.cpu;pCpu.step=1;
+    pMem.min=1;pMem.max=mx.mem;pMem.step=1;
+    pDisk.min=10;pDisk.max=mx.disk;pDisk.step=10;
+    pCount.min=1;pCount.max=SLIDER_CFG.count.max;pCount.step=1;
+    var r=computeRecParams();
+    pCpu.value=r.cpu;pMem.value=r.mem;pDisk.value=r.disk;pCount.value=r.count;
+  }
+  function updateRail(inp,rail,min,max){rail.style.width=((inp.value-min)/(max-min)*100)+'%';}
+  function computeRecParams(){
+    var hC=histCPU(),hM=histMEM();
+    var peak=Math.max(maxOf(hC),maxOf(hM));
+    var m=selectedModules.length?selectedModules[activeModIdx]:null;
+    var r=(m&&RECS[m])?RECS[m]:{};
+    return {
+      cpu:(r.cpu!=null)?r.cpu:SLIDER_CFG.cpu.max,
+      mem:(r.mem!=null)?r.mem:SLIDER_CFG.mem.max,
+      disk:(r.disk!=null)?r.disk:SLIDER_CFG.disk.max,
+      count:(r.count!=null)?r.count:SLIDER_CFG.count.max,
+      peak:peak
+    };
+  }
+  function updateRisk(){
+    var p=readParams();
+    var peaks;
+    if(simOn()){
+      peaks=[maxOf(simCurve(histCPU(),p.cpu,p.count,SLIDER_CFG.cpu.max)),maxOf(simCurve(histMEM(),p.mem,p.count,SLIDER_CFG.mem.max)),maxOf(simCurve(histDISK(),p.disk,p.count,SLIDER_CFG.disk.max))];
+    }else{
+      peaks=[maxOf(histCPU()),maxOf(histMEM()),maxOf(histDISK())];
+    }
+    var maxp=Math.max.apply(null,peaks);
+    var el=document.getElementById('riskBox');
+    var lv=maxp>=85?'high':(maxp>=70?'mid':'low');
+    var txt=maxp>=85?'建议增大机器规格或增加机器数量':(maxp>=70?'建议监控峰值并预留余量':'处于安全区间');
+    el.className='risk-box r-'+lv;
+    el.innerHTML='当前方案风险：<b>'+(lv==='high'?'高风险':(lv==='mid'?'中风险':'低风险'))+'</b>　预测峰值约 '+maxp+'%，'+txt;
+  }
+  function updateParamUI(){
+    var mx=SLIDER_CFG;
+    document.getElementById('pCpuVal').textContent=pCpu.value;
+    document.getElementById('pMemVal').textContent=pMem.value;
+    document.getElementById('pDiskVal').textContent=pDisk.value;
+    document.getElementById('pCountVal').textContent=pCount.value;
+    updateRail(pCpu,document.getElementById('pCpuRail'),mx.cpu.min,mx.cpu.max);
+    updateRail(pMem,document.getElementById('pMemRail'),mx.mem.min,mx.mem.max);
+    updateRail(pDisk,document.getElementById('pDiskRail'),mx.disk.min,mx.disk.max);
+    updateRail(pCount,document.getElementById('pCountRail'),mx.count.min,mx.count.max);
+    document.getElementById('pCpuSide').innerHTML='最低：'+mx.cpu.min+'　最高：'+mx.cpu.max+' 核';
+    document.getElementById('pMemSide').innerHTML='最低：'+mx.mem.min+'　最高：'+mx.mem.max+' GB';
+    document.getElementById('pDiskSide').innerHTML='最低：'+mx.disk.min+'　最高：'+mx.disk.max+' GB';
+    document.getElementById('pCountSide').innerHTML='最低：'+mx.count.min+'　最高：'+mx.count.max+' 台';
+    var r=computeRecParams();
+    document.getElementById('pCpuRec').textContent='（推荐 '+r.cpu+' 核）';
+    document.getElementById('pMemRec').textContent='（推荐 '+r.mem+' GB）';
+    document.getElementById('pDiskRec').textContent='（推荐 '+r.disk+' GB）';
+    document.getElementById('pCountRec').textContent='（推荐 '+r.count+' 台）';
+    document.getElementById('pCpuMark').style.left=((r.cpu-mx.cpu.min)/(mx.cpu.max-mx.cpu.min)*100)+'%';
+    document.getElementById('pMemMark').style.left=((r.mem-mx.mem.min)/(mx.mem.max-mx.mem.min)*100)+'%';
+    document.getElementById('pDiskMark').style.left=((r.disk-mx.disk.min)/(mx.disk.max-mx.disk.min)*100)+'%';
+    document.getElementById('pCountMark').style.left=((r.count-mx.count.min)/(mx.count.max-mx.count.min)*100)+'%';
+    updateRisk();
+  }
+  ['pCpu','pMem','pDisk','pCount'].forEach(function(id){
+    var inp=document.getElementById(id),rail=document.getElementById(id+'Rail');
+    inp.addEventListener('input',function(){
+      var c=id==='pCpu'?SLIDER_CFG.cpu:(id==='pMem'?SLIDER_CFG.mem:(id==='pDisk'?SLIDER_CFG.disk:SLIDER_CFG.count));
+      updateRail(inp,rail,c.min,c.max);updateParamUI();
+    });
+  });
+  var simBusy=false;
+  document.getElementById('btnSim').addEventListener('click',function(){
+    if(simBusy)return;
+    simBusy=true;
+    var btn=document.getElementById('btnSim');
+    btn.disabled=true;btn.textContent='仿真中…';
+    document.getElementById('simLoading').hidden=false;
+    setTimeout(function(){
+      simRunFlags[simKey()]=true;
+      renderSimCharts();
+      document.getElementById('simLoading').hidden=true;
+      btn.disabled=false;btn.textContent='仿真';
+      simBusy=false;
+    },2000);
+  });
+  document.getElementById('btnSimReset').addEventListener('click',function(){
+    var r=computeRecParams();
+    pCpu.value=r.cpu;pMem.value=r.mem;pDisk.value=r.disk;pCount.value=r.count;
+    updateParamUI();renderSimCharts();
+  });
+  document.getElementById('btnAdopt').addEventListener('click',function(){
+    if(!selectedModules.length){alert('当前无涉及模块，无需逐模块采用，可直接生成报告。');return;}
+    adoptedFlags[selectedModules[activeModIdx]]=true;
+    renderTabs();
+    var done=selectedModules.filter(function(m){return !!adoptedFlags[m];}).length;
+    var all=done===selectedModules.length;
+    alert(all?'已采用全部 '+selectedModules.length+' 个模块的方案，可进入环节三生成审核报告。':'已采用模块'+(activeModIdx+1)+'（'+selectedModules[activeModIdx]+'），还有 '+(selectedModules.length-done)+' 个模块待采用。');
+  });
+  document.getElementById('btnPrev1').addEventListener('click',function(){go(1);});
+  document.getElementById('btnNext2').addEventListener('click',function(){
+    if(selectedModules.length&&!selectedModules.every(function(m){return !!adoptedFlags[m];})){
+      var left=selectedModules.filter(function(m){return !adoptedFlags[m];});
+      alert('还有模块未采用方案：'+left.join('、')+'。请逐个点击【采用此方案】（标签变绿 ✓）后再生成审核报告。');
+      return;
+    }
+    var rb=document.getElementById('riskBox');
+    if(rb&&rb.classList.contains('r-high')){alert('注意：当前为高风险方案，建议增大机器规格或增加机器数量后再生成报告。');}
+    go(3);
+  });
+
+  // ---------- STEP 3 ----------
+  function chartSnapURL(hist,sim,unit){
+    var W2=300,H2=120,PL2=28,PR2=6,PT2=8,PB2=18,PW2=W2-PL2-PR2,PH2=H2-PT2-PB2;
+    var n=hist.length,step2=PW2/(n-1);
+    function pts(arr){var a=[];for(var i=0;i<n;i++){a.push({x:PL2+i*step2,y:PT2+(1-arr[i]/100)*PH2});}return a;}
+    function pth(ps){if(ps.length<2)return '';var d='M'+ps[0].x.toFixed(1)+','+ps[0].y.toFixed(1);for(var i=0;i<ps.length-1;i++){var p0=ps[Math.max(0,i-1)],p1=ps[i],p2=ps[i+1],p3=ps[Math.min(ps.length-1,i+2)];d+='C'+(p1.x+(p2.x-p0.x)/6).toFixed(1)+','+(p1.y+(p2.y-p0.y)/6).toFixed(1)+' '+(p2.x-(p3.x-p1.x)/6).toFixed(1)+','+(p2.y-(p3.y-p1.y)/6).toFixed(1)+' '+p2.x.toFixed(1)+','+p2.y.toFixed(1);}return d;}
+    function area(ps){var q=pth(ps),l=ps[ps.length-1],f=ps[0];return q+' L'+l.x.toFixed(1)+','+(PT2+PH2).toFixed(1)+' L'+f.x.toFixed(1)+','+(PT2+PH2).toFixed(1)+' Z';}
+    var hp=pts(hist),sp=pts(sim),s='',g;
+    for(g=0;g<=4;g++){var gy=PT2+(1-g/4)*PH2;s+='<line x1="'+PL2+'" y1="'+gy+'" x2="'+(W2-PR2)+'" y2="'+gy+'" stroke="#e7e7e2" stroke-width="1"/><text x="'+(PL2-4)+'" y="'+(gy+3)+'" text-anchor="end" font-size="7" fill="#a2a8a3">'+(g*25)+'%</text>';}
+    var ticks=unit==='hour'?[[0,'0时'],[6,'6时'],[12,'12时'],[18,'18时'],[23,'24时']]:[[0,'1日'],[8,'8日'],[15,'15日'],[22,'22日'],[30,'31日']];
+    for(g=0;g<ticks.length;g++){s+='<text x="'+(PL2+ticks[g][0]*step2)+'" y="'+(H2-5)+'" text-anchor="middle" font-size="7" fill="#a2a8a3">'+ticks[g][1]+'</text>';}
+    s+='<path d="'+area(hp)+'" fill="rgba(13,115,80,0.08)" stroke="none"/>';
+    s+='<path d="'+pth(hp)+'" fill="none" stroke="#0d7350" stroke-width="1.6"/>';
+    s+='<path d="'+pth(sp)+'" fill="none" stroke="#9aa09b" stroke-width="1.4" stroke-dasharray="4,3"/>';
+    return 'data:image/svg+xml;charset=utf-8,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 '+W2+' '+H2+'">'+s+'</svg>');
+  }
+  function renderReport(){
+    var a=currentApp,d=document.getElementById('report');
+    var pcpu=document.getElementById('pCpu').value,pmem=document.getElementById('pMem').value,pdisk=document.getElementById('pDisk').value,pcount=document.getElementById('pCount').value;
+    var repMods=a.type==='改造'?selectedModules.slice():a.equip.map(function(e){return e.name;});
+    var isNew=a.type==='新增';
+    var modularow='',shotHTML='';
+    repMods.forEach(function(m,k){
+      var hc=histForIdx(k,'cpu'),hm=histForIdx(k,'mem'),hd=histForIdx(k,'disk');
+      var sc=simCurve(hc,pcpu,pcount,SLIDER_CFG.cpu.max),sm=simCurve(hm,pmem,pcount,SLIDER_CFG.mem.max),sd=simCurve(hd,pdisk,pcount,SLIDER_CFG.disk.max);
+      var histCell=isNew?'<span style="color:#a2a8a3;">—</span>':(maxOf(hc)+'% / '+maxOf(hm)+'%');
+      modularow+='<tr><td>'+m+'</td><td>'+histCell+'</td><td>'+maxOf(sc)+'% / '+maxOf(sm)+'%</td></tr>';
+      shotHTML+='<div class="mod-shot"><div class="ms-title">'+m+' · 仿真结果截图</div><div class="ms-charts">'+
+        '<div class="ms-item"><div class="ms-cap">CPU使用率 · 近24小时</div><img src="'+chartSnapURL(hc,sc,'hour')+'"></div>'+
+        '<div class="ms-item"><div class="ms-cap">内存使用率 · 近24小时</div><img src="'+chartSnapURL(hm,sm,'hour')+'"></div>'+
+        '<div class="ms-item"><div class="ms-cap">磁盘使用率 · 近一个月</div><img src="'+chartSnapURL(hd,sd,'day')+'"></div>'+
+      '</div></div>';
+    });
+    var newNote=isNew?'<div class="r-note" style="margin-top:8px;">注：新增扩容不涉及历史数据，仿真依据通用标准进行仿真。</div>':'';
+    var shotSec=shotHTML?('<div class="r-sec">三、模块仿真结果截图</div>'+shotHTML):'';
+    var confSec=shotHTML?'<div class="r-sec">四、配置确认</div>':'<div class="r-sec">三、配置确认</div>';
+    var confRow='';
+    repMods.forEach(function(m,k){
+      var r=RECS[m]||{};
+      var c=(r.cpu!=null)?r.cpu:parseInt(pcpu,10);
+      var mm=(r.mem!=null)?r.mem:parseInt(pmem,10);
+      var dd=(r.disk!=null)?r.disk:parseInt(pdisk,10);
+      var cc=(r.count!=null)?r.count:parseInt(pcount,10);
+      var tt=r.type||document.getElementById('pType').value;
+      confRow+='<tr><td>'+m+'</td><td>'+tt+'</td><td>'+c+' 核 / '+mm+' GB / '+dd+' GB</td><td>'+cc+' 台</td></tr>';
+    });
+    d.innerHTML=
+      '<h3>容量方案 · 审核报告</h3>'+
+      '<div class="r-meta">报告编号：AUDIT-'+a.system+'-0821　|　生成时间：2026/08/12　|　生成人：容量 Agent</div>'+
+      '<div class="r-sec">一、申请单信息</div>'+
+      '<div class="r-grid">'+
+      '<div class="kv"><span class="k">申请单号</span><span class="v">'+currentNo+'</span></div>'+
+      '<div class="kv"><span class="k">申请场景</span><span class="v">'+a.scenario+'</span></div>'+
+      '<div class="kv full"><span class="k">标题</span><span class="v">'+a.title+'</span></div>'+
+      '<div class="kv full"><span class="k">申请原因</span><span class="v">'+a.reason+'</span></div>'+
+      '<div class="kv"><span class="k">支撑业务</span><span class="v">'+a.business+'</span></div>'+
+      '<div class="kv"><span class="k">系统名称</span><span class="v">'+a.system+'</span></div>'+
+      '<div class="kv full"><span class="k">设备清单</span><span class="v">'+equipSummary()+'</span></div>'+
+      '</div>'+
+      '<div class="r-sec">二、涉及模块（历史数据源）</div>'+
+      '<table class="r-table"><tr><th>模块名称</th><th>历史峰值（CPU/内存）</th><th>仿真峰值（CPU/内存）</th></tr>'+modularow+'</table>'+newNote+
+      shotSec+confSec+
+      '<table class="r-table"><tr><th>组件/模块</th><th>机器类型</th><th>机器规格</th><th>机器数量</th></tr>'+confRow+'</table>'+
+      '<div class="r-note">结论：按当前设备清单与历史负载仿真并调整参数后，各组件所需机器规格与数量已确认（见上表），可满足业务需求并预留合理余量。</div>'+
+      '<div class="r-sign"><span>申请人：杨　signature</span><span>审核人：____________</span><span>审批：____________</span></div>';
+  }
+  document.getElementById('btnPrev2').addEventListener('click',function(){go(2);});
+  document.getElementById('btnPrint').addEventListener('click',function(){window.print();});
+  document.getElementById('btnRestart').addEventListener('click',function(){
+    if(!confirm('审核通过后方案将归档，并重新开始新的容量方案，确定通过？'))return;
+    document.getElementById('pType').value='物理机';
+    ['pCpu','pMem','pDisk','pCount'].forEach(function(id){var el=document.getElementById(id);el.value=(id==='pCount'?10:5);});
+    go(1);document.getElementById('btnResetApp').dispatchEvent(new Event('click'));
+  });
+
+  // 点击空白处收起级联菜单
+  document.addEventListener('click',function(e){
+    if(!e.target.closest('.cascader')){document.querySelectorAll('#appContent .casc-panel').forEach(function(p){p.hidden=true;});}
+  });
+  // 步骤条点击导航（已完成步骤可返回）
+  document.querySelectorAll('.step').forEach(function(s){
+    s.addEventListener('click',function(){
+      var d=parseInt(s.getAttribute('data-step'),10);
+      if(d===currentStep)return;
+      if(d<currentStep){go(d);return;}
+      if(d===2){
+        if(!currentApp){alert('请先完成环节一：获取申请单');return;}
+        if(currentApp.type==='改造'&&selectedModules.length===0){alert('请先在环节一选择涉及模块');return;}
+      }
+      go(d);
+    });
+  });
+
+  // init
+  go(1);
+})();
+</script>
+</body>
+</html>
