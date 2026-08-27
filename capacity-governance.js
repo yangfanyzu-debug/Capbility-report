@@ -85,7 +85,7 @@ const simTargets={
   nginx:{key:'nginx',code:'NGX',system:'渠道接入平台',component:'Nginx 入口规格',object:'渠道接入 / Nginx',mode:'规格降配',currentNodes:6,defaultNodes:6,minNodes:4,maxNodes:8,baseCpu:19,baseMem:31,baseDisk:38,unitCost:1800,spec:'16C32G → 8C16G',risk:'过度配置',summary:'单实例规格高于同类中位数 2.1×，节点利用率长期低位且分布稳定。',decision:'节点数保持 6 台，先灰度 2 台由 16C32G 降至 8C16G，观察 7 天无异常后再完成整组降配。'}
 };
 
-const state={page:'home',selectedSystemId:'payment',agentOpen:false,agentTab:'log',work:0,progress:36,simNodes:5,simLoad:20,simTarget:'redis'};
+const state={page:'home',selectedSystemId:'payment',agentOpen:false,agentTab:'log',work:0,progress:36,simNodes:5,simLoad:20,simTarget:'redis',simType:'物理机',simSpec:'8C32G'};
 const main=document.querySelector('#main');
 const nav=document.querySelector('#nav');
 const crumb=document.querySelector('#crumb');
@@ -175,52 +175,99 @@ function bench(label,value,color){return `<div class="bench"><div class="bench-h
 function renderSimulator(){
   const target=simTargets[state.simTarget]||simTargets.redis;
   const newNodes=Math.min(target.maxNodes,Math.max(target.minNodes,state.simNodes||target.defaultNodes));
-  const loadFactor=1+state.simLoad/100;
-  const nodeFactor=target.currentNodes/newNodes;
-  const cpu=Math.round(target.baseCpu*nodeFactor*loadFactor);
-  const mem=Math.round(target.baseMem*nodeFactor*(1+state.simLoad/140));
-  const disk=target.key==='greatdb'?Math.max(58,Math.round(target.baseDisk-((newNodes-target.currentNodes)*8))):Math.round(target.baseDisk*nodeFactor);
-  const cost=(target.currentNodes-newNodes)*target.unitCost;
-  const safe=cpu<65&&mem<70&&disk<90;
-  const confidence=target.key==='greatdb'?91:target.key==='redis'?88:84;
+  const type=state.simType||'物理机';
+  const spec=state.simSpec||target.spec;
+  const sim=simulateCapacity(target,newNodes,state.simLoad,spec);
+  const safe=sim.cpuPeak<65&&sim.memPeak<70&&sim.diskPeak<90;
+  const decisionTitle=safe?'整体水位处于可评估区间':'当前方案需要人工复核';
   main.innerHTML=header('SIMULATION LAB','容量方案模拟仿真','基于当前 SRE 负责系统的数据，演示调整前后水位、成本、风险和执行路径',`<button class="btn" data-reset-sim>重置方案</button><button class="btn acid" data-create-task>采用此方案</button>`)+`
-  <section class="sim-console">
-    <article class="panel sim-board">
-      <div class="sim-board-head"><div><p class="kicker">CAPACITY DIGITAL TWIN</p><h2>${target.object} · ${target.mode}</h2><span>${target.summary}</span></div><em class="${safe?'ok':'warn'}">${safe?'可进入评估':'需要人工复核'}</em></div>
-      <div class="sim-topology" aria-label="容量模拟拓扑">
-        ${simNode('当前',`${target.currentNodes} 台`,target.spec,'current')}
-        ${simLink('采集基线','30 日趋势 / 同类对标')}
-        ${simNode('仿真',`${newNodes} 台`,`业务增长 +${state.simLoad}%`,'running')}
-        ${simLink('约束校验','P95 / 安全余量 / 成本')}
-        ${simNode('结论',safe?'建议推进':'先复核',`${confidence}% 置信度`,'result')}
+  <section class="sim-workbench">
+    <aside class="panel sim-config-card">
+      <div class="panel-head"><div><h2>选择分析对象</h2><p>对象来自当前 SRE 负责范围，保持演示数据一致</p></div><small>${target.code}</small></div>
+      <div class="sim-object-grid">
+        ${Object.values(simTargets).map(s=>`<button class="sim-object ${s.key===target.key?'active':''}" data-sim-target="${s.key}"><span>${s.code}</span><b>${s.system}</b><small>${s.component} · ${s.risk}</small></button>`).join('')}
       </div>
-      <div class="sim-metrics">
-        ${simMetric('CPU P95',`${target.baseCpu}%`,`${cpu}%`,cpu<65?'ok':'warn')}
-        ${simMetric('MEM P95',`${target.baseMem}%`,`${mem}%`,mem<70?'ok':'warn')}
-        ${simMetric(target.key==='greatdb'?'磁盘峰值':'资源水位',`${target.baseDisk}%`,`${disk}%`,disk<90?'ok':'warn')}
-        ${simMetric(cost>=0?'月度节约':'月度新增','—',`¥${Math.abs(cost).toLocaleString()}`,cost>=0?'ok':'warn')}
+      <div class="sim-select-grid">
+        ${simSelect('系统',target.system,['统一支付系统','实时风控系统','渠道接入平台'])}
+        ${simSelect('组件',target.component,[target.component,'应用服务','入口网关','缓存集群'])}
+        ${simSelect('集群',simClusterName(target),[simClusterName(target),'prod-a','prod-b'])}
       </div>
-      <div class="sim-playback">
-        <span style="--i:0"><b>01</b> 读取当前容量快照</span>
-        <span style="--i:1"><b>02</b> 叠加 ${state.simLoad}% 业务增长</span>
-        <span style="--i:2"><b>03</b> 计算调整后 P95 水位</span>
-        <span style="--i:3"><b>04</b> 匹配治理约束和同类基准</span>
+      <div class="sim-section-title">资源方案</div>
+      <div class="sim-select-grid two">
+        ${simSelect('机器类型',type,['物理机','虚拟机','容器'], 'sim-type')}
+        ${simSelect('机器规格',spec,simSpecOptions(target), 'sim-spec')}
       </div>
-    </article>
-    <aside class="panel sim-inspector">
-      <div class="panel-head"><div><h2>仿真参数</h2><p>系统、组件和治理对象与当前演示数据保持一致</p></div><small>${target.code}</small></div>
-      <div class="sim-targets">${Object.values(simTargets).map(s=>`<button class="sim-target ${s.key===target.key?'active':''}" data-sim-target="${s.key}"><span>${s.code}</span><b>${s.component}</b><small>${s.system} · ${s.risk}</small></button>`).join('')}</div>
-      <div class="control sim-control"><label><span>目标节点数</span><b>${newNodes} 台</b></label><input id="node-range" type="range" min="${target.minNodes}" max="${target.maxNodes}" value="${newNodes}" /></div>
-      <div class="control sim-control"><label><span>预估业务增长</span><b>+${state.simLoad}%</b></label><input id="load-range" type="range" min="0" max="80" step="5" value="${state.simLoad}" /></div>
-      <div class="sim-verdict"><small>AGENT VERDICT</small><h3>${safe?'建议生成治理评估单':'暂不建议直接执行'}</h3><p>${target.decision}</p></div>
-      <div class="guardrail">安全约束：核心系统至少保留 4 个节点；CPU P95 不高于 65%，内存 P95 不高于 70%；任何生产变更都需要人工审批。</div>
-      <button class="btn acid" style="width:100%;margin-top:14px" data-create-task>生成治理评估单</button>
+      <div class="sim-recommend">模型推荐 <b>${target.spec}</b>，建议先模拟节点数和业务流量，再决定是否生成治理评估单。</div>
+      <div class="sim-slider">
+        <label><span>机器数量</span><small>最低 ${target.minNodes} · 最高 ${target.maxNodes} · 推荐 <b>${target.defaultNodes}</b> 台 · 当前 <b>${newNodes}</b> 台</small></label>
+        <input id="node-range" type="range" min="${target.minNodes}" max="${target.maxNodes}" value="${newNodes}" />
+      </div>
+      <div class="sim-slider">
+        <label><span>业务流量</span><small>最低 0% · 最高 80% · 当前 <b>+${state.simLoad}%</b></small></label>
+        <input id="load-range" type="range" min="0" max="80" step="5" value="${state.simLoad}" />
+      </div>
+      <div class="sim-history">
+        <div class="sim-section-title">历史资源配置</div>
+        <div class="sim-history-grid">
+          <span><b>机器类型</b>${type}</span><span><b>机器规格</b>${target.spec}</span>
+          <span><b>机器数量</b>${target.currentNodes}</span><span><b>基线流量</b>100%</span>
+        </div>
+      </div>
+      <div class="guardrail sim-basis"><b>分析依据：</b>依据历史资源使用率与业务峰值波动进行容量拟合，并结合系统规格、节点数量和安全阈值测算目标水位。任何方案变更均需人工审批。</div>
     </aside>
+    <section class="sim-result-col">
+      <div class="sim-summary-strip">
+        ${simMiniMetric('CPU 峰值',`${sim.cpuPeak}%`,sim.cpuPeak<65?'ok':'warn')}
+        ${simMiniMetric('内存峰值',`${sim.memPeak}%`,sim.memPeak<70?'ok':'warn')}
+        ${simMiniMetric(target.key==='greatdb'?'磁盘峰值':'资源水位',`${sim.diskPeak}%`,sim.diskPeak<90?'ok':'warn')}
+        ${simMiniMetric(sim.cost>=0?'月度节约':'月度新增',`¥${Math.abs(sim.cost).toLocaleString()}`,sim.cost>=0?'ok':'warn')}
+      </div>
+      ${simChartCard('CPU 使用率','cpu',sim.histCpu,sim.simCpu,sim.cpuPeak)}
+      ${simChartCard('内存使用率','mem',sim.histMem,sim.simMem,sim.memPeak)}
+      ${simChartCard(target.key==='greatdb'?'磁盘使用率':'资源水位','disk',sim.histDisk,sim.simDisk,sim.diskPeak)}
+      <article class="panel sim-conclusion">
+        <div class="panel-head"><div><h2>分析结论</h2><p>点击仿真或调整参数后自动刷新，采用方案仅生成静态演示任务</p></div><small>${safe?'可评估':'需复核'}</small></div>
+        <div class="sim-conclusion-box"><b>${decisionTitle}</b><p>${simConclusion(target,type,spec,newNodes,state.simLoad,sim)}</p></div>
+        <div class="brief-actions"><button class="btn acid" data-run-sim>仿真</button><button class="btn" data-reset-sim>重置方案</button><button class="btn acid" data-create-task>采用此方案</button></div>
+      </article>
+    </section>
   </section>`;
 }
-function simNode(label,value,note,type){return `<div class="sim-node ${type}"><small>${label}</small><strong>${value}</strong><span>${note}</span></div>`}
-function simLink(label,note){return `<div class="sim-link"><i></i><b>${label}</b><span>${note}</span></div>`}
-function simMetric(label,before,after,tone){return `<div class="sim-metric ${tone}"><span>${label}</span><div><b>${before}</b><i>→</i><strong>${after}</strong></div></div>`}
+function simSelect(label,value,options,id=''){return `<label class="sim-field"><span>${label}</span><select ${id?`id="${id}"`:''}>${options.map(o=>`<option ${o===value?'selected':''}>${o}</option>`).join('')}</select></label>`}
+function simSpecOptions(target){return target.key==='greatdb'?['8C32G','16C64G','32C128G']:target.key==='nginx'?['4C8G','8C16G','16C32G']:['4C16G','8C32G','16C64G']}
+function simClusterName(target){return target.key==='greatdb'?'bjd-dsi-greatdb-010-kzx':target.key==='nginx'?'chn-ingress-nginx':'pay-redis-prod'}
+function specFactor(spec){
+  if(spec.includes('32C'))return 1.55;
+  if(spec.includes('16C64G'))return 1.35;
+  if(spec.includes('16C32G'))return 1.25;
+  if(spec.includes('8C32G'))return 1.12;
+  if(spec.includes('8C16G'))return 1.08;
+  if(spec.includes('4C'))return .94;
+  return 1;
+}
+function dailySeries(base,seed=0){return Array.from({length:31},(_,i)=>Math.max(1,Math.min(96,Math.round(base+Math.sin((i+seed)/2.6)*6+Math.sin((i+seed)/1.45+2.2)*3.5+Math.sin(i/5+.4)*4+(i/30)*4))))}
+function simulateCapacity(target,nodes,flow,spec){
+  const load=1+flow/100,nodeFactor=target.currentNodes/nodes,specAdj=specFactor(spec);
+  const next=(base,extra=1)=>Math.max(3,Math.min(95,base*nodeFactor*load*extra/specAdj));
+  const diskBase=target.key==='greatdb'?Math.max(56,target.baseDisk-((nodes-target.currentNodes)*7)):target.baseDisk*nodeFactor;
+  const histCpu=dailySeries(target.baseCpu,1),histMem=dailySeries(target.baseMem,5),histDisk=dailySeries(target.baseDisk,9);
+  const simCpu=dailySeries(next(target.baseCpu),2),simMem=dailySeries(next(target.baseMem,1+flow/220),6),simDisk=dailySeries(target.key==='greatdb'?diskBase:next(target.baseDisk,.92),10);
+  return {histCpu,histMem,histDisk,simCpu,simMem,simDisk,cpuPeak:Math.max(...simCpu),memPeak:Math.max(...simMem),diskPeak:Math.max(...simDisk),cpuAvg:avg(simCpu),memAvg:avg(simMem),diskAvg:avg(simDisk),cost:(target.currentNodes-nodes)*Math.abs(target.unitCost)};
+}
+function avg(arr){return Math.round(arr.reduce((a,b)=>a+b,0)/arr.length)}
+function simMiniMetric(label,value,tone){return `<div class="sim-mini ${tone}"><span>${label}</span><b>${value}</b></div>`}
+function simChartCard(title,id,hist,sim,peak){return `<article class="panel sim-chart-card"><div class="sim-chart-head"><h2>${title}</h2><div class="sim-legend"><span class="hist"><i></i>历史数据</span><span class="forecast"><i></i>仿真数据</span></div><em>峰值 ${peak}%</em></div><div class="sim-line-chart">${simSvg(id,hist,sim)}<div class="sim-tip">历史 ${hist[30]}% · 仿真 ${sim[30]}%</div></div></article>`}
+function simSvg(id,hist,sim){
+  const W=520,H=154,pl=34,pr=10,pt=14,pb=24,w=W-pl-pr,h=H-pt-pb,toX=i=>pl+i*w/30,toY=v=>pt+(1-v/100)*h;
+  const pts=arr=>arr.map((v,i)=>({x:toX(i),y:toY(v)}));
+  const path=points=>points.reduce((d,p,i)=>i?`${d} L${p.x.toFixed(1)},${p.y.toFixed(1)}`:`M${p.x.toFixed(1)},${p.y.toFixed(1)}`,'');
+  const area=points=>`${path(points)} L${points[points.length-1].x.toFixed(1)},${pt+h} L${points[0].x.toFixed(1)},${pt+h} Z`;
+  const hp=pts(hist),sp=pts(sim);
+  const grid=[0,25,50,75,100].map(v=>`<line x1="${pl}" y1="${toY(v)}" x2="${W-pr}" y2="${toY(v)}"/><text x="${pl-8}" y="${toY(v)+3}">${v}%</text>`).join('');
+  const ticks=[0,7,14,21,30].map(i=>`<text class="tick" x="${toX(i)}" y="${H-6}">${i+1}日</text>`).join('');
+  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${id} 历史和仿真使用率曲线"><defs><linearGradient id="sim-${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2f5d91" stop-opacity=".16"/><stop offset="1" stop-color="#2f5d91" stop-opacity="0"/></linearGradient></defs><g class="grid">${grid}${ticks}</g><path class="area hist" d="${area(hp)}"/><path class="line hist" d="${path(hp)}"/><path class="area sim" d="${area(sp)}" fill="url(#sim-${id})"/><path class="line sim" d="${path(sp)}"/><circle cx="${sp[30].x}" cy="${sp[30].y}" r="4"/></svg>`;
+}
+function simConclusion(target,type,spec,nodes,flow,sim){return `使用 ${type} / ${spec}，机器数量 ${nodes} 台、业务流量 +${flow}%：CPU 使用率峰值约 ${sim.cpuPeak}%，均值约 ${sim.cpuAvg}%；内存峰值约 ${sim.memPeak}%，均值约 ${sim.memAvg}%；${target.key==='greatdb'?'磁盘':'资源水位'}峰值约 ${sim.diskPeak}%，均值约 ${sim.diskAvg}%。${target.decision}`}
 
 function renderAdmission(){
   main.innerHTML=header('AI CAPACITY REVIEWER','增量容量准入','AI 提出资源方案，人负责关键决策；静态演示不会提交真实申请',`<button class="btn">历史评估</button><button class="btn acid" data-review>重新评估</button>`)+`
@@ -395,7 +442,7 @@ function renderTasks(){
 function taskRow(t){const stages=['发现','建议','审批','观察','验证'];return `<tr><td><span class="ticket-no">${t.id}</span></td><td><span class="task-title"><b>${t.title}</b></span></td><td>${t.owner}</td><td><span class="status-pill">${t.status}</span></td><td>${t.workOrder?`<span class="work-order-no">${t.workOrder}</span>`:'<span class="empty-cell"></span>'}</td><td>${t.workOrder?`<span class="work-status ${t.workStatus==='实施完成'?'done':''}">${t.workStatus}</span>`:`<button class="btn small" data-create-workorder="${t.id}">去提单</button>`}</td><td><span class="stage-badge">${stages[t.stage]||'处理中'}</span></td><td><span class="table-actions"><button class="btn small" ${t.id==='CAP-1839'?'data-verify':''}>${t.action}</button><button class="btn small" data-open-followup="${t.id}">查看Agent跟进记录</button></span></td></tr>`}
 
 function renderWorkline(){
-  const job=autonomousJobs[state.work%autonomousJobs.length];
+  const job=activeWorkJob();
   workline.innerHTML=`
     <div class="work-core"><span class="work-orbit"><i></i></span><div><span>CAPACITY AGENT · 自主运行中</span><b>${job.phase}</b></div></div>
     <div class="work-target"><span>当前对象</span><b>${job.scope}</b><small>${job.target}</small></div>
@@ -409,6 +456,15 @@ function renderWorkline(){
   pet.classList.remove('speaking');
   void pet.offsetWidth;
   pet.classList.add('speaking');
+}
+function activeWorkJob(){
+  if(state.page==='simulate'){
+    const target=simTargets[state.simTarget]||simTargets.redis;
+    const newNodes=Math.min(target.maxNodes,Math.max(target.minNodes,state.simNodes||target.defaultNodes));
+    const sim=simulateCapacity(target,newNodes,state.simLoad,state.simSpec||target.spec);
+    return {phase:`模拟${target.mode}方案`,scope:target.object,target:`${target.component} · ${state.simSpec||target.spec}`,kind:'方案仿真',signal:`${newNodes} 台 · 业务增长 +${state.simLoad}% · CPU ${sim.cpuPeak}% / MEM ${sim.memPeak}%`,next:'刷新仿真曲线'};
+  }
+  return autonomousJobs[state.work%autonomousJobs.length];
 }
 
 function renderDrawer(){
@@ -481,7 +537,7 @@ function openFollowup(taskId){
 function toast(title,body){const el=document.createElement('div');el.className='toast';el.innerHTML=`<b>${title}</b><span>${body}</span>`;document.querySelector('#toasts').append(el);setTimeout(()=>el.remove(),3800)}
 
 document.addEventListener('click',e=>{
-  const page=e.target.closest('[data-page]');if(page){if(page.dataset.systemId)state.selectedSystemId=page.dataset.systemId;state.page=page.dataset.page;closeOverlays();render();return}
+  const page=e.target.closest('[data-page]');if(page){if(page.dataset.systemId)state.selectedSystemId=page.dataset.systemId;state.page=page.dataset.page;closeOverlays();render();renderWorkline();return}
   if(e.target.closest('[data-open-agent]')){openAgent();return}
   if(e.target.closest('[data-close-agent]')||e.target.closest('[data-close-modal]')||e.target.closest('[data-close-inspect]')||e.target.closest('[data-close-events]')||e.target===scrim){closeOverlays();return}
   if(e.target.closest('[data-open-evidence]')){openEvidence();return}
@@ -499,21 +555,26 @@ document.addEventListener('click',e=>{
   const follow=e.target.closest('[data-open-followup]');if(follow){openFollowup(follow.dataset.openFollowup);return}
   const tab=e.target.closest('[data-agent-tab]');if(tab){state.agentTab=tab.dataset.agentTab;renderDrawer();return}
   const prompt=e.target.closest('[data-prompt]');if(prompt){agentInput.value=prompt.dataset.prompt;agentInput.focus();return}
-  const simTarget=e.target.closest('[data-sim-target]');if(simTarget){state.simTarget=simTarget.dataset.simTarget;state.simNodes=(simTargets[state.simTarget]||simTargets.redis).defaultNodes;renderSimulator();return}
+  const simTarget=e.target.closest('[data-sim-target]');if(simTarget){state.simTarget=simTarget.dataset.simTarget;const target=simTargets[state.simTarget]||simTargets.redis;state.simNodes=target.defaultNodes;state.simSpec=target.spec;renderSimulator();renderWorkline();return}
+  if(e.target.closest('[data-run-sim]')){toast('仿真已刷新','已按当前机器规格、节点数和业务流量重新计算三项资源曲线。');renderSimulator();return}
   if(e.target.closest('[data-create-task]')){toast('已生成静态演示任务','CAP-1848 已进入”待 SRE 审批”，不会触发真实生产变更。');return}
   if(e.target.closest('[data-create-workorder]')){toast('已准备治理工单','演示环境不会真实提单，请在生产流程中完成变更单创建。');return}
   if(e.target.closest('[data-review]')){toast('Capacity Agent 已完成评估','已结合历史趋势、同类对标与安全余量，建议新增 4 台。');return}
-  if(e.target.closest('[data-reset-sim]')){const target=simTargets[state.simTarget]||simTargets.redis;state.simNodes=target.defaultNodes;state.simLoad=20;renderSimulator();return}
+  if(e.target.closest('[data-reset-sim]')){const target=simTargets[state.simTarget]||simTargets.redis;state.simNodes=target.defaultNodes;state.simLoad=20;state.simType='物理机';state.simSpec=target.spec;renderSimulator();renderWorkline();return}
   if(e.target.closest('[data-verify]')){toast('效果验证正常','Redis 缩容后连续 3 天处于安全水位，将继续观察至第 7 天。');return}
 });
 
 document.addEventListener('input',e=>{
   if(e.target.id==='system-select'){state.selectedSystemId=e.target.value;render()}
-  if(e.target.id==='node-range'){state.simNodes=Number(e.target.value);renderSimulator()}
-  if(e.target.id==='load-range'){state.simLoad=Number(e.target.value);renderSimulator()}
+  if(e.target.id==='node-range'){state.simNodes=Number(e.target.value);renderSimulator();renderWorkline()}
+  if(e.target.id==='load-range'){state.simLoad=Number(e.target.value);renderSimulator();renderWorkline()}
 });
 
-document.addEventListener('change',e=>{if(e.target.id==='system-select'){state.selectedSystemId=e.target.value;render()}});
+document.addEventListener('change',e=>{
+  if(e.target.id==='system-select'){state.selectedSystemId=e.target.value;render()}
+  if(e.target.id==='sim-type'){state.simType=e.target.value;renderSimulator();renderWorkline()}
+  if(e.target.id==='sim-spec'){state.simSpec=e.target.value;renderSimulator();renderWorkline()}
+});
 document.querySelector('#agent-form').addEventListener('submit',e=>{e.preventDefault();const text=agentInput.value.trim();if(!text)return;messages.push({time:'刚刚',title:'收到，我已经调整工作上下文',body:`你的要求“${text}”已进入当前计划。我会先验证相关数据和安全约束，再主动汇报结论。`,tone:'user'});agentInput.value='';state.agentTab='log';renderDrawer();drawerContent.scrollTop=drawerContent.scrollHeight;toast('分析方向已更新','Agent 会继续自主工作，并在有结论时主动通知你。')});
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeOverlays()});
 
