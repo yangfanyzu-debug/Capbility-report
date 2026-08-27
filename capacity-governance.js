@@ -60,7 +60,9 @@ const tasks=[
 const messages=[
   {time:'08:00',title:'我开始今天的容量值守了',body:'三个接口的数据已获取并完成完整性检查。本轮聚焦你负责的 3 个系统、18 个组件和 142 个实例。',tone:'normal'},
   {time:'08:07',title:'我发现 GreatDB 的磁盘行为异常',body:'它不只是超过 85% 固定阈值，同时也明显偏离自己的 30 日动态基线。按近 7 日速度，预计 6 天后进入 90% 风险区间。',tone:'risk'},
+  {time:'08:30',title:'杨帆 · 我收到了，先不动',body:'收到 GreatDB 的告警提示，先别建单。这一轮让我手动看一下趋势和归因，确认不是归档抖动。',tone:'user'},
   {time:'08:18',title:'我把服务器信号合并成了集群结论',body:'GreatDB 不是集群整体容量不足，而是节点负载倾斜并叠加单节点磁盘增长。建议先校验归档策略，再评估增加 2 个节点。',tone:'analysis'},
+  {time:'09:10',title:'杨帆 · 先用证据说服我',body:'把 greatdb-010 的 30 日趋势、近 7 日斜率以及同类系统基线拉出来对比一下，再决定要不要扩容。',tone:'user'},
   {time:'09:10',title:'Redis 缩容正在观察期',body:'缩减 1 个节点后，CPU 峰值由 18% 升至 31%，仍处安全范围。我会观察满 7 天后再决定是否继续。',tone:'follow'}
 ];
 
@@ -74,7 +76,7 @@ const autonomousJobs=[
 const collabRecords=[
   {time:'08:00',type:'collect',status:'已完成',title:'取数与完整性检查完成',body:'已拉取你负责范围内 3 个生产系统、18 个组件、142 个实例的昨日容量快照，并过滤掉 2 条采集延迟数据。',facts:['3 系统','18 组件','142 实例']},
   {time:'08:07',type:'risk',status:'高风险',title:'GreatDB 单节点磁盘进入处置队列',body:'greatdb-010 磁盘峰值 87.6%，近 7 日持续增长；同时 CPU / MEM 未同步升高，优先判断为归档或分片倾斜问题。',facts:['87.6%','+18.4%','6 天']},
-  {time:'08:18',type:'analysis',status:'已归因',title:'将服务器信号合并成集群结论',body:'结论不是“全量扩容”，而是先检查归档策略和节点权重；若 3 天后增速未回落，再增加 2 个节点并重平衡。',facts:['负载倾斜','先治理','后扩容']},
+  {time:'08:18',type:'analysis',status:'已归因',title:'将服务器信号合并成集群结论',body:'结论不是"全量扩容"，而是先检查归档策略和节点权重；若 3 天后增速未回落，再增加 2 个节点并重平衡。',facts:['负载倾斜','先治理','后扩容']},
   {time:'08:42',type:'action',status:'待评审',title:'生成治理任务 CAP-1842',body:'治理建议已写入任务列表，变更单 ACT-CHUG-20260826-0002 处于评审中，Agent 会持续轮询状态。',facts:['CAP-1842','变更评审','陈哲']},
   {time:'09:10',type:'follow',status:'观察中',title:'Redis 缩容进入效果观察',body:'缩减 1 个节点后，CPU 峰值由 18% 升至 31%，仍处于安全区间；需覆盖完整 7 天和周末批处理窗口。',facts:['18% → 31%','0 告警','第 3/7 天']}
 ];
@@ -147,7 +149,7 @@ function renderSystem(){
   main.innerHTML=systemSwitcher(system)+`
   <section class="score-strip">${scoreCard('容量风险',system.risk,detail.notes.risk,'var(--red)')}${scoreCard('资源浪费',system.waste,detail.notes.waste,'var(--amber)')}${scoreCard('负载倾斜',system.skew,detail.notes.skew,'var(--cyan)')}${scoreCard('治理优先级',system.priority,detail.notes.priority,'var(--acid)')}</section>
   <section class="analysis-grid"><article class="panel chart-panel"><div class="chart-title"><div><h2>${detail.component} · 动态基线与容量预测</h2><p class="kicker">${detail.subject}</p></div><div class="legend"><span><i style="background:rgba(97,214,181,.25)"></i>正常区间</span><span><i style="background:var(--cyan)"></i>实际</span><span><i style="background:var(--amber)"></i>预测</span></div></div><div class="chart">${trendChart()}</div><div class="chart-cards">${detail.stats.map(([label,value])=>chartStat(label,value)).join('')}</div><div class="explain"><strong>Agent 判断：</strong>${system.name} 当前治理优先级为 ${system.priority}。${system.hint}，建议先按系统角色和节点分布定位原因，再决定扩容、降配或观察。</div></article>
-  <aside class="panel"><div class="panel-head"><div><h2>集群节点分布</h2><p>识别整体不足、单节点异常或负载倾斜</p></div><small>${detail.spread}</small></div><div class="distribution">${detail.nodes.map(([host,value,color])=>`<div class="node-row"><label>${host}</label><span class="node-bar"><i style="--value:${value}%;--bar:${color}"></i></span><b>${value}%</b></div>`).join('')}</div><div class="cause-card"><small>CLUSTER-LEVEL ATTRIBUTION</small><h3>${detail.cause}</h3><p>${detail.body}</p><div class="decision"><b>建议方案</b><p>${detail.decision}</p></div></div></aside></section>`;
+  <aside class="panel"><div class="panel-head"><div><h2>集群节点分布</h2><p>识别整体不足、单节点异常或负载倾斜</p></div><small>${detail.spread}</small></div><div class="distribution">${detail.nodes.map(([host,value,color])=>`<div class="node-row"><label>${host}</label><span class="node-bar"><i style="--value:${value}%;--bar:${color}"></i></span><b>${value}%</b></div>`).join('')}</div><div class="cause-card"><small>集群级归因</small><h3>${detail.cause}</h3><p>${detail.body}</p><div class="decision"><b>建议方案</b><p>${detail.decision}</p></div></div></aside></section>`;
 }
 
 function selectedSystem(){return managedSystems.find(s=>s.id===state.selectedSystemId)||managedSystems[0]}
@@ -165,10 +167,10 @@ function trendChart(){
 }
 
 function renderPeer(){
-  main.innerHTML=header('PEER BENCHMARK','同类系统对标','用同类组件的真实资源画像回答“为什么别人 6 台，而你需要 10 台”',`<button class="btn">选择对标样本</button><button class="btn acid" data-open-agent>询问 Agent</button>`)+`
+  main.innerHTML=header('同类对标','同类系统对标','用同类组件的真实资源画像回答"为什么别人 6 台，而你需要 10 台"',`<button class="btn">选择对标样本</button><button class="btn acid" data-open-agent>询问 Agent</button>`)+`
   <section class="peer-layout"><article class="panel"><div class="panel-head"><div><h2>Java 核心交易组件对标组</h2><p>相同业务等级、架构类型与日均交易量区间</p></div><small>12 个可比集群</small></div><table class="peer-table"><thead><tr><th>集群</th><th>规模</th><th>CPU P95</th><th>内存 P95</th><th>安全余量</th><th>判断</th></tr></thead><tbody>
     <tr><td>订单服务 / cluster-A</td><td>8C16G × 6</td><td>58%</td><td>63%</td><td>31%</td><td>合理</td></tr><tr><td>清结算 / cluster-B</td><td>8C16G × 8</td><td>61%</td><td>59%</td><td>29%</td><td>合理</td></tr><tr class="current"><td><strong>渠道接入 / cluster-C</strong></td><td><strong>16C32G × 10</strong></td><td>22%</td><td>31%</td><td>66%</td><td><strong>过度配置</strong></td></tr><tr><td>营销服务 / cluster-D</td><td>8C16G × 6</td><td>54%</td><td>57%</td><td>34%</td><td>合理</td></tr><tr><td>账户查询 / cluster-E</td><td>8C16G × 8</td><td>49%</td><td>62%</td><td>32%</td><td>合理</td></tr>
-  </tbody></table></article><aside class="panel rank-card"><p class="kicker">PEER POSITION</p><span class="big">2.1×</span><h2>资源规模高于同类中位数</h2><p>在交易量和可用性等级相近的 12 个集群中，渠道接入 cluster-C 的 CPU 与内存配置均位于最高 10%，但利用率处于最低 15%。</p><div class="benchmark-bars">${bench('资源规模','92%','var(--amber)')}${bench('业务负载','44%','var(--cyan)')}${bench('资源效率','21%','var(--red)')}</div><div class="decision"><b>Agent 建议</b><p>先将单节点规格由 16C32G 降至 8C16G，灰度 2 台并观察 7 天，预计每月节约 ¥12.4k。</p></div></aside></section>`;
+  </tbody></table></article><aside class="panel rank-card"><p class="kicker">同类位置</p><span class="big">2.1×</span><h2>资源规模高于同类中位数</h2><p>在交易量和可用性等级相近的 12 个集群中，渠道接入 cluster-C 的 CPU 与内存配置均位于最高 10%，但利用率处于最低 15%。</p><div class="benchmark-bars">${bench('资源规模','92%','var(--amber)')}${bench('业务负载','44%','var(--cyan)')}${bench('资源效率','21%','var(--red)')}</div><div class="decision"><b>Agent 建议</b><p>先将单节点规格由 16C32G 降至 8C16G，灰度 2 台并观察 7 天，预计每月节约 ¥12.4k。</p></div></aside></section>`;
 }
 function bench(label,value,color){return `<div class="bench"><div class="bench-head"><span>${label}</span><b>${value}</b></div><div class="bench-track"><i style="--value:${value};--color:${color}"></i></div></div>`}
 
@@ -270,7 +272,7 @@ function simSvg(id,hist,sim){
 function simConclusion(target,type,spec,nodes,flow,sim){return `使用 ${type} / ${spec}，机器数量 ${nodes} 台、业务流量 +${flow}%：CPU 使用率峰值约 ${sim.cpuPeak}%，均值约 ${sim.cpuAvg}%；内存峰值约 ${sim.memPeak}%，均值约 ${sim.memAvg}%；${target.key==='greatdb'?'磁盘':'资源水位'}峰值约 ${sim.diskPeak}%，均值约 ${sim.diskAvg}%。${target.decision}`}
 
 function renderAdmission(){
-  main.innerHTML=header('AI CAPACITY REVIEWER','增量容量准入','AI 提出资源方案，人负责关键决策；静态演示不会提交真实申请',`<button class="btn">历史评估</button><button class="btn acid" data-review>重新评估</button>`)+`
+  main.innerHTML=header('容量准入评估','增量容量准入','AI 提出资源方案，人负责关键决策；静态演示不会提交真实申请',`<button class="btn">历史评估</button><button class="btn acid" data-review>重新评估</button>`)+`
   <section class="admission-layout"><article class="panel"><div class="panel-head"><div><h2>业务资源申请</h2><p>输入业务目标，而不只是申请机器数量</p></div><small>REQ-2026-0812</small></div><div class="form-grid"><div class="field"><label>系统</label><select><option>统一支付系统</option><option>数据中台</option></select></div><div class="field"><label>组件 / 集群</label><select><option>Java 订单服务 / cluster-A</option></select></div><div class="field"><label>申请规格</label><select><option>16C32G</option><option>8C16G</option></select></div><div class="field"><label>申请数量</label><input id="request-count" type="number" value="10" min="1" /></div><div class="field full"><label>业务目标与增长预期</label><textarea rows="4">双十一订单量预计增长 40%，需要保障核心交易链路安全余量。</textarea></div><div class="field full"><button class="btn acid" data-review>让 Capacity Agent 评估</button></div></div></article>
   <aside class="panel review" id="review-result"><span class="review-badge">不建议按原申请执行</span><h2>建议新增 4 台，而不是 10 台</h2><p>Agent 综合了当前容量、90 日趋势、同类组件中位数与 30% 安全余量。原申请会造成明显过度配置。</p><div class="review-facts">${fact('当前规模','20 台')}${fact('近 30 日 CPU P95','61%')}${fact('90 日负载增速','+5.2%')}${fact('活动预计增长','+40%')}${fact('同类安全余量','28%—35%')}</div><div class="recommendation"><strong>建议方案：</strong>新增 4 台 16C32G。扩容后活动期间 CPU P95 预计约 58%，内存 P95 约 63%，风险等级低。</div><div class="brief-actions"><button class="btn acid" data-create-task>接受并生成评估单</button><button class="btn" data-open-agent>继续讨论</button></div></aside></section>`;
 }
@@ -344,11 +346,11 @@ function openHomeInspect(){
   const modal=document.querySelector('#inspect-modal');
   const content=document.querySelector('#inspect-content');
   content.innerHTML=`
-    <p class="kicker">TODAY · CAPACITY INSPECT</p>
+    <p class="kicker">今日巡检 · 容量概览</p>
     <h2 style="font:600 22px var(--display);margin:6px 0 12px">今日巡检 · Capacity Agent 当前跟进</h2>
     <p style="color:var(--muted);font-size:11px;line-height:1.7;margin:0 0 16px">所有生产变更仍由你审批。下表展示 Agent 正在持续跟进的任务,任何一行点击都能进入治理闭环页查看完整证据。</p>
     <section class="home-followups">${followups.map(t=>`<div class="home-followup"><div><b>${t.title}</b><small>${t.id} · ${t.owner}</small></div><span class="work-status">${stageLabel[t.stage]||'处理中'}</span></div>`).join('') || '<div class="empty-note">暂无跟进任务</div>'}</section>
-    <p class="kicker" style="margin-top:20px">STATUS SNAPSHOT</p>
+    <p class="kicker" style="margin-top:20px">状态快照</p>
     <div class="home-snapshot">
       <div><span>系统在线</span><b class="live">4 / 4</b></div>
       <div><span>待处理告警</span><b class="warn">6</b></div>
@@ -368,7 +370,7 @@ function openHomeEvents(){
   const modal=document.querySelector('#events-modal');
   const content=document.querySelector('#events-content');
   content.innerHTML=`
-    <p class="kicker">LIVE · AGENT WORK EVENTS</p>
+    <p class="kicker">工作事件流</p>
     <h2 style="font:600 22px var(--display);margin:6px 0 12px">Agent 工作事件流</h2>
     <p style="color:var(--muted);font-size:11px;line-height:1.7;margin:0 0 16px">这是 Capacity Agent 后台真实推进的进度(非动画)。每条事件表示一次取数 / 分析 / 跟进 / 验证动作。</p>
     <div class="home-events home-events-modal">${events.map(e=>`<div class="home-event"><span class="home-event-time">${e.time}</span><div class="home-event-dot ${e.tone}"></div><p>${e.text}</p></div>`).join('') || '<div class="empty-note">暂无事件</div>'}</div>`;
@@ -437,14 +439,14 @@ function renderKnowledge(){
 function renderTasks(){
   main.innerHTML=`
   <section class="panel governance-table-panel"><div class="panel-head"><div><h2>正在治理的事项</h2><p>按工单号、治理任务、当前状态、变更单和 Agent 跟进动作查看</p></div><small>3 ACTIVE</small></div><div class="governance-table-wrap"><table class="governance-table"><thead><tr><th>工单号</th><th>治理任务</th><th>负责人</th><th>当前状态</th><th>变更单号</th><th>变更状态</th><th>治理阶段</th><th>操作</th></tr></thead><tbody>${tasks.map(taskRow).join('')}</tbody></table></div></section>
-  <section class="panel verification task-verification"><p class="kicker">EFFECT VERIFICATION / CAP-1839</p><h2>Redis 缩容观察 · 第 3/7 天</h2><p style="color:var(--muted);font-size:11px">Agent 每天取数后自动比较变更前基线与变更后水位，并决定继续观察、回滚或进入下一步。</p><div class="verify-hero"><div class="verify-card"><span>变更前 CPU 峰值</span><strong>18%</strong></div><div class="verify-card"><span>变更后 CPU 峰值</span><strong class="verify-good">31%</strong></div><div class="verify-card"><span>内存峰值变化</span><strong class="verify-good">23% → 36%</strong></div><div class="verify-card"><span>异常 / 告警</span><strong class="verify-good">0 / 0</strong></div></div><div class="decision"><b>Agent 当前结论</b><p>效果符合预期，暂不继续缩容。待观察满 7 天且覆盖周末批处理窗口后，再评估由 5 台缩至 4 台。</p></div></section>`;
+  <section class="panel verification task-verification"><p class="kicker">效果验证 · CAP-1839</p><h2>Redis 缩容观察 · 第 3/7 天</h2><p style="color:var(--muted);font-size:11px">Agent 每天取数后自动比较变更前基线与变更后水位，并决定继续观察、回滚或进入下一步。</p><div class="verify-hero"><div class="verify-card"><span>变更前 CPU 峰值</span><strong>18%</strong></div><div class="verify-card"><span>变更后 CPU 峰值</span><strong class="verify-good">31%</strong></div><div class="verify-card"><span>内存峰值变化</span><strong class="verify-good">23% → 36%</strong></div><div class="verify-card"><span>异常 / 告警</span><strong class="verify-good">0 / 0</strong></div></div><div class="decision"><b>Agent 当前结论</b><p>效果符合预期，暂不继续缩容。待观察满 7 天且覆盖周末批处理窗口后，再评估由 5 台缩至 4 台。</p></div></section>`;
 }
 function taskRow(t){const stages=['发现','建议','审批','观察','验证'];return `<tr><td><span class="ticket-no">${t.id}</span></td><td><span class="task-title"><b>${t.title}</b></span></td><td>${t.owner}</td><td><span class="status-pill">${t.status}</span></td><td>${t.workOrder?`<span class="work-order-no">${t.workOrder}</span>`:'<span class="empty-cell"></span>'}</td><td>${t.workOrder?`<span class="work-status ${t.workStatus==='实施完成'?'done':''}">${t.workStatus}</span>`:`<button class="btn small" data-create-workorder="${t.id}">去提单</button>`}</td><td><span class="stage-badge">${stages[t.stage]||'处理中'}</span></td><td><span class="table-actions"><button class="btn small" ${t.id==='CAP-1839'?'data-verify':''}>${t.action}</button><button class="btn small" data-open-followup="${t.id}">查看Agent跟进记录</button></span></td></tr>`}
 
 function renderWorkline(){
   const job=activeWorkJob();
   workline.innerHTML=`
-    <div class="work-core"><span class="work-orbit"><i></i></span><div><span>CAPACITY AGENT · 自主运行中</span><b>${job.phase}</b></div></div>
+    <div class="work-core"><span class="work-orbit"><i></i></span><div><span>Capacity Agent · 自主运行中</span><b>${job.phase}</b></div></div>
     <div class="work-target"><span>当前对象</span><b>${job.scope}</b><small>${job.target}</small></div>
     <div class="work-signal"><span>实时上下文</span><b>${job.signal}</b></div>
     <div class="work-progress-block"><div><span>${job.kind}</span><b>${state.progress}%</b></div><span class="work-progress"><i style="width:${state.progress}%"></i></span></div>
@@ -469,14 +471,31 @@ function activeWorkJob(){
 
 function renderDrawer(){
   document.querySelectorAll('[data-agent-tab]').forEach(b=>b.classList.toggle('active',b.dataset.agentTab===state.agentTab));
+  const form=document.querySelector('.agent-form');
+  if(form) form.hidden=state.agentTab!=='log';
   if(state.agentTab==='log') drawerContent.innerHTML=renderCollabLog();
-  if(state.agentTab==='plan') drawerContent.innerHTML=`<p class="kicker">TODAY / AUTONOMOUS PLAN</p><div class="plan-list">${plan('08:00','三个接口取数与完整性检查','已完成 3 系统 / 142 实例')}${plan('进行中','GreatDB 容量风险复核','动态基线 + 集群归因',true)}${plan('随后','同类组件资源效率扫描','12 个可比集群')}${plan('14:00','生成容量准入评估摘要','2 项待人工决策')}${plan('持续','轮询治理任务与效果验证','CAP-1842 / CAP-1839')}</div>`;
-  if(state.agentTab==='memory') drawerContent.innerHTML=`<p class="kicker">DECISION CONTEXT</p>${memory('算法负责“算”','动态基线、趋势预测、节点离散度与方案水位由静态模拟的时序分析层提供。')}${memory('AI 负责“判断”','结合系统等级、架构角色、历史行为、同类基准和治理办法解释结论。')}${memory('Agent 负责“做”','安排计划、创建治理单、轮询状态，并在变更后验证效果。')}${memory('长期安全约束','核心集群至少 4 个节点；关键生产变更必须由 SRE 人工审批。')}`;
+  if(state.agentTab==='plan') drawerContent.innerHTML=`<p class="kicker">今日工作计划</p><div class="plan-timeline">${planItem({time:'08:00',status:'done',title:'三个接口取数与完整性检查',desc:'已完成 3 系统 / 142 实例',progress:100})}${planItem({time:'进行中',status:'doing',title:'GreatDB 容量风险复核',desc:'动态基线 + 集群归因',progress:47})}${planItem({time:'随后',status:'next',title:'同类组件资源效率扫描',desc:'12 个可比集群',progress:0})}${planItem({time:'14:00',status:'next',title:'生成容量准入评估摘要',desc:'2 项待人工决策',progress:0})}${planItem({time:'持续',status:'ongoing',title:'轮询治理任务与效果验证',desc:'CAP-1842 / CAP-1839',progress:0})}</div>`;
 }
 function renderCollabLog(){
   const job=autonomousJobs[state.work%autonomousJobs.length];
   const activeIndex=state.work%collabRecords.length;
-  const userRecords=messages.filter(m=>m.tone==='user').map((m,i)=>({time:m.time,type:'user',status:'已接收',title:m.title,body:m.body,facts:['SRE 反馈','写入上下文'],user:true,offset:collabRecords.length+i}));
+  const agentRecords=collabRecords.map((item,i)=>({
+    time:item.time,kind:item.type,status:item.status,title:item.title,body:item.body,facts:item.facts,role:'agent',i,active:i===activeIndex
+  }));
+  const userRecords=messages.filter(m=>m.tone==='user').map((m,i)=>({
+    time:m.time,kind:'user',status:'已接收',title:m.title,body:m.body,role:'user',i:collabRecords.length+i
+  }));
+  // 在 agent 列表里穿插一条 user 记录,模拟「我和 agent 共事」的来回感
+  const merged=[];
+  const insertAt=[1,3,5];
+  agentRecords.forEach((rec,idx)=>{
+    merged.push(rec);
+    if(insertAt.includes(idx)){
+      const ur=userRecords.shift();
+      if(ur) merged.push(ur);
+    }
+  });
+  while(userRecords.length) merged.push(userRecords.shift());
   return `<section class="collab-workbench">
     <div class="collab-date"><span>2026-08-12 · 今日共事记录</span></div>
     <div class="collab-shift">
@@ -485,8 +504,7 @@ function renderCollabLog(){
       <div class="shift-card"><small>实时进度</small><b>${state.progress}%</b><span class="shift-track"><i style="width:${state.progress}%"></i></span></div>
     </div>
     <div class="collab-stream">
-      ${collabRecords.map((item,i)=>collabRecordHTML(item,i,i===activeIndex)).join('')}
-      ${userRecords.map((item,i)=>collabRecordHTML(item,item.offset,true)).join('')}
+      ${merged.map((m,i)=>collabBubbleHTML(m,i)).join('')}
     </div>
     <div class="agent-thinking live">
       <span class="msg-avatar">CA</span>
@@ -494,21 +512,31 @@ function renderCollabLog(){
     </div>
   </section>`;
 }
-function collabRecordHTML(item,i,active=false){
-  return `<article class="collab-record ${item.type} ${active?'active':''} ${item.user?'user-note':''}" style="--i:${i}">
-    <time>${item.time}</time>
-    <div class="record-node"></div>
-    <div class="record-card">
-      <div class="record-head"><span>${item.status}</span><b>${item.title}</b></div>
-      <p>${item.body}</p>
-      <div class="record-facts">${item.facts.map(x=>`<em>${x}</em>`).join('')}</div>
-      ${item.type==='risk'?'<div class="message-actions"><button class="btn small" data-page="system">查看趋势证据</button><button class="btn small" data-open-evidence>判断过程</button></div>':''}
+function collabBubbleHTML(m,i){
+  const user=m.role==='user';
+  const tone=m.kind||'';
+  return `<article class="message ${user?'user':''} ${tone}" style="--i:${i}">
+    <span class="msg-avatar">${user?'YOU':'CA'}</span>
+    <div class="message-body">
+      <small>${m.time} · ${m.status}</small>
+      <h3>${m.title}</h3>
+      <p>${m.body}</p>
+      ${m.facts?`<div class="record-facts">${m.facts.map(x=>`<em>${x}</em>`).join('')}</div>`:''}
+      ${!user && m.kind==='risk'?'<div class="message-actions"><button class="btn small" data-page="system">查看趋势证据</button><button class="btn small" data-open-evidence>判断过程</button></div>':''}
     </div>
   </article>`;
 }
 function messageHTML(m,i){const user=m.tone==='user';return `<article class="message ${user?'user':''}"><span class="msg-avatar">${user?'YOU':'CA'}</span><div class="message-body"><small>${m.time} · ${m.tone.toUpperCase()}</small><h3>${m.title}</h3><p>${m.body}</p>${i===1?'<div class="message-actions"><button class="btn small" data-page="system">查看趋势证据</button><button class="btn small" data-open-evidence>判断过程</button></div>':''}</div></article>`}
-function plan(time,title,note,active=false){return `<div class="plan-item ${active?'active':''}"><time>${time}</time><div><b>${title}</b><small>${note}</small></div></div>`}
-function memory(label,title){return `<div class="memory-card"><small>WORKING MEMORY</small><b>${label}</b><p>${title}</p></div>`}
+function planItem(o){return `<div class="plan-row ${o.status}" style="--p:${o.progress||0}">
+  <div class="plan-time">${o.time}</div>
+  <div class="plan-node"></div>
+  <div class="plan-card">
+    <div class="plan-card-head"><span class="plan-status">${statusLabel(o.status)}</span><b>${o.title}</b></div>
+    <p>${o.desc}</p>
+    <div class="plan-bar"><i style="width:${o.progress||0}%"></i></div>
+  </div>
+</div>`}
+function statusLabel(s){return {done:'已完成',doing:'进行中',next:'待完成',ongoing:'持续跟进'}[s]||s}
 
 function openAgent(){state.agentOpen=true;drawer.classList.add('open');drawer.removeAttribute('inert');drawer.setAttribute('aria-hidden','false');scrim.hidden=false;renderDrawer()}
 function closeOverlays(){
@@ -521,7 +549,7 @@ function closeOverlays(){
   if(events){events.classList.remove('open');events.setAttribute('inert','');events.setAttribute('aria-hidden','true')}
   if(scrim)scrim.hidden=true;
 }
-function openEvidence(){modalCard.classList.remove('followup-card');modalContent.innerHTML=`<div class="evidence-head"><small>HOW I REACHED THIS CONCLUSION</small><h2>这不是一句“AI 觉得有风险”</h2><p>Capacity Agent 把计算、判断与行动分开呈现，SRE 可以检查每一层证据。</p></div><div class="evidence-steps"><div class="evidence-step"><span>01 / CALCULATE</span><h3>算法负责算</h3><p>关联 30 日历史，计算动态基线、7 日斜率、节点极差和预计触达阈值时间。</p></div><div class="evidence-step"><span>02 / REASON</span><h3>AI 负责判断</h3><p>结合主备角色、系统等级和治理规则，判断是整体不足、单节点异常还是负载倾斜。</p></div><div class="evidence-step"><span>03 / ACT</span><h3>Agent 负责做</h3><p>生成建议、等待关键审批、创建 JIRA、轮询状态并验证变更后的容量效果。</p></div></div><div class="explain" style="margin-top:18px"><strong>本次结论：</strong>GreatDB 风险置信度 91%。证据包括峰值 87.6%、偏离基线 18.4%、连续 7 日增长和节点极差 49.6%。</div>`;modal.classList.add('open');modal.removeAttribute('inert');modal.setAttribute('aria-hidden','false');scrim.hidden=false}
+function openEvidence(){modalCard.classList.remove('followup-card');modalContent.innerHTML=`<div class="evidence-head"><small>本次结论如何得出</small><h2>这不是一句"AI 觉得有风险"</h2><p>Capacity Agent 把计算、判断与行动分开呈现，SRE 可以检查每一层证据。</p></div><div class="evidence-steps"><div class="evidence-step"><span>第一步 · 算法算</span><h3>算法负责算</h3><p>关联 30 日历史，计算动态基线、7 日斜率、节点极差和预计触达阈值时间。</p></div><div class="evidence-step"><span>第二步 · AI 判断</span><h3>AI 负责判断</h3><p>结合主备角色、系统等级和治理规则，判断是整体不足、单节点异常还是负载倾斜。</p></div><div class="evidence-step"><span>第三步 · Agent 做</span><h3>Agent 负责做</h3><p>生成建议、等待关键审批、创建 JIRA、轮询状态并验证变更后的容量效果。</p></div></div><div class="explain" style="margin-top:18px"><strong>本次结论：</strong>GreatDB 风险置信度 91%。证据包括峰值 87.6%、偏离基线 18.4%、连续 7 日增长和节点极差 49.6%。</div>`;modal.classList.add('open');modal.removeAttribute('inert');modal.setAttribute('aria-hidden','false');scrim.hidden=false}
 function openFollowup(taskId){
   const task=tasks.find(t=>t.id===taskId)||tasks[1];
   const events=[
@@ -531,7 +559,7 @@ function openFollowup(taskId){
     ['下一步 · 08-16 自动复核','覆盖完整观察窗口后生成最终结论。']
   ];
   modalCard.classList.add('followup-card');
-  modalContent.innerHTML=`<div class="follow-dialog"><header class="follow-hero"><div><small>AGENT FOLLOW-UP / ${task.id}</small><h2>${task.title}</h2><p>${task.workOrder?`Agent 正在跟进 ${task.workOrder}，当前变更状态为 ${task.workStatus}。`:'当前治理任务尚未提单，Agent 会在提单后继续自动轮询状态。'}</p></div><span class="follow-status ${task.workStatus==='实施完成'?'done':''}">${task.workStatus||'待提单'}</span></header><div class="follow-summary"><div><span>治理工单</span><b>${task.id}</b></div><div><span>变更单</span><b>${task.workOrder||'尚未创建'}</b></div><div><span>当前阶段</span><b>${task.status}</b></div></div><div class="dialog-timeline">${events.map(([title,body],i)=>`<div class="timeline-item" style="--i:${i}"><span class="timeline-dot">${String(i+1).padStart(2,'0')}</span><div><b>${title}</b><p>${body}</p></div></div>`).join('')}</div></div>`;
+  modalContent.innerHTML=`<div class="follow-dialog"><header class="follow-hero"><div><small>Agent 跟进 · ${task.id}</small><h2>${task.title}</h2><p>${task.workOrder?`Agent 正在跟进 ${task.workOrder}，当前变更状态为 ${task.workStatus}。`:'当前治理任务尚未提单，Agent 会在提单后继续自动轮询状态。'}</p></div><span class="follow-status ${task.workStatus==='实施完成'?'done':''}">${task.workStatus||'待提单'}</span></header><div class="follow-summary"><div><span>治理工单</span><b>${task.id}</b></div><div><span>变更单</span><b>${task.workOrder||'尚未创建'}</b></div><div><span>当前阶段</span><b>${task.status}</b></div></div><div class="dialog-timeline">${events.map(([title,body],i)=>`<div class="timeline-item" style="--i:${i}"><span class="timeline-dot">${String(i+1).padStart(2,'0')}</span><div><b>${title}</b><p>${body}</p></div></div>`).join('')}</div></div>`;
   modal.classList.add('open');modal.removeAttribute('inert');modal.setAttribute('aria-hidden','false');scrim.hidden=false;
 }
 function toast(title,body){const el=document.createElement('div');el.className='toast';el.innerHTML=`<b>${title}</b><span>${body}</span>`;document.querySelector('#toasts').append(el);setTimeout(()=>el.remove(),3800)}
@@ -557,7 +585,7 @@ document.addEventListener('click',e=>{
   const prompt=e.target.closest('[data-prompt]');if(prompt){agentInput.value=prompt.dataset.prompt;agentInput.focus();return}
   const simTarget=e.target.closest('[data-sim-target]');if(simTarget){state.simTarget=simTarget.dataset.simTarget;const target=simTargets[state.simTarget]||simTargets.redis;state.simNodes=target.defaultNodes;state.simSpec=target.spec;renderSimulator();renderWorkline();return}
   if(e.target.closest('[data-run-sim]')){toast('仿真已刷新','已按当前机器规格、节点数和业务流量重新计算三项资源曲线。');renderSimulator();return}
-  if(e.target.closest('[data-create-task]')){toast('已生成静态演示任务','CAP-1848 已进入”待 SRE 审批”，不会触发真实生产变更。');return}
+  if(e.target.closest('[data-create-task]')){toast('已生成静态演示任务','CAP-1848 已进入"待 SRE 审批"，不会触发真实生产变更。');return}
   if(e.target.closest('[data-create-workorder]')){toast('已准备治理工单','演示环境不会真实提单，请在生产流程中完成变更单创建。');return}
   if(e.target.closest('[data-review]')){toast('Capacity Agent 已完成评估','已结合历史趋势、同类对标与安全余量，建议新增 4 台。');return}
   if(e.target.closest('[data-reset-sim]')){const target=simTargets[state.simTarget]||simTargets.redis;state.simNodes=target.defaultNodes;state.simLoad=20;state.simType='物理机';state.simSpec=target.spec;renderSimulator();renderWorkline();return}
@@ -575,7 +603,7 @@ document.addEventListener('change',e=>{
   if(e.target.id==='sim-type'){state.simType=e.target.value;renderSimulator();renderWorkline()}
   if(e.target.id==='sim-spec'){state.simSpec=e.target.value;renderSimulator();renderWorkline()}
 });
-document.querySelector('#agent-form').addEventListener('submit',e=>{e.preventDefault();const text=agentInput.value.trim();if(!text)return;messages.push({time:'刚刚',title:'收到，我已经调整工作上下文',body:`你的要求“${text}”已进入当前计划。我会先验证相关数据和安全约束，再主动汇报结论。`,tone:'user'});agentInput.value='';state.agentTab='log';renderDrawer();drawerContent.scrollTop=drawerContent.scrollHeight;toast('分析方向已更新','Agent 会继续自主工作，并在有结论时主动通知你。')});
+document.querySelector('#agent-form').addEventListener('submit',e=>{e.preventDefault();const text=agentInput.value.trim();if(!text)return;messages.push({time:'刚刚',title:'收到，我已经调整工作上下文',body:`你的要求"${text}"已进入当前计划。我会先验证相关数据和安全约束，再主动汇报结论。`,tone:'user'});agentInput.value='';state.agentTab='log';renderDrawer();drawerContent.scrollTop=drawerContent.scrollHeight;toast('分析方向已更新','Agent 会继续自主工作，并在有结论时主动通知你。')});
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeOverlays()});
 
 render();renderWorkline();
