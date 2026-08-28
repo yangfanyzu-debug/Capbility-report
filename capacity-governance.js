@@ -705,17 +705,18 @@ function wzRenderReport(){
 /* ---------- 向导交互监听 ---------- */
 document.addEventListener('click',e=>{
   if(!e.target.closest('#main'))return;
+  // 关闭级联面板(向导还在场时)
   if(document.getElementById('appContent')&&!e.target.closest('.cascader')){
     document.querySelectorAll('#appContent .casc-panel').forEach(p=>p.hidden=true);
   }
-  if(!document.getElementById('step1'))return;
+  if(!document.querySelector('.wz-stepper'))return;
   const step=e.target.closest('.wz-stepper .step');
   if(step){
     const d=parseInt(step.getAttribute('data-step'),10);
     if(d===wzStep)return;
     if(d<wzStep){wzGo(d);return;}
     if(!wzApp){toast('请先完成第 1 步','需要先加载一条 ITSM 申请单才能进入仿真。');return;}
-    if(d===2&&wzApp.type==='改造'&&wzModules.length===0){toast('请先选择涉及模块','在设备清单中为每个组件选择涉及模块。');return;}
+    if(d===2&&wzApp&&wzApp.type==='改造'&&wzModules.length===0){toast('请先选择涉及模块','在设备清单中为每个组件选择涉及模块。');return;}
     wzGo(d);return;
   }
   const modTab=e.target.closest('[data-mod-i]');

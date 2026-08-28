@@ -574,7 +574,7 @@ main{background:transparent}.page-toolbar,.system-switcher,.brief-copy,.brief-da
 .wz-stepper .connector{flex:1;height:2px;background:#e3e8f0;margin:0 16px}
 .wz-stepper .connector.done{background:#9fb4d4}
 
-.wz-panel{background:#fff;border:1px solid #dce2eb;border-radius:16px;padding:18px 22px;margin-bottom:16px;box-shadow:0 12px 30px rgba(25,36,58,.06)}
+.wz-panel{background:#fff;border:1px solid #dce2eb;border-radius:16px;padding:18px 22px;margin-bottom:16px;box-shadow:0 12px 30px rgba(25,36,58,.06);display:flex;flex-direction:column;min-height:0}
 .wz-panel>.panel-head{margin-bottom:20px;padding-bottom:14px}
 .wz-panel .panel-head .en{font-size:10.5px;letter-spacing:.1em;color:#2f5d91;font-weight:700;font-family:var(--mono)}
 .wz-panel .panel-head .zh{font-size:16px;font-weight:750}
@@ -641,8 +641,11 @@ main{background:transparent}.page-toolbar,.system-switcher,.brief-copy,.brief-da
 .tab-hint{font-size:11px;color:#8b94a5;margin-left:auto;align-self:center;white-space:nowrap}
 .tab-hint.ok{color:#168066;font-weight:600}
 
-.sim-grid{display:grid;grid-template-columns:2.5fr 1fr;gap:16px;align-items:start}
-@media(max-width:1000px){.sim-grid{grid-template-columns:1fr}}
+.sim-grid{display:grid;grid-template-columns:2.5fr 1fr;grid-template-areas:"tabs tabs" "charts params";gap:16px;align-items:start}
+.sim-grid .mod-tabs{grid-area:tabs}
+.sim-grid .sim-charts{grid-area:charts}
+.sim-grid .sim-params{grid-area:params}
+@media(max-width:1000px){.sim-grid{grid-template-columns:1fr;grid-template-areas:"tabs" "charts" "params"}}
 .sim-charts{position:relative;display:flex;flex-direction:column;gap:10px}
 .sim-loading{position:absolute;inset:0;z-index:6;background:rgba(255,255,255,.94);border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;backdrop-filter:blur(2px)}
 .sim-loading[hidden]{display:none}
@@ -722,3 +725,4 @@ main{background:transparent}.page-toolbar,.system-switcher,.brief-copy,.brief-da
 .agent-float.collapsed .agent-mini{display:grid}
 .agent-mini{display:none;width:48px;height:48px;border-radius:50%;background:linear-gradient(145deg,#f7f9fc,#e4eaf3);border:1px solid #c8d3e2;color:#2f5d91;font:700 13px var(--sans);place-items:center;box-shadow:0 8px 20px rgba(25,36,58,.16);cursor:pointer;justify-self:end;align-self:end}
 .agent-float.collapsed .agent-mini{animation:bubblePop .32s cubic-bezier(.2,.8,.2,1)}
+.wz-panel[hidden]{display:none!important}
