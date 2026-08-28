@@ -670,8 +670,8 @@ main{background:transparent}.page-toolbar,.system-switcher,.brief-copy,.brief-da
 .param-title{font-size:15px;font-weight:750}
 .slider-block{width:100%}
 .slider-label{display:flex;align-items:center;justify-content:space-between;margin-bottom:7px;font-size:12.5px;color:#46556d;font-weight:600;gap:8px}
-.slider-label .side{color:#7b879b;font-weight:500;text-align:right}
-.slider-label .side b{color:#2f5d91;font-weight:700}
+  .slider-label .meta{color:#7b879b;font-weight:500;text-align:right}
+.slider-label .meta b{color:#2f5d91;font-weight:700}
 .slider-label .rec{font-size:11px;color:#2f5d91;font-weight:600;margin-left:6px}
 .range{position:relative;height:22px;display:flex;align-items:center}
 .range input[type=range]{width:100%;height:5px;background:#e3e8f0;border-radius:5px;outline:none;-webkit-appearance:none;appearance:none}

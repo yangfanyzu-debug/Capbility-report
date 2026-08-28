@@ -248,19 +248,19 @@ function renderSimulator(){
         <div class="fld"><label>机器类型</label><div class="select"><select id="pType">
           <option>物理机</option><option>虚拟机</option><option>容器</option></select></div></div>
         <div class="slider-block">
-          <div class="slider-label"><span>机器CPU</span><span class="side"><span id="pCpuSide"></span>　当前 <b id="pCpuVal"></b><span class="rec" id="pCpuRec"></span></span></div>
+          <div class="slider-label"><span>机器CPU</span><span class="meta"><span id="pCpuSide"></span>　当前 <b id="pCpuVal"></b><span class="rec" id="pCpuRec"></span></span></div>
           <div class="range"><span class="rail" id="pCpuRail"></span><span class="mark" id="pCpuMark"></span><input type="range" id="pCpu" min="1" max="4" value="4"></div>
         </div>
         <div class="slider-block">
-          <div class="slider-label"><span>机器内存</span><span class="side"><span id="pMemSide"></span>　当前 <b id="pMemVal"></b><span class="rec" id="pMemRec"></span></span></div>
+          <div class="slider-label"><span>机器内存</span><span class="meta"><span id="pMemSide"></span>　当前 <b id="pMemVal"></b><span class="rec" id="pMemRec"></span></span></div>
           <div class="range"><span class="rail" id="pMemRail"></span><span class="mark" id="pMemMark"></span><input type="range" id="pMem" min="1" max="16" value="16"></div>
         </div>
         <div class="slider-block">
-          <div class="slider-label"><span>机器磁盘</span><span class="side"><span id="pDiskSide"></span>　当前 <b id="pDiskVal"></b><span class="rec" id="pDiskRec"></span></span></div>
+          <div class="slider-label"><span>机器磁盘</span><span class="meta"><span id="pDiskSide"></span>　当前 <b id="pDiskVal"></b><span class="rec" id="pDiskRec"></span></span></div>
           <div class="range"><span class="rail" id="pDiskRail"></span><span class="mark" id="pDiskMark"></span><input type="range" id="pDisk" min="10" max="100" value="100"></div>
         </div>
         <div class="slider-block">
-          <div class="slider-label"><span>机器数量</span><span class="side"><span id="pCountSide"></span>　当前 <b id="pCountVal"></b><span class="rec" id="pCountRec"></span></span></div>
+          <div class="slider-label"><span>机器数量</span><span class="meta"><span id="pCountSide"></span>　当前 <b id="pCountVal"></b><span class="rec" id="pCountRec"></span></span></div>
           <div class="range"><span class="rail" id="pCountRail"></span><span class="mark" id="pCountMark"></span><input type="range" id="pCount" min="1" max="10" value="10"></div>
         </div>
         <div class="risk-box r-low" id="riskBox">当前方案风险：<b>低风险</b></div>
