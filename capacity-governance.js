@@ -966,9 +966,14 @@ function renderWorkline(){
   const mini=document.querySelector('#agent-mini-status');
   const pet=document.querySelector('#agent-float');
   mini.textContent=`${job.phase} · ${state.progress}%`;
+  if(pet.classList.contains('collapsed'))return;
+  if(pet._lastPhase===job.phase)return;
+  pet._lastPhase=job.phase;
   pet.classList.remove('speaking');
   void pet.offsetWidth;
   pet.classList.add('speaking');
+  clearTimeout(pet._talkTimer);
+  pet._talkTimer=setTimeout(()=>pet.classList.remove('speaking'),5200);
 }
 function activeWorkJob(){
   if(state.page==='simulate'&&wzApp){
@@ -1075,7 +1080,20 @@ function toast(title,body){const el=document.createElement('div');el.className='
 
 document.addEventListener('click',e=>{
   const page=e.target.closest('[data-page]');if(page){if(page.dataset.systemId)state.selectedSystemId=page.dataset.systemId;state.page=page.dataset.page;closeOverlays();render();renderWorkline();return}
-  if(e.target.closest('[data-open-agent]')){openAgent();return}
+  const collapseBtn=e.target.closest('[data-agent-collapse]');
+  if(collapseBtn){
+    e.stopPropagation();
+    const pet=document.querySelector('#agent-float');
+    pet.classList.add('collapsed');
+    try{localStorage.setItem('cap-agent-collapsed','1')}catch(_){}
+    toast('机器人已收起','点击右下角 CA 圆钮可随时恢复完整机器人。');
+    return;
+  }
+  if(e.target.closest('[data-open-agent]')){
+    const pet=document.querySelector('#agent-float');
+    if(pet.classList.contains('collapsed')){pet.classList.remove('collapsed');try{localStorage.removeItem('cap-agent-collapsed')}catch(_){}return}
+    openAgent();return;
+  }
   if(e.target.closest('[data-close-agent]')||e.target.closest('[data-close-modal]')||e.target.closest('[data-close-inspect]')||e.target.closest('[data-close-events]')||e.target===scrim){closeOverlays();return}
   if(e.target.closest('[data-open-evidence]')){openEvidence();return}
   if(e.target.closest('[data-open-inspect]')){openHomeInspect();return}
@@ -1109,5 +1127,6 @@ document.querySelector('#agent-form').addEventListener('submit',e=>{e.preventDef
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeOverlays()});
 
 render();renderWorkline();
+try{if(localStorage.getItem('cap-agent-collapsed')==='1')document.querySelector('#agent-float')?.classList.add('collapsed')}catch(_){}
 setInterval(()=>{state.progress+=7;if(state.progress>100){state.progress=12;state.work++;if(state.work%2===0)toast('Capacity Agent 主动更新','完成一项容量分析，新的治理结论已写入工作记录。')}renderWorkline();if(state.agentOpen&&state.agentTab==='log')renderDrawer()},2400);
 setTimeout(()=>toast('今日容量巡检已完成','Agent 正在持续跟进 3 项治理任务，无需人工触发。'),800);
