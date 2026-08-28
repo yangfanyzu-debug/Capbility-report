@@ -673,12 +673,12 @@ main{background:transparent}.page-toolbar,.system-switcher,.brief-copy,.brief-da
   .slider-label .meta{color:#7b879b;font-weight:500;text-align:right}
 .slider-label .meta b{color:#2f5d91;font-weight:700}
 .slider-label .rec{font-size:11px;color:#2f5d91;font-weight:600;margin-left:6px}
-.range{position:relative;height:22px;display:flex;align-items:center}
-.range input[type=range]{width:100%;height:5px;background:#e3e8f0;border-radius:5px;outline:none;-webkit-appearance:none;appearance:none}
-.range input[type=range]::-webkit-slider-thumb{width:18px;height:18px;border-radius:50%;background:#fff;border:2px solid #2f5d91;box-shadow:0 1px 3px rgba(25,36,58,.18);-webkit-appearance:none;margin-top:-6px;cursor:pointer}
-.range input[type=range]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;background:#fff;border:2px solid #2f5d91;cursor:pointer}
-.range .rail{position:absolute;left:0;top:50%;transform:translateY(-50%);height:5px;border-radius:5px;background:#2f5d91;pointer-events:none}
-.range .mark{position:absolute;top:50%;transform:translate(-50%,-50%);width:9px;height:9px;border-radius:50%;background:#e8a13c;box-shadow:0 0 0 3px rgba(232,161,60,.22);pointer-events:none;z-index:2}
+.range{position:relative;height:28px;display:flex;align-items:center;margin-top:2px}
+.range input[type=range]{width:100%;height:4px;background:#e3e8f0;border-radius:4px;outline:none;-webkit-appearance:none;appearance:none;cursor:pointer}
+.range input[type=range]::-webkit-slider-thumb{width:14px;height:14px;border-radius:50%;background:#2f5d91;border:2px solid #fff;box-shadow:0 1px 3px rgba(25,36,58,.25);-webkit-appearance:none;margin-top:-5px;cursor:pointer;position:relative;z-index:2}
+.range input[type=range]::-moz-range-thumb{width:14px;height:14px;border-radius:50%;background:#2f5d91;border:2px solid #fff;cursor:pointer}
+.range .rail{position:absolute;left:0;top:50%;transform:translateY(-50%);height:4px;border-radius:4px;background:linear-gradient(90deg,#2f5d91 0%,#527da5 100%);pointer-events:none}
+.range .mark{position:absolute;top:50%;transform:translate(-50%,-50%);width:6px;height:14px;border-radius:3px;background:#e8a13c;box-shadow:0 0 0 2px #fff,0 1px 3px rgba(232,161,60,.4);pointer-events:none;z-index:1}
 .risk-box{border-radius:9px;padding:9px 12px;font-size:12px;line-height:1.6;border:1px solid}
 .risk-box.r-low{background:#eef7f2;border-color:#c9e5d6;color:#256247}
 .risk-box.r-mid{background:#fdf8ea;border-color:#eadfbe;color:#7a6a3a}
