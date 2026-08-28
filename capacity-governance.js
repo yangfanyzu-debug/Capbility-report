@@ -1027,6 +1027,26 @@ function renderCollabLog(){
     </div>
   </section>`;
 }
+function updateCollabShift(){
+  const job=activeWorkJob();
+  const shift=document.querySelector('#drawer-content .collab-shift');
+  if(!shift)return;
+  const mainStrong=shift.querySelector('.shift-main strong');
+  const mainP=shift.querySelector('.shift-main p');
+  if(mainStrong)mainStrong.textContent=job.phase;
+  if(mainP)mainP.textContent=`${job.scope} · ${job.target}`;
+  const cards=shift.querySelectorAll('.shift-card');
+  if(cards[0]){
+    const b=cards[0].querySelector('b'),p=cards[0].querySelector('p');
+    if(b)b.textContent=job.kind;
+    if(p)p.textContent=job.next;
+  }
+  if(cards[1]){
+    const b=cards[1].querySelector('b'),t=cards[1].querySelector('.shift-track i');
+    if(b)b.textContent=`${state.progress}%`;
+    if(t)t.style.width=`${state.progress}%`;
+  }
+}
 function collabBubbleHTML(m,i){
   const user=m.role==='user';
   const tone=m.kind||'';
@@ -1129,5 +1149,5 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape')closeOverlays()});
 
 render();renderWorkline();
 try{if(localStorage.getItem('cap-agent-collapsed')==='1')document.querySelector('#agent-float')?.classList.add('collapsed')}catch(_){}
-setInterval(()=>{state.progress+=7;if(state.progress>100){state.progress=12;state.work++;if(state.work%2===0)toast('Capacity Agent 主动更新','完成一项容量分析，新的治理结论已写入工作记录。')}renderWorkline();if(state.agentOpen&&state.agentTab==='log')renderDrawer()},2400);
+setInterval(()=>{state.progress+=7;if(state.progress>100){state.progress=12;state.work++;if(state.work%2===0)toast('Capacity Agent 主动更新','完成一项容量分析，新的治理结论已写入工作记录。')}renderWorkline();if(state.agentOpen&&state.agentTab==='log'&&typeof updateCollabShift==='function')updateCollabShift()},2400);
 setTimeout(()=>toast('今日容量巡检已完成','Agent 正在持续跟进 3 项治理任务，无需人工触发。'),800);
