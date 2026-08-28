@@ -54,7 +54,6 @@ const systemDetails={
 
 const systemProfiles={
   payment:{
-    owner:'陈哲',level:'A',business:'核心交易与支付清结算链路',source:'IF-04 系统画像 · 2026-08-12 08:00',
     components:[
       {name:'GreatDB',role:'核心交易数据库',clusters:[
         {name:'pay-greatdb-prod',level:'P1',summary:'6 台 · 8C32G · 主从分片',servers:['greatdb-010','greatdb-011','greatdb-012','greatdb-013','greatdb-014','greatdb-015']},
@@ -69,7 +68,6 @@ const systemProfiles={
     ]
   },
   risk:{
-    owner:'王璐',level:'A',business:'实时反欺诈、评分和夜间批处理重算',source:'IF-04 系统画像 · 2026-08-12 08:00',
     components:[
       {name:'Java 应用',role:'风控规则与评分服务',clusters:[
         {name:'rsk-score-worker',level:'P2',summary:'6 台 · 8C32G · CPU 增长',servers:['rsk-calc-01','rsk-calc-02','rsk-calc-03','rsk-calc-04','rsk-calc-05','rsk-calc-06']},
@@ -81,7 +79,6 @@ const systemProfiles={
     ]
   },
   channel:{
-    owner:'李琦',level:'B',business:'渠道流量接入、路由和限流',source:'IF-04 系统画像 · 2026-08-12 08:00',
     components:[
       {name:'Nginx',role:'统一入口与流量转发',clusters:[
         {name:'chn-ingress-nginx',level:'P3',summary:'6 台 · 16C32G · 可降配',servers:['chn-nginx-01','chn-nginx-02','chn-nginx-03','chn-nginx-04','chn-nginx-05','chn-nginx-06']},
@@ -125,7 +122,7 @@ const collabRecords=[
 ];
 
 
-const state={page:'overview',selectedSystemId:'payment',agentOpen:false,agentTab:'log',work:0,progress:36,simNodes:5,simLoad:20,simTarget:'redis',simType:'物理机',simSpec:'8C32G'};
+const state={page:'overview',selectedSystemId:'payment',profileCluster:'',agentOpen:false,agentTab:'log',work:0,progress:36,simNodes:5,simLoad:20,simTarget:'redis',simType:'物理机',simSpec:'8C32G'};
 const main=document.querySelector('#main');
 const nav=document.querySelector('#nav');
 const crumb=document.querySelector('#crumb');
@@ -199,45 +196,63 @@ function renderProfile(){
   const system=selectedSystem(),profile=systemProfiles[system.id]||systemProfiles.payment;
   const clusterCount=profile.components.reduce((sum,c)=>sum+c.clusters.length,0);
   const serverCount=profile.components.reduce((sum,c)=>sum+c.clusters.reduce((n,cl)=>n+cl.servers.length,0),0);
-  main.innerHTML=systemSwitcher(system)+`
-  <section class="profile-layout">
-    <article class="panel profile-summary">
-      <div class="profile-title">
-        <span class="system-code">${system.code}</span>
-        <div><p class="kicker">SYSTEM PROFILE</p><h2>${system.name}</h2><small>${system.domain} · ${profile.business}</small></div>
-      </div>
-      <div class="profile-facts">
-        ${profileFact('系统等级',profile.level)}
-        ${profileFact('主负责人',profile.owner)}
-        ${profileFact('组件数量',profile.components.length+' 个')}
-        ${profileFact('集群数量',clusterCount+' 个')}
-        ${profileFact('服务器数量',serverCount+' 台')}
-        ${profileFact('画像来源','IF-04')}
-      </div>
-      <div class="profile-source"><b>画像口径</b><p>系统画像用于解释容量数据的归属关系：系统下面是组件，组件下面是集群，集群再关联到具体服务器。容量总览和趋势证据都应挂到这条关系链上。</p><small>${profile.source}</small></div>
-    </article>
-    <section class="panel profile-map">
-      <div class="panel-head"><div><h2>系统 · 组件 · 集群 · 服务器</h2><p>逻辑资源在页面中统一表述为集群维度</p></div><small>${serverCount} SERVERS</small></div>
-      <div class="profile-tree">
-        ${profile.components.map(componentProfile).join('')}
-      </div>
-    </section>
-  </section>`;
+  const selected=findProfileCluster(profile);
+  main.innerHTML=`
+  <section class="profile-toolbar panel">
+    <label for="system-select"><span>选择系统</span><select id="system-select" aria-label="切换系统画像">${managedSystems.map(s=>`<option value="${s.id}" ${s.id===system.id?'selected':''}>${s.name}</option>`).join('')}</select></label>
+    <div class="profile-counts"><span><b>${profile.components.length}</b> 组件</span><span><b>${clusterCount}</b> 集群</span><span><b>${serverCount}</b> 服务器</span></div>
+  </section>
+  <section class="panel profile-map">
+    <div class="panel-head"><div><h2>系统资源结构</h2><p>沿系统、组件、集群逐层查看资源归属；选择集群可查看服务器明细</p></div><div class="topology-legend"><i></i> 当前集群</div></div>
+    <div class="profile-topology">
+      <div class="profile-system-column"><div class="profile-system-node"><span>${system.code}</span><b>${system.name}</b><small>${system.domain}</small></div></div>
+      <div class="profile-lanes" style="--lane-count:${profile.components.length}">${profile.components.map(component=>componentProfile(component,selected.cluster.name)).join('')}</div>
+    </div>
+  </section>
+  ${serverTable(selected.component,selected.cluster)}`;
 }
 
-function profileFact(label,value){return `<div><span>${label}</span><b>${value}</b></div>`}
-function componentProfile(component){
-  return `<section class="profile-component">
-    <header><span>${component.name}</span><small>${component.role}</small></header>
-    <div class="profile-clusters">${component.clusters.map(clusterProfile).join('')}</div>
+function findProfileCluster(profile){
+  for(const component of profile.components){
+    const cluster=component.clusters.find(item=>item.name===state.profileCluster);
+    if(cluster)return {component,cluster};
+  }
+  const component=profile.components[0],cluster=component.clusters[0];
+  state.profileCluster=cluster.name;
+  return {component,cluster};
+}
+function componentProfile(component,selectedCluster){
+  return `<section class="profile-lane">
+    <div class="profile-component-node"><span>组件</span><b>${component.name}</b><small>${component.role}</small></div>
+    <div class="profile-cluster-stack">${component.clusters.map(cluster=>clusterProfile(cluster,cluster.name===selectedCluster)).join('')}</div>
   </section>`;
 }
-function clusterProfile(cluster){
-  return `<article class="profile-cluster">
-    <div class="cluster-head"><div><b>${cluster.name}</b><small>${cluster.summary}</small></div><em>${cluster.level}</em></div>
-    <div class="server-chips">${cluster.servers.map(s=>`<span>${s}</span>`).join('')}</div>
-  </article>`;
+function clusterProfile(cluster,selected){
+  return `<button class="profile-cluster-node ${selected?'selected':''}" data-profile-cluster="${cluster.name}" aria-pressed="${selected}">
+    <span><i></i>集群</span><b>${cluster.name}</b><small>${cluster.summary}</small><em>${cluster.servers.length} 台</em>
+  </button>`;
 }
+function serverTable(component,cluster){
+  return `<section class="panel profile-server-panel">
+    <div class="panel-head"><div><p class="kicker">CLUSTER SERVERS</p><h2>${cluster.name}</h2><p>${component.name} · ${component.role}</p></div><span class="cluster-level">${cluster.level}</span></div>
+    <div class="profile-table-wrap"><table class="profile-server-table"><thead><tr><th>服务器</th><th>IP 地址</th><th>角色</th><th>规格</th><th>CPU</th><th>内存</th><th>磁盘</th><th>运行状态</th></tr></thead><tbody>${cluster.servers.map((server,index)=>serverRow(server,index,cluster,component.name)).join('')}</tbody></table></div>
+  </section>`;
+}
+function serverRow(server,index,cluster,componentName){
+  const seed=[...server].reduce((sum,char)=>sum+char.charCodeAt(0),0);
+  const ip=`10.${(seed%12)+20}.${(seed%83)+10}.${(index+11)*3}`;
+  const role=index===0?'主节点':index===1?'备用节点':'工作节点';
+  const spec=cluster.summary.match(/\d+C\d+G/)?.[0]||'8C16G';
+  let cpu=18+(seed+index*7)%49,mem=27+(seed+index*11)%45,disk=35+(seed+index*13)%54;
+  const knownMetric=systemDetails[state.selectedSystemId]?.nodes.find(([host])=>host===server)?.[1];
+  if(knownMetric!==undefined){
+    if(state.selectedSystemId==='payment'&&componentName==='GreatDB')disk=knownMetric;
+    else cpu=knownMetric;
+  }
+  const status=disk>82?'关注':'正常';
+  return `<tr><td><b>${server}</b></td><td><code>${ip}</code></td><td>${role}</td><td>${spec}</td><td>${metricCell(cpu)}</td><td>${metricCell(mem)}</td><td>${metricCell(disk,disk>82?'warn':'')}</td><td><span class="server-status ${status==='关注'?'warn':''}"><i></i>${status}</span></td></tr>`;
+}
+function metricCell(value,tone=''){return `<span class="server-metric ${tone}"><b>${value}%</b><i><em style="width:${value}%"></em></i></span>`}
 
 function trendChart(){
   const actual=[48,50,49,52,51,53,54,52,55,56,55,58,59,57,60,61,62,63,65,64,67,69,70,72,75,77,80,82,85,87.6];
@@ -1189,6 +1204,7 @@ function toast(title,body){const el=document.createElement('div');el.className='
 
 document.addEventListener('click',e=>{
   const page=e.target.closest('[data-page]');if(page){if(page.dataset.systemId)state.selectedSystemId=page.dataset.systemId;state.page=page.dataset.page;closeOverlays();render();renderWorkline();return}
+  const profileCluster=e.target.closest('[data-profile-cluster]');if(profileCluster){state.profileCluster=profileCluster.dataset.profileCluster;render();return}
   const collapseBtn=e.target.closest('[data-agent-collapse]');
   if(collapseBtn){
     e.stopPropagation();
@@ -1226,11 +1242,11 @@ document.addEventListener('click',e=>{
 });
 
 document.addEventListener('input',e=>{
-  if(e.target.id==='system-select'){state.selectedSystemId=e.target.value;render()}
+  if(e.target.id==='system-select'){state.selectedSystemId=e.target.value;state.profileCluster='';render()}
 });
 
 document.addEventListener('change',e=>{
-  if(e.target.id==='system-select'){state.selectedSystemId=e.target.value;render()}
+  if(e.target.id==='system-select'){state.selectedSystemId=e.target.value;state.profileCluster='';render()}
 });
 document.querySelector('#agent-form').addEventListener('submit',e=>{e.preventDefault();const text=agentInput.value.trim();if(!text)return;messages.push({time:'刚刚',title:'收到，我已经调整工作上下文',body:`你的要求"${text}"已进入当前计划。我会先验证相关数据和安全约束，再主动汇报结论。`,tone:'user'});agentInput.value='';state.agentTab='log';renderDrawer();drawerContent.scrollTop=drawerContent.scrollHeight;toast('分析方向已更新','Agent 会继续自主工作，并在有结论时主动通知你。')});
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeOverlays()});
