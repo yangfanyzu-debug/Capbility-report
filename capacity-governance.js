@@ -6,6 +6,7 @@ const icons={
   admission:'<svg viewBox="0 0 24 24"><path d="M12 3 4 7v5c0 5 3 8 8 9 5-1 8-4 8-9V7z"/><path d="m8 12 3 3 5-6"/></svg>',
   tasks:'<svg viewBox="0 0 24 24"><path d="M8 5h12M8 12h12M8 19h12M3 5h1M3 12h1M3 19h1"/></svg>',
   knowledge:'<svg viewBox="0 0 24 24"><path d="M4 4h7a3 3 0 0 1 3 3v13a2 2 0 0 0-2-2H4z"/><path d="M20 4h-7a3 3 0 0 0-3 3v13a2 2 0 0 1 2-2h8z"/></svg>',
+  profile:'<svg viewBox="0 0 24 24"><path d="M12 4v5M12 15v5M5 12h5M14 12h5"/><circle cx="12" cy="12" r="3"/><circle cx="12" cy="4" r="2"/><circle cx="12" cy="20" r="2"/><circle cx="4" cy="12" r="2"/><circle cx="20" cy="12" r="2"/></svg>',
   home:'<svg viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5"/><path d="M5 10.5V20h14v-9.5"/><path d="M10 20v-6h4v6"/></svg>'
 };
 
@@ -48,6 +49,48 @@ const systemDetails={
     spread:'MAX−MIN 8.6%',cause:'风险低但资源规格偏大',
     body:'Nginx 节点利用率长期低位且节点分布稳定，主要问题不是风险，而是单实例规格高于同类系统中位数。',
     decision:'先灰度 2 台由 16C32G 降至 8C16G，观察 7 天无异常后再完成整组降配。'
+  }
+};
+
+const systemProfiles={
+  payment:{
+    owner:'陈哲',level:'A',business:'核心交易与支付清结算链路',source:'IF-04 系统画像 · 2026-08-12 08:00',
+    components:[
+      {name:'GreatDB',role:'核心交易数据库',clusters:[
+        {name:'pay-greatdb-prod',level:'P1',summary:'6 台 · 8C32G · 主从分片',servers:['greatdb-010','greatdb-011','greatdb-012','greatdb-013','greatdb-014','greatdb-015']},
+        {name:'pay-greatdb-haproxy',level:'P2',summary:'4 台 · 4C8G · 访问代理',servers:['haproxy-001','haproxy-002','haproxy-003','haproxy-004']}
+      ]},
+      {name:'Redis',role:'交易缓存与会话',clusters:[
+        {name:'pay-redis-prod',level:'P2',summary:'5 台 · 8C32G · 观察期',servers:['redis-010','redis-011','redis-012','redis-013','redis-014']}
+      ]},
+      {name:'Java 应用',role:'支付、订单、清结算服务',clusters:[
+        {name:'pay-core-app',level:'P1',summary:'12 台 · 8C16G · 双机房',servers:['pay-app-001','pay-app-002','pay-app-003','pay-app-004','pay-app-005','pay-app-006','pay-app-007','pay-app-008','pay-app-009','pay-app-010','pay-app-011','pay-app-012']}
+      ]}
+    ]
+  },
+  risk:{
+    owner:'王璐',level:'A',business:'实时反欺诈、评分和夜间批处理重算',source:'IF-04 系统画像 · 2026-08-12 08:00',
+    components:[
+      {name:'Java 应用',role:'风控规则与评分服务',clusters:[
+        {name:'rsk-score-worker',level:'P2',summary:'6 台 · 8C32G · CPU 增长',servers:['rsk-calc-01','rsk-calc-02','rsk-calc-03','rsk-calc-04','rsk-calc-05','rsk-calc-06']},
+        {name:'rsk-online-api',level:'P1',summary:'8 台 · 8C16G · 在线链路',servers:['rsk-api-001','rsk-api-002','rsk-api-003','rsk-api-004','rsk-api-005','rsk-api-006','rsk-api-007','rsk-api-008']}
+      ]},
+      {name:'Redis',role:'规则缓存与黑名单',clusters:[
+        {name:'rsk-redis-prod',level:'P2',summary:'4 台 · 4C16G · 稳定',servers:['rsk-redis-001','rsk-redis-002','rsk-redis-003','rsk-redis-004']}
+      ]}
+    ]
+  },
+  channel:{
+    owner:'李琦',level:'B',business:'渠道流量接入、路由和限流',source:'IF-04 系统画像 · 2026-08-12 08:00',
+    components:[
+      {name:'Nginx',role:'统一入口与流量转发',clusters:[
+        {name:'chn-ingress-nginx',level:'P3',summary:'6 台 · 16C32G · 可降配',servers:['chn-nginx-01','chn-nginx-02','chn-nginx-03','chn-nginx-04','chn-nginx-05','chn-nginx-06']},
+        {name:'chn-edge-nginx',level:'P3',summary:'4 台 · 8C16G · 灰度入口',servers:['chn-edge-01','chn-edge-02','chn-edge-03','chn-edge-04']}
+      ]},
+      {name:'Java 应用',role:'渠道协议转换',clusters:[
+        {name:'chn-adapter-service',level:'P2',summary:'8 台 · 8C16G · 多渠道',servers:['chn-app-001','chn-app-002','chn-app-003','chn-app-004','chn-app-005','chn-app-006','chn-app-007','chn-app-008']}
+      ]}
+    ]
   }
 };
 
@@ -97,7 +140,7 @@ const agentInput=document.querySelector('#agent-input');
 
 function navHTML(){
   const groups=[
-    {label:'AGENT',items:[['overview','治理总览',icons.overview,'']]},
+    {label:'AGENT',items:[['overview','治理总览',icons.overview,''],['profile','系统画像',icons.profile,'']]},
     {label:'KNOWLEDGE',items:[['knowledge','知识库',icons.knowledge,''],['peer','同类对标',icons.peer,'']]},
     {label:'DEVICES',items:[['system','系统洞察',icons.system,'3'],['admission','容量准入',icons.admission,'']]},
     {label:'OBSERVABILITY',items:[['simulate','方案模拟',icons.simulate,''],['tasks','治理闭环',icons.tasks,'3']]}
@@ -111,9 +154,9 @@ function header(kicker,title,subtitle,actions=''){
 
 function render(){
   nav.innerHTML=navHTML();
-  const names={overview:'我的容量治理',system:'统一支付系统 / 系统洞察',peer:'同类系统 / 资源对标',simulate:'容量方案 / 方案模拟',admission:'增量资源 / 容量准入',knowledge:'容量治理 / 知识库',tasks:'治理任务 / 效果验证'};
+  const names={overview:'我的容量治理',profile:'系统画像',system:'统一支付系统 / 系统洞察',peer:'同类系统 / 资源对标',simulate:'容量方案 / 方案模拟',admission:'增量资源 / 容量准入',knowledge:'容量治理 / 知识库',tasks:'治理任务 / 效果验证'};
   crumb.textContent=names[state.page];
-  ({overview:renderOverview,system:renderSystem,peer:renderPeer,simulate:renderSimulator,admission:renderAdmission,knowledge:renderKnowledge,tasks:renderTasks}[state.page]||renderOverview)();
+  ({overview:renderOverview,profile:renderProfile,system:renderSystem,peer:renderPeer,simulate:renderSimulator,admission:renderAdmission,knowledge:renderKnowledge,tasks:renderTasks}[state.page]||renderOverview)();
   main.focus({preventScroll:true});
 }
 
@@ -151,6 +194,51 @@ function selectedSystem(){return managedSystems.find(s=>s.id===state.selectedSys
 function systemSwitcher(system){return `<section class="system-switcher"><label for="system-select"><span>我管理的系统</span><select id="system-select" aria-label="切换我管理的系统">${managedSystems.map(s=>`<option value="${s.id}" ${s.id===system.id?'selected':''}>${s.name} · ${s.domain}</option>`).join('')}</select></label><div><button class="btn" data-page="overview">返回总览</button><button class="btn acid" data-open-agent>让 Agent 解释</button></div></section>`}
 function scoreCard(label,value,note,color){return `<article class="score-card" style="--value:${value}%;--color:${color}"><span>${label}</span><strong>${value}</strong><small>${note}</small></article>`}
 function chartStat(label,value){return `<div class="chart-stat"><span>${label}</span><strong>${value}</strong></div>`}
+
+function renderProfile(){
+  const system=selectedSystem(),profile=systemProfiles[system.id]||systemProfiles.payment;
+  const clusterCount=profile.components.reduce((sum,c)=>sum+c.clusters.length,0);
+  const serverCount=profile.components.reduce((sum,c)=>sum+c.clusters.reduce((n,cl)=>n+cl.servers.length,0),0);
+  main.innerHTML=systemSwitcher(system)+`
+  <section class="profile-layout">
+    <article class="panel profile-summary">
+      <div class="profile-title">
+        <span class="system-code">${system.code}</span>
+        <div><p class="kicker">SYSTEM PROFILE</p><h2>${system.name}</h2><small>${system.domain} · ${profile.business}</small></div>
+      </div>
+      <div class="profile-facts">
+        ${profileFact('系统等级',profile.level)}
+        ${profileFact('主负责人',profile.owner)}
+        ${profileFact('组件数量',profile.components.length+' 个')}
+        ${profileFact('集群数量',clusterCount+' 个')}
+        ${profileFact('服务器数量',serverCount+' 台')}
+        ${profileFact('画像来源','IF-04')}
+      </div>
+      <div class="profile-source"><b>画像口径</b><p>系统画像用于解释容量数据的归属关系：系统下面是组件，组件下面是集群，集群再关联到具体服务器。容量总览和趋势证据都应挂到这条关系链上。</p><small>${profile.source}</small></div>
+    </article>
+    <section class="panel profile-map">
+      <div class="panel-head"><div><h2>系统 · 组件 · 集群 · 服务器</h2><p>逻辑资源在页面中统一表述为集群维度</p></div><small>${serverCount} SERVERS</small></div>
+      <div class="profile-tree">
+        ${profile.components.map(componentProfile).join('')}
+      </div>
+    </section>
+  </section>`;
+}
+
+function profileFact(label,value){return `<div><span>${label}</span><b>${value}</b></div>`}
+function componentProfile(component){
+  return `<section class="profile-component">
+    <header><span>${component.name}</span><small>${component.role}</small></header>
+    <div class="profile-clusters">${component.clusters.map(clusterProfile).join('')}</div>
+  </section>`;
+}
+function clusterProfile(cluster){
+  return `<article class="profile-cluster">
+    <div class="cluster-head"><div><b>${cluster.name}</b><small>${cluster.summary}</small></div><em>${cluster.level}</em></div>
+    <div class="server-chips">${cluster.servers.map(s=>`<span>${s}</span>`).join('')}</div>
+  </article>`;
+}
+
 function trendChart(){
   const actual=[48,50,49,52,51,53,54,52,55,56,55,58,59,57,60,61,62,63,65,64,67,69,70,72,75,77,80,82,85,87.6];
   const predict=[87.6,88.2,88.8,89.4,90.1,90.8,91.5]; const W=720,H=220,p=24,min=35,max=95;

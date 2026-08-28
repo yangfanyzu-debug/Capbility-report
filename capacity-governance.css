@@ -712,6 +712,37 @@ main{background:transparent}.page-toolbar,.system-switcher,.brief-copy,.brief-da
 .ms-cap{font-size:11px;color:#7b879b;text-align:center;margin-bottom:6px}
 .ms-item img{width:100%;height:auto;display:block}
 
+/* ============ 系统画像: 系统 → 组件 → 集群 → 服务器 ============ */
+.profile-layout{display:grid;grid-template-columns:340px minmax(0,1fr);gap:16px;align-items:start}
+.profile-summary{padding:18px;position:sticky;top:112px}
+.profile-title{display:grid;grid-template-columns:42px minmax(0,1fr);gap:12px;align-items:center}
+.profile-title .system-code{width:42px;height:42px}
+.profile-title h2{margin:2px 0 4px;font-size:22px;letter-spacing:-.02em}
+.profile-title small{color:#6e7888;font-size:12px;line-height:1.55}
+.profile-facts{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin:18px 0}
+.profile-facts div{border:1px solid #dce2eb;border-radius:12px;background:#f8fafc;padding:11px 12px;min-height:66px}
+.profile-facts span{display:block;color:#8b94a5;font-size:10px;margin-bottom:7px}
+.profile-facts b{font-size:17px;color:#172033}
+.profile-source{border:1px solid #d0d9e7;border-radius:14px;background:linear-gradient(180deg,#f8fafc,#fff);padding:14px 15px}
+.profile-source b{display:block;color:#2f5d91;margin-bottom:7px}
+.profile-source p{margin:0;color:#46556d;font-size:12px;line-height:1.7}
+.profile-source small{display:block;margin-top:10px;color:#8b94a5;font:10px var(--mono)}
+.profile-map{overflow:hidden}
+.profile-tree{padding:14px;display:grid;gap:12px}
+.profile-component{border:1px solid #dce2eb;border-radius:15px;background:#fbfcfe;overflow:hidden}
+.profile-component>header{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;padding:14px 16px;border-bottom:1px solid #e6ebf2;background:#fff}
+.profile-component>header span{font-weight:800;color:#172033}
+.profile-component>header small{color:#7b879b;font-size:11px;text-align:right}
+.profile-clusters{display:grid;gap:10px;padding:12px}
+.profile-cluster{position:relative;border:1px solid #d9e0ea;border-radius:13px;background:#fff;padding:13px 14px 14px 18px;box-shadow:0 6px 16px rgba(25,36,58,.035)}
+.profile-cluster:before{content:"";position:absolute;left:0;top:13px;bottom:13px;width:3px;border-radius:0 3px 3px 0;background:#2f5d91}
+.cluster-head{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;margin-bottom:10px}
+.cluster-head b{display:block;color:#172033;font-size:13px}
+.cluster-head small{display:block;color:#7b879b;font-size:11px;margin-top:3px}
+.cluster-head em{font:10px var(--mono);font-style:normal;border:1px solid #d8dfe9;border-radius:999px;background:#f8fafc;color:#2f5d91;padding:3px 8px;white-space:nowrap}
+.server-chips{display:flex;gap:7px;flex-wrap:wrap}
+.server-chips span{display:inline-flex;align-items:center;min-height:26px;border:1px solid #dce2eb;border-radius:8px;background:#f7f9fc;color:#46556d;padding:0 8px;font:10px var(--mono)}
+
 /* ============ 右下角机器人:间歇播报 + 可收起 ============ */
 .agent-float{transition:width .28s cubic-bezier(.2,.8,.2,1),height .28s cubic-bezier(.2,.8,.2,1)}
 .agent-bubble{opacity:0;visibility:hidden;transform:translateY(8px) scale(.96);transition:opacity .28s,visibility .28s,transform .28s;pointer-events:none}
