@@ -232,6 +232,8 @@ function renderProfile(){
   const clusterCount=profile.components.reduce((sum,c)=>sum+c.clusters.length,0);
   const serverCount=profile.components.reduce((sum,c)=>sum+c.clusters.reduce((n,cl)=>n+cl.servers.length,0),0);
   const selected=findProfileCluster(profile);
+  const firstAnchor=profileLaneAnchor(profile.components[0]);
+  const lastAnchor=profileLaneAnchor(profile.components[profile.components.length-1]);
   main.innerHTML=`
   <section class="profile-toolbar panel">
     <label for="system-select"><span>选择系统</span><select id="system-select" aria-label="切换系统画像">${managedSystems.map(s=>`<option value="${s.id}" ${s.id===system.id?'selected':''}>${s.name}</option>`).join('')}</select></label>
@@ -241,10 +243,15 @@ function renderProfile(){
     <div class="panel-head"><div><h2>系统资源结构</h2><p>沿系统、组件、集群逐层查看资源归属；选择集群可查看服务器明细</p></div><div class="topology-legend"><i></i> 当前集群</div></div>
     <div class="profile-topology">
       <div class="profile-system-column"><div class="profile-system-node"><span>${system.code}</span><b>${system.name}</b><small>${system.domain}</small></div></div>
-      <div class="profile-lanes" style="--lane-count:${profile.components.length}">${profile.components.map(component=>componentProfile(component,selected.cluster.name)).join('')}</div>
+      <div class="profile-lanes" style="--first-anchor:${firstAnchor}px;--last-anchor:${lastAnchor}px">${profile.components.map(component=>componentProfile(component,selected.cluster.name)).join('')}</div>
     </div>
   </section>
   ${serverTable(selected.component,selected.cluster)}`;
+}
+
+function profileLaneAnchor(component){
+  const count=component.clusters.length;
+  return (count*76+(count-1)*9)/2;
 }
 
 function findProfileCluster(profile){
