@@ -98,6 +98,33 @@ const tasks=[
   {id:'CAP-1831',title:'Nginx 节点规格降配',owner:'李琦',stage:1,status:'方案待提单',workOrder:'',workStatus:'',action:'查看方案'}
 ];
 
+const overviewGovernance={
+  payment:{
+    recommendations:[
+      {id:'pay-greatdb',title:'先修复归档策略，再评估扩容',target:'GreatDB · pay-greatdb-prod',body:'单节点磁盘峰值 87.6%，节点极差 49.6%。建议先校验归档与分片权重，3 天后增速未回落再扩容。',cluster:'pay-greatdb-prod',jiraNo:'ACT-1842',cicdNo:'ACT-CHUG-20260826-0001'},
+      {id:'pay-redis',title:'Redis 采用渐进缩容',target:'Redis · pay-redis-prod',body:'5 个实例连续 30 日 CPU 与内存峰值偏低，建议先缩减 1 台并观察完整业务周期。',cluster:'pay-redis-prod',jiraNo:'ACT-1839',cicdNo:'ACT-CHUG-20260826-0002'}
+    ],
+    tasks:[tasks[0],tasks[1]],
+    verification:{ticket:'CAP-1839',title:'Redis 缩容观察',day:'第 3/7 天',status:'观察正常',beforeCpu:'18%',afterCpu:'31%',memory:'23% → 36%',alerts:'0 / 0',conclusion:'效果符合预期，暂不继续缩容。待覆盖周末批处理窗口后，再评估由 5 台缩至 4 台。'}
+  },
+  risk:{
+    recommendations:[
+      {id:'risk-batch',title:'拆分夜间批处理并发',target:'Java 应用 · auth-score-worker',body:'CPU 增长集中在授权规则重算窗口，建议先将批处理并发降低 30%，并与在线交易错峰。',cluster:'auth-score-worker',jiraNo:'ACT-1868',cicdNo:'ACT-CHUG-20260826-0003'},
+      {id:'risk-cpu',title:'连续观察 CPU P95 后再扩容',target:'Java 应用 · auth-online-api',body:'在线链路当前仍稳定。若调整批处理后 7 天 CPU P95 仍高于 70%，再增加 2 个计算节点。',cluster:'auth-online-api',jiraNo:'ACT-1871',cicdNo:'ACT-CHUG-20260826-0004'}
+    ],
+    tasks:[{id:'CAP-1868',title:'授权规则批处理错峰治理',owner:'周敏',stage:2,status:'变更评审',workOrder:'ACT-1868',workStatus:'评审中',action:'查看证据'}],
+    verification:{ticket:'CAP-1861',title:'授权计算错峰观察',day:'第 2/7 天',status:'趋势改善',beforeCpu:'74%',afterCpu:'62%',memory:'48% → 46%',alerts:'0 / 0',conclusion:'夜间 CPU 峰值已回落 12 个百分点，在线交易延迟无回归；继续观察月底规则重算窗口。'}
+  },
+  channel:{
+    recommendations:[
+      {id:'channel-nginx',title:'Nginx 先灰度降配 2 台',target:'Nginx · dps-ingress-nginx',body:'实例规格高于同类中位数 2.1 倍，建议将 2 台由 16C32G 灰度降至 8C16G，观察 7 天。',cluster:'dps-ingress-nginx',jiraNo:'ACT-1831',cicdNo:'ACT-CHUG-20260826-0005'},
+      {id:'channel-edge',title:'回收边缘入口冗余配额',target:'Nginx · dps-edge-nginx',body:'灰度入口长期低使用率且流量分布稳定，可在保留故障冗余的前提下回收 8C / 16GB。',cluster:'dps-edge-nginx',jiraNo:'ACT-1876',cicdNo:'ACT-CHUG-20260826-0006'}
+    ],
+    tasks:[tasks[2]],
+    verification:{ticket:'CAP-1827',title:'Nginx 灰度降配验证',day:'第 5/7 天',status:'观察正常',beforeCpu:'19%',afterCpu:'34%',memory:'28% → 41%',alerts:'0 / 0',conclusion:'降配节点仍有充足余量，连接错误率与 P95 延迟无变化；观察期结束后可推广至剩余节点。'}
+  }
+};
+
 const messages=[
   {time:'08:00',title:'我开始今天的容量值守了',body:'三个接口的数据已获取并完成完整性检查。本轮聚焦你负责的 3 个系统、18 个组件和 142 个实例。',tone:'normal'},
   {time:'08:07',title:'我发现 GreatDB 的磁盘行为异常',body:'它不只是超过 85% 固定阈值，同时也明显偏离自己的 30 日动态基线。按近 7 日速度，预计 6 天后进入 90% 风险区间。',tone:'risk'},
@@ -148,7 +175,7 @@ const governanceMapRows=[
 ];
 
 
-const state={page:'map',selectedSystemId:'payment',profileCluster:'',agentOpen:false,agentTab:'log',work:0,progress:36,simNodes:5,simLoad:20,simTarget:'redis',simType:'物理机',simSpec:'8C32G',homeDraft:'',wzSnap:null,lastPage:null};
+const state={page:'map',selectedSystemId:'payment',overviewSystemId:'payment',profileCluster:'',recommendationDecisions:{},governanceFlows:{},workflowTimers:{},agentOpen:false,agentTab:'log',work:0,progress:36,simNodes:5,simLoad:20,simTarget:'redis',simType:'物理机',simSpec:'8C32G',homeDraft:'',wzSnap:null,lastPage:null};
 const main=document.querySelector('#main');
 const nav=document.querySelector('#nav');
 const crumb=document.querySelector('#crumb');
@@ -278,31 +305,75 @@ function mountPage(){
 }
 
 function renderOverview(){
-  main.innerHTML=`
-  <section class="today-brief">
-    <div class="brief-copy"><span class="brief-stamp"><i></i> AI 总结与建议 · 08:32</span><h2>S支付平台需要本周内完成处置决策</h2><p>Agent 已将当前 SRE 负责范围内的 <strong>142 个实例信号归并为 3 条治理建议</strong>。S支付平台 GreatDB 磁盘是最高风险；Redis 属于渐进缩容观察；S数据服务网关 Nginx 存在明确降配空间。</p><div class="brief-actions"><button class="btn acid" data-page="profile" data-system-id="payment">查看最高风险</button><button class="btn" data-open-evidence>查看判断过程</button></div></div>
-    <div class="brief-data"><div class="brief-data-head"><span>治理指标概览</span><small>我负责的 3 个系统</small></div><div class="brief-numbers">
-      ${briefNumber('容量风险','2','项','PAY 优先处置','risk')}${briefNumber('资源浪费','2','候选','Redis / Nginx','waste')}${briefNumber('负载倾斜','1','集群','先调度后扩容','balance')}${briefNumber('预计可回收','16C','/ 64GB','约 ¥6.1k / 月','save')}
-    </div>
-    </div>
-  </section>
-  <section class="overview-quadrants">
-  <section class="panel overview-panel overview-priority"><div class="panel-head"><div><h2>我负责的系统治理优先级</h2><p>按容量风险、资源浪费、负载倾斜和行动必要性排序</p></div><small>${managedSystems.length} 个系统 · 按优先级排序</small></div><div class="systems">${managedSystems.map(systemRow).join('')}</div></section>
-  <aside class="panel overview-panel overview-advice"><div class="panel-head"><div><h2>面向我的治理建议</h2><p>服务器信号已归并为负责系统内的可行动结论</p></div><small>3 NEW</small></div><div class="signal-list">
-    ${signal('01','单节点增长 + 集群倾斜','GreatDB 最高节点磁盘 87.6%，节点差值 49.6%，不应仅凭集群平均值判断。','profile')}
-    ${signal('02','Redis 集群整体配置偏大','4 个实例连续 30 日 CPU 与内存峰值低于 25%，建议渐进缩容。','simulate')}
-    ${signal('03','Nginx 节点规格偏高','S数据服务网关 Nginx 的单实例规格高于历史基线 2 倍，可考虑降配。','profile')}
-  </div></aside>
-  <section class="panel overview-panel overview-tasks"><div class="panel-head"><div><h2>正在治理的事项</h2><p>集中查看工单、变更状态和 Agent 跟进动作</p></div><small>3 ACTIVE</small></div><div class="overview-task-list">${tasks.map(overviewTaskItem).join('')}</div></section>
-  <section class="panel overview-panel overview-verification"><div class="panel-head"><div><h2>效果验证</h2><p>变更后水位与基线持续比对</p></div><small>CAP-1839 · DAY 3/7</small></div><div class="overview-verification-body"><div class="verify-title"><div><span>Redis 缩容观察</span><strong>第 3/7 天</strong></div><em>观察正常</em></div><div class="verify-hero"><div class="verify-card"><span>变更前 CPU 峰值</span><strong>18%</strong></div><div class="verify-card"><span>变更后 CPU 峰值</span><strong class="verify-good">31%</strong></div><div class="verify-card"><span>内存峰值变化</span><strong class="verify-good">23% → 36%</strong></div><div class="verify-card"><span>异常 / 告警</span><strong class="verify-good">0 / 0</strong></div></div><div class="decision"><b>Agent 当前结论</b><p>效果符合预期，暂不继续缩容。待观察满 7 天且覆盖周末批处理窗口后，再评估由 5 台缩至 4 台。</p></div></div></section>
+  const system=managedSystems.find(item=>item.id===state.overviewSystemId)||managedSystems[0];
+  const governance=overviewGovernance[system.id];
+  const flow=state.governanceFlows[system.id];
+  main.innerHTML=`<section class="overview-context"><div><span>当前治理范围</span><strong>${system.name}</strong><small>${system.domain} · 点击左侧系统切换四块内容</small></div><button class="btn small" data-page="profile" data-system-id="${system.id}">进入系统画像</button></section>
+  <section class="overview-quadrants ${flow?'has-flow':''}">
+  <section class="panel overview-panel overview-priority"><div class="panel-head"><div><h2>我负责的系统治理优先级</h2><p>点击系统后，治理建议、事项与验证结果同步切换</p></div><small>${managedSystems.length} 个系统 · 按优先级排序</small></div><div class="systems">${managedSystems.map(item=>systemRow(item,system.id)).join('')}</div></section>
+  <aside class="panel overview-panel overview-advice"><div class="panel-head"><div><h2>${system.name}治理建议</h2><p>基于当前系统的服务器信号与治理规则生成</p></div><small>${governance.recommendations.length} 条建议</small></div><div class="governance-advice-list">${governance.recommendations.map((item,index)=>recommendationItem(item,index,system.id)).join('')}</div></aside>
+  ${flow?governanceWorkflowPanel(system,flow):`${overviewTasksPanel(governance.tasks,system)}${overviewVerificationPanel(governance.verification,system)}`}
   </section>`;
 }
 
-function briefNumber(label,value,unit,note,cls){return `<div class="brief-number ${cls}"><span>${label}</span><strong>${value}</strong>${unit}<small>${note}</small></div>`}
-function systemRow(s){return `<button class="system-row" data-page="profile" data-system-id="${s.id}"><span class="system-name"><span class="system-code">${s.code}</span><span><b>${s.name}</b><small>${s.domain} · ${s.hint}</small></span></span>${scoreCell('容量风险',s.risk,'risk')}${scoreCell('资源浪费',s.waste,'waste')}${scoreCell('负载倾斜',s.skew,'skew')}${scoreCell('治理优先',s.priority,'') }<span class="priority ${s.level==='P1'?'high':''}">${levelLabel(s.level)}</span><span class="chev">›</span></button>`}
+function systemRow(s,selectedId){return `<button class="system-row ${s.id===selectedId?'selected':''}" data-overview-system="${s.id}" aria-pressed="${s.id===selectedId}"><span class="system-name"><span class="system-code">${s.code}</span><span><b>${s.name}</b><small>${s.domain} · ${s.hint}</small></span></span>${scoreCell('容量风险',s.risk,'risk')}${scoreCell('资源浪费',s.waste,'waste')}${scoreCell('负载倾斜',s.skew,'skew')}${scoreCell('治理优先',s.priority,'') }<span class="priority ${s.level==='P1'?'high':''}">${levelLabel(s.level)}</span><span class="chev">›</span></button>`}
 function scoreCell(label,value,cls){return `<span class="score-cell ${cls}"><span>${label}</span><b>${value}</b></span>`}
 function levelLabel(level){return {P1:'紧急',P2:'重点',P3:'常规'}[level]||level}
-function signal(num,title,body,page){return `<div class="signal"><span class="signal-num">${num}</span><div><b>${title}</b><p>${body}</p><button data-page="${page}">查看分析 →</button></div></div>`}
+function recommendationItem(item,index,systemId){
+  const decision=state.recommendationDecisions[`${systemId}:${item.id}`]||'';
+  const decisionLabel=decision==='adopted'?'已采纳':decision==='rejected'?'已拒绝':'';
+  return `<article class="governance-advice-item ${decision}"><span class="advice-index">${String(index+1).padStart(2,'0')}</span><div class="advice-copy"><div class="advice-title"><b>${item.title}</b><span>${item.target}</span></div><p>${item.body}</p><div class="advice-actions"><button class="btn small" data-view-recommendation="${item.id}" data-system-id="${systemId}">查看分析</button>${decision?`<span class="advice-decision ${decision}">${decisionLabel}</span>`:`<button class="btn small primary" data-adopt-recommendation="${item.id}" data-system-id="${systemId}">采纳建议</button><button class="btn small reject" data-reject-recommendation="${item.id}" data-system-id="${systemId}">拒绝建议</button>`}</div></div></article>`;
+}
+function overviewTasksPanel(items,system){
+  return `<section class="panel overview-panel overview-tasks"><div class="panel-head"><div><h2>正在治理的事项</h2><p>${system.name}当前已进入闭环的治理任务</p></div><small>${items.length} ACTIVE</small></div><div class="overview-task-list">${items.map(overviewTaskItem).join('')}</div></section>`;
+}
+function overviewVerificationPanel(item,system){
+  return `<section class="panel overview-panel overview-verification"><div class="panel-head"><div><h2>效果验证</h2><p>${system.name}变更后水位与基线持续比对</p></div><small>${item.ticket} · ${item.day}</small></div><div class="overview-verification-body"><div class="verify-title"><div><span>${item.title}</span><strong>${item.day}</strong></div><em>${item.status}</em></div><div class="verify-hero"><div class="verify-card"><span>变更前 CPU 峰值</span><strong>${item.beforeCpu}</strong></div><div class="verify-card"><span>变更后 CPU 峰值</span><strong class="verify-good">${item.afterCpu}</strong></div><div class="verify-card"><span>内存峰值变化</span><strong class="verify-good">${item.memory}</strong></div><div class="verify-card"><span>异常 / 告警</span><strong class="verify-good">${item.alerts}</strong></div></div><div class="decision"><b>Agent 当前结论</b><p>${item.conclusion}</p></div></div></section>`;
+}
+function governanceWorkflowPanel(system,flow){
+  const steps=[
+    ['平台治理事项',flow.phase>=1?flow.governanceNo:'正在生成治理单号…'],
+    ['JIRA 变更单',flow.phase>=2?flow.jiraNo:'等待治理事项创建成功'],
+    ['CICD 执行单',flow.phase>=3?flow.cicdNo:'等待 JIRA 创建成功'],
+    ['跟进执行进度',flow.phase>=3?`执行进度 ${flow.deployProgress}%`:'等待 CICD 执行'],
+    ['验证治理效果',flow.phase>=4?'对比变更前基线与验收条件':'等待执行完成'],
+    ['完成治理闭环',flow.phase>=5?'治理结论已回写':'等待验证结论']
+  ];
+  const activeIndex=Math.min(flow.phase,steps.length-1);
+  const status=flow.phase>=6?'治理闭环已完成':flow.phase===4?'正在验证治理效果':flow.phase===3?'正在跟进 CICD 执行':'正在自动推进';
+  return `<section class="panel overview-panel overview-flow"><div class="panel-head"><div><h2>治理执行流程</h2><p>${system.name} · 已采纳「${flow.recommendationTitle}」</p></div><span class="flow-status ${flow.phase>=6?'done':''}"><i></i>${status}</span></div><div class="governance-flow-body"><div class="flow-identifiers"><div><span>平台治理单号</span><b>${flow.phase>=1?flow.governanceNo:'生成中…'}</b></div><div><span>JIRA 单号</span><b>${flow.phase>=2?flow.jiraNo:'待创建'}</b></div><div><span>CICD 单号</span><b>${flow.phase>=3?flow.cicdNo:'待创建'}</b></div></div><div class="governance-flow-track">${steps.map(([title,detail],index)=>`<article class="flow-step ${flow.phase>=6||index<activeIndex?'done':index===activeIndex?'active':'waiting'}"><span class="flow-node">${flow.phase>=6||index<activeIndex?'✓':String(index+1).padStart(2,'0')}</span><div><b>${title}</b><small>${detail}</small>${index===3&&flow.phase===3?`<span class="flow-progress"><i style="width:${flow.deployProgress}%"></i></span>`:''}</div></article>`).join('')}</div><div class="flow-live"><span class="live-dot"></span><div><b>${governanceFlowMessage(flow)}</b><small>演示流程由 Capacity Agent 自动推进，所有外部单据均保留独立编号与状态。</small></div><em>${flow.phase>=6?'100%':Math.round((Math.min(flow.phase,5)+.35)/6*100)}%</em></div></div></section>`;
+}
+function governanceFlowMessage(flow){
+  if(flow.phase===0)return '正在创建平台内部治理事项并固化建议证据';
+  if(flow.phase===1)return `治理事项 ${flow.governanceNo} 已创建，正在创建 JIRA 变更单`;
+  if(flow.phase===2)return `JIRA 单 ${flow.jiraNo} 已创建，正在生成 CICD 执行单`;
+  if(flow.phase===3)return `CICD 单 ${flow.cicdNo} 正在执行，当前进度 ${flow.deployProgress}%`;
+  if(flow.phase===4)return 'CICD 执行完成，正在对比治理前基线与验收条件';
+  if(flow.phase===5)return '效果验证通过，正在回写治理结论与证据快照';
+  return '治理流程已闭环，单据、执行记录和验证结论均已归档';
+}
+function startGovernanceWorkflow(systemId,recommendationId){
+  const system=managedSystems.find(item=>item.id===systemId);
+  const recommendation=overviewGovernance[systemId].recommendations.find(item=>item.id===recommendationId);
+  if(!system||!recommendation)return;
+  (state.workflowTimers[systemId]||[]).forEach(clearTimeout);
+  state.workflowTimers[systemId]=[];
+  Object.keys(state.recommendationDecisions).forEach(key=>{
+    if(key.startsWith(`${systemId}:`)&&state.recommendationDecisions[key]==='adopted')delete state.recommendationDecisions[key];
+  });
+  state.recommendationDecisions[`${systemId}:${recommendationId}`]='adopted';
+  const flow={recommendationId,recommendationTitle:recommendation.title,governanceNo:recommendation.jiraNo.replace(/^ACT-/,'CAP-'),jiraNo:recommendation.jiraNo,cicdNo:recommendation.cicdNo,phase:0,deployProgress:0};
+  state.governanceFlows[systemId]=flow;
+  const updates=[[650,1,0],[1300,2,0],[1950,3,18],[2600,3,47],[3250,3,78],[3900,3,100],[4500,4,100],[5250,5,100],[6000,6,100]];
+  updates.forEach(([delay,phase,progress])=>state.workflowTimers[systemId].push(setTimeout(()=>{
+    const current=state.governanceFlows[systemId];
+    if(!current||current.recommendationId!==recommendationId)return;
+    current.phase=phase;current.deployProgress=progress;
+    if(state.page==='overview'&&state.overviewSystemId===systemId)render();
+    if(phase===6)toast('治理闭环已完成',`${current.governanceNo} 的执行与效果验证已归档。`);
+  },delay)));
+  render();
+}
 function overviewTaskItem(t){
   const stages=['发现','建议','审批','观察','验证'];
   return `<article class="overview-task-item"><div class="task-record-head"><span class="ticket-no">${t.id}</span><span class="work-status ${t.workStatus==='实施完成'?'done':''}">${t.workStatus||'待提单'}</span></div><b class="task-record-title">${t.title}</b><div class="task-record-meta"><span>${t.owner}</span><span class="status-pill">${t.status}</span><span class="stage-badge">${stages[t.stage]||'处理中'}</span></div><div class="task-record-bottom">${t.workOrder?`<span class="work-order-no">${t.workOrder}</span>`:`<button class="btn small" data-create-workorder="${t.id}">去提单</button>`}<span class="task-record-actions"><button class="btn small" ${t.id==='CAP-1839'?'data-verify':''}>${t.action}</button><button class="btn small" data-open-followup="${t.id}">查看 Agent 跟进记录</button></span></div></article>`;
@@ -1425,7 +1496,8 @@ function closeOverlays(){
 }
 function openEvidence(){modalCard.classList.remove('followup-card');modalContent.innerHTML=`<div class="evidence-head"><small>本次结论如何得出</small><h2>这不是一句"AI 觉得有风险"</h2><p>Capacity Agent 把计算、判断与行动分开呈现，SRE 可以检查每一层证据。</p></div><div class="evidence-steps"><div class="evidence-step"><span>第一步 · 算法算</span><h3>算法负责算</h3><p>关联 30 日历史，计算动态基线、7 日斜率、节点极差和预计触达阈值时间。</p></div><div class="evidence-step"><span>第二步 · AI 判断</span><h3>AI 负责判断</h3><p>结合主备角色、系统等级和治理规则，判断是整体不足、单节点异常还是负载倾斜。</p></div><div class="evidence-step"><span>第三步 · Agent 做</span><h3>Agent 负责做</h3><p>生成建议、等待关键审批、创建 JIRA、轮询状态并验证变更后的容量效果。</p></div></div><div class="explain" style="margin-top:18px"><strong>本次结论：</strong>GreatDB 风险置信度 91%。证据包括峰值 87.6%、偏离基线 18.4%、连续 7 日增长和节点极差 49.6%。</div>`;modal.classList.add('open');modal.removeAttribute('inert');modal.setAttribute('aria-hidden','false');scrim.hidden=false}
 function openFollowup(taskId){
-  const task=tasks.find(t=>t.id===taskId)||tasks[1];
+  const overviewTasks=Object.values(overviewGovernance).flatMap(item=>item.tasks);
+  const task=overviewTasks.find(t=>t.id===taskId)||tasks[1];
   const events=[
     ['08-09 22:00 · 已缩减 1 个节点','JIRA 变更完成，Agent 自动进入观察期。'],
     ['08-10 08:15 · 首日验证正常','CPU P95 29%，无新增告警。'],
@@ -1439,6 +1511,22 @@ function openFollowup(taskId){
 function toast(title,body){const el=document.createElement('div');el.className='toast';el.innerHTML=`<b>${title}</b><span>${body}</span>`;document.querySelector('#toasts').append(el);setTimeout(()=>el.remove(),3800)}
 
 document.addEventListener('click',e=>{
+  const overviewSystem=e.target.closest('[data-overview-system]');
+  if(overviewSystem){state.overviewSystemId=overviewSystem.dataset.overviewSystem;state.selectedSystemId=state.overviewSystemId;render();return}
+  const viewRecommendation=e.target.closest('[data-view-recommendation]');
+  if(viewRecommendation){
+    const systemId=viewRecommendation.dataset.systemId;
+    const recommendation=overviewGovernance[systemId]?.recommendations.find(item=>item.id===viewRecommendation.dataset.viewRecommendation);
+    if(!recommendation)return;
+    state.selectedSystemId=systemId;state.profileCluster=recommendation.cluster;state.page='profile';render();return;
+  }
+  const adoptRecommendation=e.target.closest('[data-adopt-recommendation]');
+  if(adoptRecommendation){startGovernanceWorkflow(adoptRecommendation.dataset.systemId,adoptRecommendation.dataset.adoptRecommendation);return}
+  const rejectRecommendation=e.target.closest('[data-reject-recommendation]');
+  if(rejectRecommendation){
+    const key=`${rejectRecommendation.dataset.systemId}:${rejectRecommendation.dataset.rejectRecommendation}`;
+    state.recommendationDecisions[key]='rejected';render();toast('建议已拒绝','本次决策已记录，Capacity Agent 将保留证据并继续观察相关指标。');return;
+  }
   const page=e.target.closest('[data-page]');if(page){if(page.dataset.systemId)state.selectedSystemId=page.dataset.systemId;state.page=page.dataset.page;closeOverlays();render();renderWorkline();return}
   const server=e.target.closest('[data-profile-server]');if(server){openServerInsight(server.dataset.profileServer,server.dataset.profileComponent,server.dataset.profileClusterName);return}
   const profileCluster=e.target.closest('[data-profile-cluster]');if(profileCluster){state.profileCluster=profileCluster.dataset.profileCluster;render();return}

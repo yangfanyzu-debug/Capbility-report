@@ -712,14 +712,19 @@ main{background:transparent}.page-toolbar,.system-switcher,.brief-copy,.brief-da
 .ms-cap{font-size:11px;color:#7b879b;text-align:center;margin-bottom:6px}
 .ms-item img{width:100%;height:auto;display:block}
 
-/* 治理总览: 四块信息按决策路径形成稳定的 2 x 2 工作台。 */
+/* 我的治理: 系统选择驱动同一上下文，采纳建议后进入完整治理流程。 */
+.overview-context{min-height:52px;margin-bottom:12px;padding:10px 14px;border:1px solid #dce2eb;border-radius:11px;background:#fff;display:flex;align-items:center;justify-content:space-between;gap:16px;box-shadow:0 8px 22px rgba(25,36,58,.04)}
+.overview-context>div{display:flex;align-items:baseline;gap:9px;min-width:0}.overview-context span{color:#7b879b;font-size:10px}.overview-context strong{color:#172033;font-size:14px}.overview-context small{color:#8993a4;font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .overview-quadrants{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));grid-template-areas:"priority advice" "tasks verification";gap:15px;align-items:stretch}
+.overview-quadrants.has-flow{grid-template-areas:"priority advice" "flow flow"}
 .overview-panel{min-width:0}
-.overview-priority{grid-area:priority}.overview-advice{grid-area:advice}.overview-tasks{grid-area:tasks}.overview-verification{grid-area:verification}
+.overview-priority{grid-area:priority}.overview-advice{grid-area:advice}.overview-tasks{grid-area:tasks}.overview-verification{grid-area:verification}.overview-flow{grid-area:flow}
 .overview-panel .panel-head{min-height:62px}
 .overview-panel .panel-head h2{font-size:13px}
 .overview-priority .systems{padding:7px}
 .overview-priority .system-row{grid-template-columns:minmax(135px,1fr) repeat(4,42px) 46px 12px;gap:6px;padding:11px 8px}
+.overview-priority .system-row.selected{border-color:#9db1cc;background:#edf3fb;box-shadow:inset 3px 0 0 #2f5d91;transform:none}
+.overview-priority .system-row.selected .system-code{border-color:#9db1cc;background:#fff;color:#234f82}
 .overview-priority .system-code{width:32px;height:32px;flex:0 0 auto}
 .overview-priority .system-name{gap:8px;min-width:0}
 .overview-priority .system-name>span:last-child{min-width:0}
@@ -728,11 +733,13 @@ main{background:transparent}.page-toolbar,.system-switcher,.brief-copy,.brief-da
 .overview-priority .score-cell b{font-size:13px}
 .overview-priority .priority{padding:4px 5px}
 .overview-priority .chev{font-size:16px}
-.overview-advice .signal-list{padding:6px 10px}
-.overview-advice .signal{padding:12px 8px;grid-template-columns:26px 1fr}
-.overview-advice .signal b{font-size:11px}
-.overview-advice .signal p{font-size:10px;line-height:1.55}
-.overview-advice .signal button{padding-top:6px}
+.governance-advice-list{padding:5px 12px}
+.governance-advice-item{display:grid;grid-template-columns:28px minmax(0,1fr);gap:9px;padding:13px 2px;border-bottom:1px solid #e6ebf2;transition:opacity .2s,background .2s}
+.governance-advice-item:last-child{border-bottom:0}.governance-advice-item.rejected{opacity:.55}.advice-index{padding-top:2px;color:#2f5d91;font:10px var(--mono)}
+.advice-copy{min-width:0}.advice-title{display:flex;align-items:center;justify-content:space-between;gap:8px}.advice-title b{font-size:12px}.advice-title span{flex:0 0 auto;border:1px solid #d8e0eb;border-radius:999px;background:#f7f9fc;color:#68758a;padding:3px 7px;font:8px var(--mono)}
+.advice-copy p{margin:6px 0 10px;color:#687386;font-size:10px;line-height:1.6}.advice-actions{display:flex;align-items:center;justify-content:flex-end;gap:6px;min-height:28px}
+.advice-actions .btn{min-height:28px;padding:0 9px;font-size:9px;box-shadow:none}.advice-actions .btn.primary{border-color:#2f5d91;background:#2f5d91;color:#fff}.advice-actions .btn.primary:hover{background:#244c7a}.advice-actions .btn.reject{border-color:#e2c9c9;color:#a54a4a;background:#fff}
+.advice-decision{display:inline-flex;align-items:center;min-height:25px;padding:0 9px;border-radius:999px;font-size:9px;font-weight:700}.advice-decision.adopted{border:1px solid #b8cfbf;background:#f0f8f2;color:#39704a}.advice-decision.rejected{border:1px solid #dfc8c8;background:#fbf2f2;color:#995050}
 .overview-task-list{padding:5px 12px}
 .overview-task-item{padding:12px 2px;border-bottom:1px solid #e6ebf2}
 .overview-task-item:last-child{border-bottom:0}
@@ -759,6 +766,13 @@ main{background:transparent}.page-toolbar,.system-switcher,.brief-copy,.brief-da
 .overview-verification .decision{margin-top:11px;padding:12px}
 .overview-verification .decision b{font-size:11px}
 .overview-verification .decision p{font-size:10px;line-height:1.6}
+.overview-flow .panel-head{min-height:66px}.flow-status{display:inline-flex;align-items:center;gap:7px;border:1px solid #c9d5e5;border-radius:999px;background:#f2f6fb;color:#2f5d91;padding:6px 10px;font-size:9px;font-weight:700}.flow-status i{width:7px;height:7px;border-radius:50%;background:#2f5d91;box-shadow:0 0 0 5px rgba(47,93,145,.11);animation:workflowPulse 1.3s ease-in-out infinite}.flow-status.done{border-color:#bcd4c3;background:#f0f8f2;color:#39704a}.flow-status.done i{background:#4f8a60;animation:none}
+.governance-flow-body{padding:16px 18px 18px}.flow-identifiers{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin-bottom:18px}.flow-identifiers>div{border:1px solid #dce2eb;border-radius:9px;background:#f8fafc;padding:10px 12px}.flow-identifiers span,.flow-identifiers b{display:block}.flow-identifiers span{color:#8490a2;font-size:9px}.flow-identifiers b{margin-top:5px;color:#26364e;font:11px var(--mono);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.governance-flow-track{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px}.flow-step{position:relative;min-width:0;display:grid;grid-template-columns:28px minmax(0,1fr);gap:8px;align-items:start}.flow-step:not(:last-child):after{content:"";position:absolute;left:28px;right:-13px;top:14px;height:1px;background:#d7dee8;z-index:0}.flow-step.done:not(:last-child):after{background:#7999bf}.flow-node{position:relative;z-index:1;width:28px;height:28px;border:1px solid #cfd7e3;border-radius:50%;background:#fff;color:#8792a3;display:grid;place-items:center;font:9px var(--mono);transition:.28s}.flow-step.done .flow-node{border-color:#7899bf;background:#2f5d91;color:#fff}.flow-step.active .flow-node{border-color:#2f5d91;color:#2f5d91;box-shadow:0 0 0 6px rgba(47,93,145,.10);animation:workflowPulse 1.3s ease-in-out infinite}.flow-step>div{position:relative;z-index:1;min-width:0;background:#fff;padding-right:3px}.flow-step b,.flow-step small{display:block}.flow-step b{font-size:10px;line-height:1.35}.flow-step small{margin-top:4px;color:#8590a1;font-size:8px;line-height:1.45;min-height:23px}.flow-step.waiting b{color:#8c96a5}.flow-step.active b{color:#244e80}.flow-step.done b{color:#35445a}
+.flow-progress{display:block;height:4px;margin-top:6px;border-radius:999px;background:#e2e7ef;overflow:hidden}.flow-progress i{display:block;height:100%;border-radius:inherit;background:linear-gradient(90deg,#2f5d91,#6f93bd,#2f5d91);background-size:200% 100%;animation:workflowProgress 1.2s linear infinite;transition:width .4s ease}
+.flow-live{display:grid;grid-template-columns:8px minmax(0,1fr) auto;gap:10px;align-items:center;margin-top:18px;border:1px solid #d6dfeb;border-radius:10px;background:#f5f8fc;padding:11px 13px}.flow-live .live-dot{background:#2f5d91;box-shadow:0 0 0 5px rgba(47,93,145,.1)}.flow-live b,.flow-live small{display:block}.flow-live b{font-size:10px}.flow-live small{margin-top:3px;color:#7b8799;font-size:9px}.flow-live em{color:#2f5d91;font:11px var(--mono);font-style:normal}
+@keyframes workflowPulse{50%{box-shadow:0 0 0 9px rgba(47,93,145,.035)}}
+@keyframes workflowProgress{to{background-position:200% 0}}
 
 /* ============ 系统画像: 拓扑结构 + 集群服务器明细 ============ */
 .profile-toolbar{display:flex;align-items:center;justify-content:space-between;gap:20px;padding:12px 16px;margin-bottom:12px}
