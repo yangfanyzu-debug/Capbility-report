@@ -122,8 +122,33 @@ const collabRecords=[
   {time:'09:10',type:'follow',status:'观察中',title:'Redis 缩容进入效果观察',body:'缩减 1 个节点后，CPU 峰值由 18% 升至 31%，仍处于安全区间；需覆盖完整 7 天和周末批处理窗口。',facts:['18% → 31%','0 告警','第 3/7 天']}
 ];
 
+const governanceMapRows=[
+  {label:'用户视角',code:'USER VIEW',icon:icons.profile,groups:[
+    {name:'渠道',items:[['S动卡空间'],['S公众号平台'],['S短信系统'],['S电邮系统',1],['S内容管理系统'],['S小程序管理系统'],['S新零售生态应用'],['S企业微信客户管理系统'],['S直播系统']]},
+    {name:'用户体系',items:[['S用户体系'],['S财富综合门户'],['S渠道用卡服务'],['S中收优品商城'],['S中收商旅商城'],['S本邦生活']]},
+    {name:'支付',items:[['S支付平台'],['S外卡收单系统'],['S信收付产品系统'],['S手机Pay管理系统']]},
+    {name:'产品',items:[['S增值服务套餐系统'],['S网络申卡',1],['S分期渠道服务系统']]},
+    {name:'基础账户',items:[['S负债账户'],['S积分账户'],['S权益账户'],['S新核心_账户处理',1]]}
+  ]},
+  {label:'平台视角',code:'PLATFORM VIEW',icon:icons.system,groups:[
+    {name:'应用级平台',items:[['S搜索引擎'],['S地图服务'],['S文件传输平台'],['S推荐引擎'],['S操作风险量化管理平台']]},
+    {name:'系统级平台',items:[['S容器云平台',13],['S应用级服务监控',1],['S服务总线'],['S分布式数据库',1],['S日志云平台'],['S数据服务网关']]},
+    {name:'信息安全',items:[['S安全监控'],['S互联网安全服务系统'],['S内部安全工具',4]]},
+    {name:'5G全IP服务',items:[['S智能外呼系统'],['S全IP智慧坐席平台',2]]}
+  ]},
+  {label:'职能视角',code:'FUNCTION VIEW',icon:icons.tasks,groups:[
+    {name:'渠道支撑',items:[['S电销获客下单系统'],['S收件数据管理系统'],['S电销渠道系统'],['S销售综合管理系统']]},
+    {name:'营销支撑',items:[['S抢购抢兑平台'],['S供应链管理系统'],['S抽奖平台'],['S营销活动']]},
+    {name:'客户服务',items:[['S投诉处理系统',1],['S知识库',1],['S客服作业系统',1],['S客户服务策略管理系统']]},
+    {name:'运营支撑',items:[['S商户管理系统'],['S参数管理平台'],['S制发卡业务管理系统'],['S账务平台']]},
+    {name:'信贷风险',items:[['S电子审批系统',18],['S授信业务管理系统',2],['S资产综合作业系统'],['S交易风险侦测系统',1],['S新核心_授权交易']]},
+    {name:'宣信支撑',items:[['S协同办公系统'],['S人力资源管理系统'],['S信用卡中心运营管理系统'],['S内部用户认证系统']]},
+    {name:'科技治理',items:[['S开发管理和分析工具'],['T项目管理工具'],['S发布变更管理工具'],['S测试管理和分析工具']]}
+  ]}
+];
 
-const state={page:'overview',selectedSystemId:'payment',profileCluster:'',agentOpen:false,agentTab:'log',work:0,progress:36,simNodes:5,simLoad:20,simTarget:'redis',simType:'物理机',simSpec:'8C32G',homeDraft:'',wzSnap:null,lastPage:null};
+
+const state={page:'map',selectedSystemId:'payment',profileCluster:'',agentOpen:false,agentTab:'log',work:0,progress:36,simNodes:5,simLoad:20,simTarget:'redis',simType:'物理机',simSpec:'8C32G',homeDraft:'',wzSnap:null,lastPage:null};
 const main=document.querySelector('#main');
 const nav=document.querySelector('#nav');
 const crumb=document.querySelector('#crumb');
@@ -137,13 +162,16 @@ const scrim=document.querySelector('#scrim');
 const agentInput=document.querySelector('#agent-input');
 
 function navHTML(){
-  const groups=[
-    {label:'AGENT',items:[['overview','治理总览',icons.overview,''],['profile','系统画像',icons.profile,'']]},
-    {label:'DEVICES',items:[['system','系统洞察',icons.system,'3']]},
-    {label:'OBSERVABILITY',items:[['simulate','方案模拟',icons.simulate,'']]},
-    {label:'KNOWLEDGE',items:[['knowledge','知识库',icons.knowledge,'']]}
-  ];
-  return groups.flatMap(g=>g.items).map(([id,label,icon,count])=>`<button class="nav-item ${state.page===id?'active':''}" data-page="${id}">${icon}<span>${label}</span>${count?`<em>${count}</em>`:''}</button>`).join('');
+  const item=(id,label,icon,child=false)=>`<button class="nav-item ${child?'child':''} ${state.page===id?'active':''}" data-page="${id}">${icon}<span>${label}</span></button>`;
+  return `${item('map','治理地图',icons.overview)}
+    <section class="nav-section"><div class="nav-section-title"><span>存量治理</span><small>STOCK</small></div><div class="nav-children">
+      ${item('overview','我的治理',icons.tasks,true)}
+      ${item('profile','系统画像',icons.profile,true)}
+      ${item('knowledge','治理规则',icons.knowledge,true)}
+    </div></section>
+    <section class="nav-section"><div class="nav-section-title"><span>增量管控</span><small>INCREMENT</small></div><div class="nav-children">
+      ${item('simulate','资源申请',icons.simulate,true)}
+    </div></section>`;
 }
 
 function header(kicker,title,subtitle,actions=''){
@@ -162,12 +190,31 @@ function render(){
     if(ta) state.homeDraft=ta.value;
   }
   nav.innerHTML=navHTML();
-  const names={overview:'我的容量治理',profile:'系统画像',system:`${selectedSystem().name} / 系统洞察`,simulate:'容量方案 / 方案模拟',knowledge:'容量治理 / 知识库'};
+  const names={map:'治理地图',overview:'存量治理 / 我的治理',profile:'存量治理 / 系统画像',simulate:'增量管控 / 资源申请',knowledge:'存量治理 / 治理规则'};
   crumb.textContent=names[state.page];
-  ({overview:renderOverview,profile:renderProfile,system:renderSystem,simulate:renderSimulator,knowledge:renderKnowledge}[state.page]||renderOverview)();
+  ({map:renderGovernanceMap,overview:renderOverview,profile:renderProfile,simulate:renderSimulator,knowledge:renderKnowledge}[state.page]||renderGovernanceMap)();
   // 进入新页面后,恢复上一个页面留下的快照(向导 / 首页草稿)
   mountPage();
   main.focus({preventScroll:true});
+}
+
+function renderGovernanceMap(){
+  const systemTotal=governanceMapRows.reduce((sum,row)=>sum+row.groups.reduce((count,group)=>count+group.items.length,0),0);
+  const markedTotal=governanceMapRows.reduce((sum,row)=>sum+row.groups.reduce((count,group)=>count+group.items.reduce((n,item)=>n+(item[1]||0),0),0),0);
+  main.innerHTML=`<section class="map-summary">
+    <div><p class="kicker">GOVERNANCE LANDSCAPE</p><h1>治理地图</h1><p>从用户、平台与职能三个视角查看系统全景，快速定位容量治理覆盖范围。</p></div>
+    <div class="map-summary-stats"><span><b>${systemTotal}</b> 系统</span><span><b>${markedTotal}</b> 待治理信号</span><span><b>3</b> 治理视角</span></div>
+  </section>
+  <section class="panel governance-map" aria-label="治理地图">
+    ${governanceMapRows.map(row=>`<section class="map-lane">
+      <aside class="map-axis"><span class="map-axis-icon">${row.icon}</span><b>${row.label}</b><small>${row.code}</small></aside>
+      <div class="map-group-grid" style="--map-columns:${row.groups.length}">${row.groups.map(group=>`<section class="map-group"><h2>${group.name}</h2><div class="map-system-grid">${group.items.map(([name,count])=>mapSystemTile(name,count)).join('')}</div></section>`).join('')}</div>
+    </section>`).join('')}
+  </section>`;
+}
+function mapSystemTile(name,count){
+  const systemId={'S支付平台':'payment','S新核心_授权交易':'risk','S数据服务网关':'channel'}[name];
+  return `<button class="map-system ${systemId?'managed':''}" ${systemId?`data-page="profile" data-system-id="${systemId}"`:`data-map-system="${name}"`}><span>${name}</span>${count?`<em>${count}</em>`:''}</button>`;
 }
 
 function mountPage(){
@@ -198,7 +245,7 @@ function mountPage(){
 function renderOverview(){
   main.innerHTML=`
   <section class="today-brief">
-    <div class="brief-copy"><span class="brief-stamp"><i></i> AI 总结与建议 · 08:32</span><h2>S支付平台需要本周内完成处置决策</h2><p>Agent 已将当前 SRE 负责范围内的 <strong>142 个实例信号归并为 3 条治理建议</strong>。S支付平台 GreatDB 磁盘是最高风险；Redis 属于渐进缩容观察；S数据服务网关 Nginx 存在明确降配空间。</p><div class="brief-actions"><button class="btn acid" data-page="system">查看最高风险</button><button class="btn" data-open-evidence>查看判断过程</button></div></div>
+    <div class="brief-copy"><span class="brief-stamp"><i></i> AI 总结与建议 · 08:32</span><h2>S支付平台需要本周内完成处置决策</h2><p>Agent 已将当前 SRE 负责范围内的 <strong>142 个实例信号归并为 3 条治理建议</strong>。S支付平台 GreatDB 磁盘是最高风险；Redis 属于渐进缩容观察；S数据服务网关 Nginx 存在明确降配空间。</p><div class="brief-actions"><button class="btn acid" data-page="profile" data-system-id="payment">查看最高风险</button><button class="btn" data-open-evidence>查看判断过程</button></div></div>
     <div class="brief-data"><div class="brief-data-head"><span>治理指标概览</span><small>我负责的 3 个系统</small></div><div class="brief-numbers">
       ${briefNumber('容量风险','2','项','PAY 优先处置','risk')}${briefNumber('资源浪费','2','候选','Redis / Nginx','waste')}${briefNumber('负载倾斜','1','集群','先调度后扩容','balance')}${briefNumber('预计可回收','16C','/ 64GB','约 ¥6.1k / 月','save')}
     </div>
@@ -207,9 +254,9 @@ function renderOverview(){
   <section class="overview-quadrants">
   <section class="panel overview-panel overview-priority"><div class="panel-head"><div><h2>我负责的系统治理优先级</h2><p>按容量风险、资源浪费、负载倾斜和行动必要性排序</p></div><small>${managedSystems.length} 个系统 · 按优先级排序</small></div><div class="systems">${managedSystems.map(systemRow).join('')}</div></section>
   <aside class="panel overview-panel overview-advice"><div class="panel-head"><div><h2>面向我的治理建议</h2><p>服务器信号已归并为负责系统内的可行动结论</p></div><small>3 NEW</small></div><div class="signal-list">
-    ${signal('01','单节点增长 + 集群倾斜','GreatDB 最高节点磁盘 87.6%，节点差值 49.6%，不应仅凭集群平均值判断。','system')}
+    ${signal('01','单节点增长 + 集群倾斜','GreatDB 最高节点磁盘 87.6%，节点差值 49.6%，不应仅凭集群平均值判断。','profile')}
     ${signal('02','Redis 集群整体配置偏大','4 个实例连续 30 日 CPU 与内存峰值低于 25%，建议渐进缩容。','simulate')}
-    ${signal('03','Nginx 节点规格偏高','S数据服务网关 Nginx 的单实例规格高于历史基线 2 倍，可考虑降配。','system')}
+    ${signal('03','Nginx 节点规格偏高','S数据服务网关 Nginx 的单实例规格高于历史基线 2 倍，可考虑降配。','profile')}
   </div></aside>
   <section class="panel overview-panel overview-tasks"><div class="panel-head"><div><h2>正在治理的事项</h2><p>集中查看工单、变更状态和 Agent 跟进动作</p></div><small>3 ACTIVE</small></div><div class="overview-task-list">${tasks.map(overviewTaskItem).join('')}</div></section>
   <section class="panel overview-panel overview-verification"><div class="panel-head"><div><h2>效果验证</h2><p>变更后水位与基线持续比对</p></div><small>CAP-1839 · DAY 3/7</small></div><div class="overview-verification-body"><div class="verify-title"><div><span>Redis 缩容观察</span><strong>第 3/7 天</strong></div><em>观察正常</em></div><div class="verify-hero"><div class="verify-card"><span>变更前 CPU 峰值</span><strong>18%</strong></div><div class="verify-card"><span>变更后 CPU 峰值</span><strong class="verify-good">31%</strong></div><div class="verify-card"><span>内存峰值变化</span><strong class="verify-good">23% → 36%</strong></div><div class="verify-card"><span>异常 / 告警</span><strong class="verify-good">0 / 0</strong></div></div><div class="decision"><b>Agent 当前结论</b><p>效果符合预期，暂不继续缩容。待观察满 7 天且覆盖周末批处理窗口后，再评估由 5 台缩至 4 台。</p></div></div></section>
@@ -217,7 +264,7 @@ function renderOverview(){
 }
 
 function briefNumber(label,value,unit,note,cls){return `<div class="brief-number ${cls}"><span>${label}</span><strong>${value}</strong>${unit}<small>${note}</small></div>`}
-function systemRow(s){return `<button class="system-row" data-page="system" data-system-id="${s.id}"><span class="system-name"><span class="system-code">${s.code}</span><span><b>${s.name}</b><small>${s.domain} · ${s.hint}</small></span></span>${scoreCell('容量风险',s.risk,'risk')}${scoreCell('资源浪费',s.waste,'waste')}${scoreCell('负载倾斜',s.skew,'skew')}${scoreCell('治理优先',s.priority,'') }<span class="priority ${s.level==='P1'?'high':''}">${s.level}</span><span class="chev">›</span></button>`}
+function systemRow(s){return `<button class="system-row" data-page="profile" data-system-id="${s.id}"><span class="system-name"><span class="system-code">${s.code}</span><span><b>${s.name}</b><small>${s.domain} · ${s.hint}</small></span></span>${scoreCell('容量风险',s.risk,'risk')}${scoreCell('资源浪费',s.waste,'waste')}${scoreCell('负载倾斜',s.skew,'skew')}${scoreCell('治理优先',s.priority,'') }<span class="priority ${s.level==='P1'?'high':''}">${s.level}</span><span class="chev">›</span></button>`}
 function scoreCell(label,value,cls){return `<span class="score-cell ${cls}"><span>${label}</span><b>${value}</b></span>`}
 function signal(num,title,body,page){return `<div class="signal"><span class="signal-num">${num}</span><div><b>${title}</b><p>${body}</p><button data-page="${page}">查看分析 →</button></div></div>`}
 function overviewTaskItem(t){
@@ -257,7 +304,8 @@ function renderProfile(){
       <div class="profile-lanes" style="--first-anchor:${firstAnchor}px;--last-anchor:${lastAnchor}px">${profile.components.map(component=>componentProfile(component,selected.cluster.name)).join('')}</div>
     </div>
   </section>
-  ${serverTable(selected.component,selected.cluster)}`;
+  ${serverTable(selected.component,selected.cluster)}
+  ${clusterInsight(selected.component,selected.cluster)}`;
 }
 
 function profileLaneAnchor(component){
@@ -287,11 +335,11 @@ function clusterProfile(cluster,selected){
 }
 function serverTable(component,cluster){
   return `<section class="panel profile-server-panel">
-    <div class="panel-head"><div><p class="kicker">CLUSTER SERVERS</p><h2>${cluster.name}</h2><p>${component.name} · ${component.role}</p></div><span class="cluster-level">${cluster.level}</span></div>
+    <div class="panel-head"><div><p class="kicker">CLUSTER SERVERS</p><h2>${cluster.name}</h2><p>${component.name} · ${component.role} · 点击服务器查看动态基线与容量预测</p></div><span class="cluster-level">${cluster.level}</span></div>
     <div class="profile-table-wrap"><table class="profile-server-table"><thead><tr><th>服务器</th><th>IP 地址</th><th>角色</th><th>规格</th><th>CPU</th><th>内存</th><th>磁盘</th><th>运行状态</th></tr></thead><tbody>${cluster.servers.map((server,index)=>serverRow(server,index,cluster,component.name)).join('')}</tbody></table></div>
   </section>`;
 }
-function serverRow(server,index,cluster,componentName){
+function serverMetrics(server,index,cluster,componentName){
   const seed=[...server].reduce((sum,char)=>sum+char.charCodeAt(0),0);
   const ip=`10.${(seed%12)+20}.${(seed%83)+10}.${(index+11)*3}`;
   const role=index===0?'主节点':index===1?'备用节点':'工作节点';
@@ -303,18 +351,43 @@ function serverRow(server,index,cluster,componentName){
     else cpu=knownMetric;
   }
   const status=disk>82?'关注':'正常';
-  return `<tr><td><b>${server}</b></td><td><code>${ip}</code></td><td>${role}</td><td>${spec}</td><td>${metricCell(cpu)}</td><td>${metricCell(mem)}</td><td>${metricCell(disk,disk>82?'warn':'')}</td><td><span class="server-status ${status==='关注'?'warn':''}"><i></i>${status}</span></td></tr>`;
+  return {server,ip,role,spec,cpu,mem,disk,status};
+}
+function serverRow(server,index,cluster,componentName){
+  const metric=serverMetrics(server,index,cluster,componentName);
+  return `<tr class="profile-server-row" tabindex="0" role="button" data-profile-server="${server}" data-profile-component="${componentName}" data-profile-cluster-name="${cluster.name}" aria-label="查看 ${server} 容量趋势"><td><b>${server}</b></td><td><code>${metric.ip}</code></td><td>${metric.role}</td><td>${metric.spec}</td><td>${metricCell(metric.cpu)}</td><td>${metricCell(metric.mem)}</td><td>${metricCell(metric.disk,metric.disk>82?'warn':'')}</td><td><span class="server-status ${metric.status==='关注'?'warn':''}"><i></i>${metric.status}</span></td></tr>`;
 }
 function metricCell(value,tone=''){return `<span class="server-metric ${tone}"><b>${value}%</b><i><em style="width:${value}%"></em></i></span>`}
 
-function trendChart(){
-  const actual=[48,50,49,52,51,53,54,52,55,56,55,58,59,57,60,61,62,63,65,64,67,69,70,72,75,77,80,82,85,87.6];
-  const predict=[87.6,88.2,88.8,89.4,90.1,90.8,91.5]; const W=720,H=220,p=24,min=35,max=95;
+function clusterInsight(component,cluster){
+  const detail=systemDetails[state.selectedSystemId]||systemDetails.payment;
+  const metrics=cluster.servers.map((server,index)=>serverMetrics(server,index,cluster,component.name));
+  const focus=component.name==='GreatDB'?'disk':'cpu';
+  const focusLabel=focus==='disk'?'磁盘':'CPU';
+  const values=metrics.map(metric=>metric[focus]);
+  const max=Math.max(...values),min=Math.min(...values),spread=(max-min).toFixed(1);
+  const isPrimary=detail.nodes.some(([host])=>cluster.servers.includes(host));
+  const cause=isPrimary?detail.cause:`${focusLabel} 水位分布${max>80?'存在高位节点':'整体稳定'}`;
+  const body=isPrimary?detail.body:`${cluster.name} 共 ${cluster.servers.length} 台服务器，${focusLabel}最高 ${max}%，最低 ${min}%，极差 ${spread}%。当前结论仅作用于该集群，不代表整个系统容量状态。`;
+  const decision=isPrimary?detail.decision:(max>80?'先定位高位服务器的业务负载和数据分布，再决定重平衡或扩容。':'维持当前规格并按既定周期复核，无需立即调整资源。');
+  return `<section class="profile-cluster-insight">
+    <article class="panel cluster-distribution-panel"><div class="panel-head"><div><p class="kicker">CLUSTER DISTRIBUTION</p><h2>集群节点分布</h2><p>${cluster.name} · ${focusLabel} 水位</p></div><small>MAX−MIN ${spread}%</small></div><div class="distribution">${metrics.map(metric=>`<div class="node-row"><label>${metric.server}</label><span class="node-bar"><i style="--value:${metric[focus]}%;--bar:${metric[focus]>82?'var(--red)':metric[focus]>70?'var(--amber)':'var(--cyan)'}"></i></span><b>${metric[focus]}%</b></div>`).join('')}</div></article>
+    <aside class="panel cluster-attribution-panel"><div class="panel-head"><div><p class="kicker">CLUSTER ATTRIBUTION</p><h2>集群级归因与方案</h2><p>结论范围：${cluster.name}</p></div><span class="cluster-level">${cluster.level}</span></div><div class="cause-card"><small>集群级归因</small><h3>${cause}</h3><p>${body}</p><div class="decision"><b>建议方案</b><p>${decision}</p></div></div></aside>
+  </section>`;
+}
+
+function trendChart({end=87.6,limit=90,metric='磁盘'}={}){
+  const source=[48,50,49,52,51,53,54,52,55,56,55,58,59,57,60,61,62,63,65,64,67,69,70,72,75,77,80,82,85,87.6];
+  const ratio=end/87.6;
+  const actual=source.map(value=>+(value*ratio).toFixed(1));
+  const predict=Array.from({length:7},(_,index)=>+(end*(1+index*.008)).toFixed(1));
+  const W=720,H=220,p=24,min=Math.max(0,Math.floor((Math.min(...actual)-10)/10)*10),max=Math.min(100,Math.max(limit+5,Math.ceil((Math.max(...predict)+5)/10)*10));
   const x=(i,total)=>p+i*(W-p*2)/(total-1), y=v=>H-p-(v-min)/(max-min)*(H-p*2);
   const line=actual.map((v,i)=>`${x(i,actual.length)},${y(v)}`).join(' '), pred=predict.map((v,i)=>`${x(actual.length-1+i,actual.length+predict.length-1)},${y(v)}`).join(' ');
-  const upper=actual.map((_,i)=>`${x(i,actual.length)},${y(66+i*.22)}`).join(' '), lower=[...actual].reverse().map((_,ri)=>{const i=actual.length-1-ri;return `${x(i,actual.length)},${y(43+i*.18)}`}).join(' ');
-  const grids=[40,50,60,70,80,90].map(v=>`<line class="chart-grid" x1="${p}" y1="${y(v)}" x2="${W-p}" y2="${y(v)}"/><text class="chart-label" x="0" y="${y(v)+3}">${v}</text>`).join('');
-  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="磁盘使用率偏离动态基线并预计六天后达到百分之九十">${grids}<polygon class="chart-band" points="${upper} ${lower}"/><line class="chart-limit" x1="${p}" y1="${y(90)}" x2="${W-p}" y2="${y(90)}"/><text class="chart-label" x="${W-78}" y="${y(90)-6}">风险线 90%</text><polyline class="chart-line" points="${line}"/><polyline class="chart-predict" points="${pred}"/><circle class="chart-point" cx="${x(29,actual.length)}" cy="${y(87.6)}" r="5"/><text class="chart-label" x="${p}" y="${H-3}">07-14</text><text class="chart-label" x="${W/2}" y="${H-3}">07-29</text><text class="chart-label" x="${W-70}" y="${H-3}">08-18 预测</text></svg>`;
+  const upper=actual.map((value,i)=>`${x(i,actual.length)},${y(Math.min(max,value+8))}`).join(' '), lower=[...actual].reverse().map((value,ri)=>{const i=actual.length-1-ri;return `${x(i,actual.length)},${y(Math.max(min,value-8))}`}).join(' ');
+  const step=(max-min)/5;
+  const grids=Array.from({length:6},(_,index)=>Math.round(min+step*index)).map(v=>`<line class="chart-grid" x1="${p}" y1="${y(v)}" x2="${W-p}" y2="${y(v)}"/><text class="chart-label" x="0" y="${y(v)+3}">${v}</text>`).join('');
+  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${metric}使用率动态基线与未来七天预测">${grids}<polygon class="chart-band" points="${upper} ${lower}"/><line class="chart-limit" x1="${p}" y1="${y(limit)}" x2="${W-p}" y2="${y(limit)}"/><text class="chart-label" x="${W-78}" y="${y(limit)-6}">风险线 ${limit}%</text><polyline class="chart-line" points="${line}"/><polyline class="chart-predict" points="${pred}"/><circle class="chart-point" cx="${x(29,actual.length)}" cy="${y(end)}" r="5"/><text class="chart-label" x="${p}" y="${H-3}">07-14</text><text class="chart-label" x="${W/2}" y="${H-3}">07-29</text><text class="chart-label" x="${W-70}" y="${H-3}">08-18 预测</text></svg>`;
 }
 
 /* ============ 方案模拟 · 三步向导（自 模拟仿真.html 迁移） ============ */
@@ -941,8 +1014,8 @@ function renderHome(){
   ];
   state.homeSessions=sessions;
   const quickPrompts=[
-    {icon:'◎',title:'发现异常设备',desc:'z-score 离群 · 142 个实例',page:'system'},
-    {icon:'∿',title:'对比本周与上周负载',desc:'容量水位变化 · 一键钻取',page:'system'},
+    {icon:'◎',title:'发现异常设备',desc:'z-score 离群 · 142 个实例',page:'profile'},
+    {icon:'∿',title:'对比本周与上周负载',desc:'容量水位变化 · 一键钻取',page:'profile'},
     {icon:'!',title:'解释告警疲劳度',desc:'哪些告警已重复 3 次以上',page:'overview'},
     {icon:'✓',title:'一行话集群健康',desc:'按重要性级别 P1/P2/P3 汇总',page:'overview'}
   ];
@@ -994,14 +1067,14 @@ function renderHome(){
 
 function homeRoute(text){
   const t=text.toLowerCase();
-  if(/扩容|新增节点|加节点|加机器|扩.*节点|资源不足|撑不住|不够用|快到上限|阈值|即将到期|快到期/.test(t)) return {intent:'capacity_plan',reply:`扩容建议分两步走:<br>1. 先验证近 7 日增长斜率(系统画像 → ${selectedSystem().name})<br>2. 再查历史同口径基线,确定推荐规格,而非直接复制申请。<br>我可以为你打开系统画像,或直接生成治理任务。`,chips:[{label:'看趋势证据',page:'system'},{label:'查看治理事项',page:'overview'}]};
+  if(/扩容|新增节点|加节点|加机器|扩.*节点|资源不足|撑不住|不够用|快到上限|阈值|即将到期|快到期/.test(t)) return {intent:'capacity_plan',reply:`扩容建议分两步走:<br>1. 先验证近 7 日增长斜率(系统画像 → ${selectedSystem().name})<br>2. 再查历史同口径基线,确定推荐规格,而非直接复制申请。<br>我可以为你打开系统画像,或直接生成治理任务。`,chips:[{label:'看趋势证据',page:'profile'},{label:'查看治理事项',page:'overview'}]};
   if(/缩容|减节点|释放|降配|过剩|冗余|空闲|浪费|降本|利用率低|缩配/.test(t)) return {intent:'scale_in',reply:`缩容/降配的关键是「同口径基线比对」:<br>· 找到 12 个相似组件的 CPU P95 / 内存 P95 历史中位值<br>· 当前配置如果高出中位 1.5× 以上,大概率可降<br>· 一次缩 1 节点,观察 7 天再继续(参见 CAP-1839 案例)。`,chips:[{label:'查看 Redis 案例',page:'overview'}]};
   if(/对比|本周|环比|同期|趋势|vs|比上周|比昨日|比同期/.test(t)) return {intent:'compare',reply:`本周 vs 上周对比,关键看三个维度:<br>· CPU / 内存 P95 变化(峰值压力)<br>· 磁盘水位变化(容量累积)<br>· 告警次数 / 告警疲劳度(运维负担)<br>建议在系统画像页选择两个时间窗口对比。`,chips:[{label:'打开系统画像',page:'profile'}]};
-  if(/解释|为什么|判断|依据|怎么得出的|推理/.test(t)) return {intent:'explain',reply:`Agent 的判断分三层:<br>1. <b>算法层</b>:动态基线 + 7 日斜率 + 节点极差<br>2. <b>判断层</b>:结合系统等级、是否主备、是否符合历史模式<br>3. <b>行动层</b>:变更需经人工审批,所有结论可在「判断过程」弹窗逐条复核。`,chips:[{label:'看一次判断过程',page:'system'}]};
+  if(/解释|为什么|判断|依据|怎么得出的|推理/.test(t)) return {intent:'explain',reply:`Agent 的判断分三层:<br>1. <b>算法层</b>:动态基线 + 7 日斜率 + 节点极差<br>2. <b>判断层</b>:结合系统等级、是否主备、是否符合历史模式<br>3. <b>行动层</b>:变更需经人工审批,所有结论可在「判断过程」弹窗逐条复核。`,chips:[{label:'查看系统画像',page:'profile'}]};
   if(/建单|提单|jira|工单|变更单|开单|申请单|itsm/.test(t)) return {intent:'create_ticket',reply:`建单前 Agent 会自动准备:<br>· 当前集群指标(峰值 / 水位 / 增长)<br>· 历史同口径基线对比(为什么是这个规格)<br>· 风险与回滚建议<br>所有变更单仍由你点击提交,我不会自动执行。`,chips:[{label:'查看治理事项',page:'overview'}]};
   if(/查询|看一下|看看|查一下|详情|多少|什么|状态|水位|峰值|cpu|内存|磁盘|redis|nginx|greatdb/.test(t)) return {intent:'query',reply:`已记录你的查询意图。你可以更具体一点:<br>· 「Redis CPU 峰值」 / 「GreatDB 磁盘水位」<br>· 「本周告警次数」<br>· 「同类 Nginx 的 P95 中位」<br>我会在系统画像页拉数据并标注取数时间。`,chips:[{label:'系统画像',page:'profile'}]};
   if(/复盘|回顾|今天|今天做|今天完成|总结|汇报/.test(t)) return {intent:'recap',reply:`今日复盘:<br>· 14 轮数据采集,142 个实例<br>· 3 条治理建议,1 条进入评审(CAP-1842)<br>· 1 条缩容观察中(CAP-1839 第 3/7 天)<br>详细事件在「工作事件流」中,可导出给团队。`,chips:[{label:'看工作事件',page:'home'}]};
-  if(/帮助|help|能做什么|功能|你能/.test(t)) return {intent:'help',reply:`我是 Capacity Agent,7 类高频对话:<br>· <b>查询</b>:Redis / GreatDB / Nginx 容量数据<br>· <b>对比</b>:本周 vs 上周水位<br>· <b>解释</b>:为什么 Agent 给出某个结论<br>· <b>模拟</b>:扩容/缩容/降配方案<br>· <b>建单</b>:准备 JIRA 变更单所需的所有证据<br>· <b>复盘</b>:今日工作事件总结<br>· <b>路由</b>:打开知识库、系统画像或治理总览`,chips:[]};
+  if(/帮助|help|能做什么|功能|你能/.test(t)) return {intent:'help',reply:`我是 Capacity Agent,7 类高频对话:<br>· <b>查询</b>:Redis / GreatDB / Nginx 容量数据<br>· <b>对比</b>:本周 vs 上周水位<br>· <b>解释</b>:为什么 Agent 给出某个结论<br>· <b>模拟</b>:扩容/缩容/降配方案<br>· <b>建单</b>:准备 JIRA 变更单所需的所有证据<br>· <b>复盘</b>:今日工作事件总结<br>· <b>路由</b>:打开治理规则、系统画像或我的治理`,chips:[]};
   return {intent:'fallback',reply:`我收到了你的问题。Agent 会把这条问题放进工作上下文,然后:<br>· 拉相关数据(峰值、水位、趋势)<br>· 查历史同口径基线<br>· 给你一个「先验证、再建议、最后由你审批」的方案。<br>所有结论都不会自动执行生产变更。`,chips:[]};
 }
 
@@ -1018,6 +1091,31 @@ function homeRespond(text){
   toast('已加入工作上下文',r.intent==='fallback'?'Agent 会持续跟进并主动通知你。':'意图已识别 · '+r.intent);
 }
 
+function openServerInsight(serverName,componentName,clusterName){
+  const profile=systemProfiles[state.selectedSystemId]||systemProfiles.payment;
+  const component=profile.components.find(item=>item.name===componentName)||profile.components[0];
+  const cluster=component.clusters.find(item=>item.name===clusterName)||component.clusters[0];
+  const index=Math.max(0,cluster.servers.indexOf(serverName));
+  const metric=serverMetrics(serverName,index,cluster,component.name);
+  const detail=systemDetails[state.selectedSystemId]||systemDetails.payment;
+  const focus=component.name==='GreatDB'?'磁盘':'CPU';
+  const current=component.name==='GreatDB'?metric.disk:metric.cpu;
+  const inspect=document.querySelector('#inspect-modal');
+  const content=document.querySelector('#inspect-content');
+  closeOverlays();
+  content.innerHTML=`<section class="server-insight-dialog">
+    <header class="server-insight-head"><div><p class="kicker">SERVER CAPACITY INSIGHT</p><h2>${serverName} · 动态基线与容量预测</h2><p>${selectedSystem().name} / ${component.name} / ${cluster.name}</p></div><span class="server-status ${metric.status==='关注'?'warn':''}"><i></i>${metric.status}</span></header>
+    <div class="server-insight-meta"><span><small>IP 地址</small><b>${metric.ip}</b></span><span><small>服务器角色</small><b>${metric.role}</b></span><span><small>规格</small><b>${metric.spec}</b></span><span><small>当前${focus}</small><b>${current}%</b></span></div>
+    <article class="server-insight-chart"><div class="chart-title"><div><h3>${focus}使用率趋势</h3><p>历史基线、实际水位与未来 7 天预测</p></div><div class="legend"><span><i style="background:rgba(47,93,145,.14)"></i>正常区间</span><span><i style="background:var(--cyan)"></i>实际</span><span><i style="background:var(--amber)"></i>预测</span></div></div><div class="chart">${trendChart({end:current,limit:focus==='磁盘'?90:80,metric:focus})}</div></article>
+    <div class="chart-cards">${[['CPU 峰值',`${metric.cpu}%`],['内存峰值',`${metric.mem}%`],['磁盘水位',`${metric.disk}%`],['集群节点极差',detail.spread.replace('MAX−MIN ','')]].map(([label,value])=>chartStat(label,value)).join('')}</div>
+    <div class="explain"><strong>服务器级判断：</strong>${serverName} 当前${focus}为 ${current}%。该趋势用于解释服务器自身变化；是否扩容、重平衡或降配，仍需回到 ${cluster.name} 的集群级归因与建议方案判断。</div>
+  </section>`;
+  inspect.classList.add('open');
+  inspect.removeAttribute('inert');
+  inspect.setAttribute('aria-hidden','false');
+  if(scrim)scrim.hidden=false;
+}
+
 function openHomeInspect(){
   const followups=state.homeFollowUps||[];
   const events=state.homeEvents||[];
@@ -1027,7 +1125,7 @@ function openHomeInspect(){
   content.innerHTML=`
     <p class="kicker">今日巡检 · 容量概览</p>
     <h2 style="font:600 22px var(--display);margin:6px 0 12px">今日巡检 · Capacity Agent 当前跟进</h2>
-    <p style="color:var(--muted);font-size:11px;line-height:1.7;margin:0 0 16px">所有生产变更仍由你审批。下表展示 Agent 正在持续跟进的任务，完整证据统一收敛到治理总览。</p>
+    <p style="color:var(--muted);font-size:11px;line-height:1.7;margin:0 0 16px">所有生产变更仍由你审批。下表展示 Agent 正在持续跟进的任务，完整证据统一收敛到我的治理。</p>
     <section class="home-followups">${followups.map(t=>`<div class="home-followup"><div><b>${t.title}</b><small>${t.id} · ${t.owner}</small></div><span class="work-status">${stageLabel[t.stage]||'处理中'}</span></div>`).join('') || '<div class="empty-note">暂无跟进任务</div>'}</section>
     <p class="kicker" style="margin-top:20px">状态快照</p>
     <div class="home-snapshot">
@@ -1217,11 +1315,11 @@ function collabBubbleHTML(m,i){
       <h3>${m.title}</h3>
       <p>${m.body}</p>
       ${m.facts?`<div class="record-facts">${m.facts.map(x=>`<em>${x}</em>`).join('')}</div>`:''}
-      ${!user && m.kind==='risk'?'<div class="message-actions"><button class="btn small" data-page="system">查看趋势证据</button><button class="btn small" data-open-evidence>判断过程</button></div>':''}
+      ${!user && m.kind==='risk'?'<div class="message-actions"><button class="btn small" data-page="profile">查看趋势证据</button><button class="btn small" data-open-evidence>判断过程</button></div>':''}
     </div>
   </article>`;
 }
-function messageHTML(m,i){const user=m.tone==='user';return `<article class="message ${user?'user':''}"><span class="msg-avatar">${user?'YOU':'CA'}</span><div class="message-body"><small>${m.time} · ${m.tone.toUpperCase()}</small><h3>${m.title}</h3><p>${m.body}</p>${i===1?'<div class="message-actions"><button class="btn small" data-page="system">查看趋势证据</button><button class="btn small" data-open-evidence>判断过程</button></div>':''}</div></article>`}
+function messageHTML(m,i){const user=m.tone==='user';return `<article class="message ${user?'user':''}"><span class="msg-avatar">${user?'YOU':'CA'}</span><div class="message-body"><small>${m.time} · ${m.tone.toUpperCase()}</small><h3>${m.title}</h3><p>${m.body}</p>${i===1?'<div class="message-actions"><button class="btn small" data-page="profile">查看趋势证据</button><button class="btn small" data-open-evidence>判断过程</button></div>':''}</div></article>`}
 function planItem(o){return `<div class="plan-row ${o.status}" style="--p:${o.progress||0}">
   <div class="plan-time">${o.time}</div>
   <div class="plan-node"></div>
@@ -1261,6 +1359,8 @@ function toast(title,body){const el=document.createElement('div');el.className='
 
 document.addEventListener('click',e=>{
   const page=e.target.closest('[data-page]');if(page){if(page.dataset.systemId)state.selectedSystemId=page.dataset.systemId;state.page=page.dataset.page;closeOverlays();render();renderWorkline();return}
+  const mapSystem=e.target.closest('[data-map-system]');if(mapSystem){toast('系统画像尚未接入',`${mapSystem.dataset.mapSystem} 已纳入治理地图，当前演示仅接入你负责的 3 个系统。`);return}
+  const server=e.target.closest('[data-profile-server]');if(server){openServerInsight(server.dataset.profileServer,server.dataset.profileComponent,server.dataset.profileClusterName);return}
   const profileCluster=e.target.closest('[data-profile-cluster]');if(profileCluster){state.profileCluster=profileCluster.dataset.profileCluster;render();return}
   const collapseBtn=e.target.closest('[data-agent-collapse]');
   if(collapseBtn){
@@ -1303,6 +1403,8 @@ document.addEventListener('input',e=>{
 });
 document.addEventListener('keydown',e=>{
   if(e.key==='Escape'){closeOverlays();return}
+  const server=e.target.closest?.('[data-profile-server]');
+  if(server&&(e.key==='Enter'||e.key===' ')){e.preventDefault();openServerInsight(server.dataset.profileServer,server.dataset.profileComponent,server.dataset.profileClusterName);return}
   if(e.target.closest('#home-composer') && e.key==='Enter' && (e.metaKey||e.ctrlKey)){
     e.preventDefault();
     const ta=document.querySelector('#home-composer textarea');

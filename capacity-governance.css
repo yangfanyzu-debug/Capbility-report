@@ -866,3 +866,44 @@ main{background:transparent}.page-toolbar,.system-switcher,.brief-copy,.brief-da
 .agent-mini{display:none;width:48px;height:48px;border-radius:50%;background:linear-gradient(145deg,#f7f9fc,#e4eaf3);border:1px solid #c8d3e2;color:#2f5d91;font:700 13px var(--sans);place-items:center;box-shadow:0 8px 20px rgba(25,36,58,.16);cursor:pointer;justify-self:end;align-self:end}
 .agent-float.collapsed .agent-mini{animation:bubblePop .32s cubic-bezier(.2,.8,.2,1)}
 .wz-panel[hidden]{display:none!important}
+
+/* ============ 信息架构：一级入口 + 二级治理菜单 ============ */
+#nav{gap:6px}
+.nav-section{display:grid;gap:4px;margin-top:7px;padding-top:9px;border-top:1px solid #e2e7ef}
+.nav-section-title{height:26px;padding:0 10px;display:flex;align-items:center;justify-content:space-between;color:#596579;font-size:10px;font-weight:800;letter-spacing:.04em}
+.nav-section-title small{color:#a0a8b5;font:8px var(--mono);letter-spacing:.09em}
+.nav-children{display:grid;gap:2px;padding-left:8px}
+.nav-item.child{height:39px;padding-left:14px;color:#6f7889}
+.nav-item.child svg{width:15px;height:15px}
+.nav-item.child.active{color:#223b5d}
+
+/* ============ 治理地图：用户 / 平台 / 职能三视角 ============ */
+.map-summary{min-height:76px;margin-bottom:12px;border:1px solid #dbe1ea;border-radius:14px;background:#fff;padding:14px 18px;box-shadow:0 10px 24px rgba(25,36,58,.045);display:flex;align-items:center;justify-content:space-between;gap:24px}
+.map-summary .kicker{margin-bottom:3px}.map-summary h1{margin:0;color:#172033;font-size:21px;line-height:1.25;letter-spacing:-.02em}.map-summary p:last-child{margin:4px 0 0;color:#737e90;font-size:10px}
+.map-summary-stats{display:flex;align-items:center;gap:0;flex:0 0 auto}.map-summary-stats span{min-width:104px;padding:0 18px;border-left:1px solid #e2e7ef;color:#778297;font-size:10px}.map-summary-stats b{display:block;margin-bottom:2px;color:#223b5d;font:700 18px var(--mono)}
+.governance-map{overflow:auto;background:#f7f9fc}
+.map-lane{min-width:1080px;display:grid;grid-template-columns:92px minmax(0,1fr);border-bottom:8px solid #e9edf3}.map-lane:last-child{border-bottom:0}
+.map-axis{border-right:1px solid #d8dfe9;background:#eef2f7;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;color:#2b4568;padding:18px 8px}
+.map-axis-icon{width:34px;height:34px;border:1px solid #c6d1df;border-radius:9px;background:#fff;display:grid;place-items:center;margin-bottom:9px;box-shadow:0 5px 12px rgba(25,36,58,.06)}
+.map-axis-icon svg{width:17px;height:17px;stroke:#2f5d91;fill:none;stroke-width:1.7}.map-axis b{font-size:12px}.map-axis small{margin-top:4px;color:#8b95a5;font:7px var(--mono);letter-spacing:.08em}
+.map-group-grid{display:grid;grid-template-columns:repeat(var(--map-columns),minmax(0,1fr));background:#fff}
+.map-group{min-width:0;border-right:1px solid #e2e7ef;padding:0 7px 8px}.map-group:last-child{border-right:0}.map-group h2{height:34px;margin:0 -7px 7px;border-bottom:1px solid #dce2eb;background:#f7f9fc;display:flex;align-items:center;justify-content:center;color:#34435a;font-size:11px;font-weight:800}
+.map-system-grid{display:grid;grid-template-columns:1fr;gap:6px}.map-lane:first-child .map-system-grid,.map-lane:nth-child(2) .map-system-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+.map-system{position:relative;min-height:36px;border:1px solid #e0e5ec;border-radius:4px;background:#f4f6f9;color:#4f5b6f;padding:6px 22px 6px 8px;font-size:9.5px;line-height:1.35;text-align:center;transition:border-color .16s,background .16s,color .16s,box-shadow .16s}
+.map-system:hover{border-color:#aebbcf;background:#fff;color:#223b5d;box-shadow:0 5px 12px rgba(25,36,58,.07)}
+.map-system em{position:absolute;right:5px;top:5px;min-width:16px;height:16px;border-radius:999px;background:#2f5d91;color:#fff;display:grid;place-items:center;font:8px var(--mono);font-style:normal;box-shadow:0 3px 7px rgba(47,93,145,.22)}
+.map-lane:nth-child(2) .map-axis{background:#eef3f8}.map-lane:nth-child(3) .map-axis{background:#eef4f2}.map-lane:nth-child(3) .map-axis-icon svg{stroke:#4b6f6a}
+
+/* ============ 系统画像：集群级结论 + 服务器级趋势 ============ */
+.profile-server-panel{margin-bottom:12px}
+.profile-server-row{cursor:pointer;transition:background .16s,box-shadow .16s}.profile-server-row:hover,.profile-server-row:focus-visible{background:#f0f4f9;box-shadow:inset 3px 0 #2f5d91;outline:0}
+.profile-server-row td:first-child b:after{content:"查看趋势";margin-left:8px;border:1px solid #d4dce7;border-radius:999px;background:#fff;color:#6f7b8f;padding:2px 6px;font:8px var(--sans);opacity:0;transition:opacity .16s}.profile-server-row:hover td:first-child b:after,.profile-server-row:focus-visible td:first-child b:after{opacity:1}
+.profile-cluster-insight{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(320px,.9fr);gap:12px;align-items:stretch}
+.cluster-distribution-panel .distribution{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:22px;padding:14px 18px}.cluster-distribution-panel .node-row{grid-template-columns:105px minmax(80px,1fr) 42px;margin:8px 0}
+.cluster-attribution-panel .cause-card{border-top:0;padding:18px}.cluster-attribution-panel .cause-card h3{font-size:16px}.cluster-attribution-panel .cause-card p{font-size:11px;line-height:1.75}
+.server-insight-dialog{padding:2px}.server-insight-head{display:flex;align-items:flex-start;justify-content:space-between;gap:20px;padding:2px 38px 18px 0;border-bottom:1px solid #e5eaf1}.server-insight-head h2{margin:5px 0 5px;font-size:22px;letter-spacing:-.02em}.server-insight-head p{margin:0;color:#7a8597;font:10px var(--mono)}
+.server-insight-meta{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:14px 0}.server-insight-meta span{border:1px solid #dce2eb;border-radius:10px;background:#f8fafc;padding:10px 11px}.server-insight-meta small,.server-insight-meta b{display:block}.server-insight-meta small{color:#8690a0;font-size:9px}.server-insight-meta b{margin-top:5px;color:#24344b;font:11px var(--mono)}
+.server-insight-chart{border:1px solid #e0e5ec;border-radius:13px;background:#fff;padding:14px}.server-insight-chart .chart-title h3{margin:0;color:#172033;font-size:13px}.server-insight-chart .chart-title p{margin:4px 0 0;color:#8791a1;font-size:9px}.server-insight-chart .chart{height:230px;margin-top:7px}.server-insight-dialog>.chart-cards{margin-top:9px}.server-insight-dialog>.explain{background:#f4f7fb;border-color:#2f5d91;color:#526078}.server-insight-dialog>.explain strong{color:#223b5d}
+#inspect-modal .modal-card{width:min(900px,calc(100vw - 40px));padding:24px;border-color:#d5dce6;background:#fff;box-shadow:0 30px 90px rgba(20,31,49,.22)}
+
+@media(max-width:1180px){.profile-cluster-insight{grid-template-columns:1fr}.cluster-distribution-panel .distribution{grid-template-columns:1fr}.map-summary{align-items:flex-start}.map-summary-stats span{min-width:86px;padding:0 12px}}
