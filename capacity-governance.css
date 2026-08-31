@@ -712,6 +712,54 @@ main{background:transparent}.page-toolbar,.system-switcher,.brief-copy,.brief-da
 .ms-cap{font-size:11px;color:#7b879b;text-align:center;margin-bottom:6px}
 .ms-item img{width:100%;height:auto;display:block}
 
+/* 治理总览: 四块信息按决策路径形成稳定的 2 x 2 工作台。 */
+.overview-quadrants{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));grid-template-areas:"priority advice" "tasks verification";gap:15px;align-items:stretch}
+.overview-panel{min-width:0}
+.overview-priority{grid-area:priority}.overview-advice{grid-area:advice}.overview-tasks{grid-area:tasks}.overview-verification{grid-area:verification}
+.overview-panel .panel-head{min-height:62px}
+.overview-panel .panel-head h2{font-size:13px}
+.overview-priority .systems{padding:7px}
+.overview-priority .system-row{grid-template-columns:minmax(135px,1fr) repeat(4,42px) 46px 12px;gap:6px;padding:11px 8px}
+.overview-priority .system-code{width:32px;height:32px;flex:0 0 auto}
+.overview-priority .system-name{gap:8px;min-width:0}
+.overview-priority .system-name>span:last-child{min-width:0}
+.overview-priority .system-name b,.overview-priority .system-name small{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.overview-priority .score-cell span{font-size:7px;white-space:nowrap}
+.overview-priority .score-cell b{font-size:13px}
+.overview-priority .priority{padding:4px 5px}
+.overview-priority .chev{font-size:16px}
+.overview-advice .signal-list{padding:6px 10px}
+.overview-advice .signal{padding:12px 8px;grid-template-columns:26px 1fr}
+.overview-advice .signal b{font-size:11px}
+.overview-advice .signal p{font-size:10px;line-height:1.55}
+.overview-advice .signal button{padding-top:6px}
+.overview-task-list{padding:5px 12px}
+.overview-task-item{padding:12px 2px;border-bottom:1px solid #e6ebf2}
+.overview-task-item:last-child{border-bottom:0}
+.task-record-head,.task-record-meta,.task-record-bottom{display:flex;align-items:center}
+.task-record-head{justify-content:space-between;gap:10px}
+.task-record-title{display:block;margin:6px 0 8px;color:#172033;font-size:12px}
+.task-record-meta{gap:7px;color:#7a8495;font-size:10px}
+.task-record-meta>span:first-child{margin-right:auto}
+.overview-task-item .status-pill,.overview-task-item .stage-badge{min-height:22px;padding:0 8px;font-size:9px}
+.overview-task-item .work-status{min-height:21px;padding:0 8px;font-size:9px}
+.task-record-bottom{justify-content:space-between;gap:10px;margin-top:9px;padding-top:9px;border-top:1px dashed #e2e7ef}
+.task-record-actions{display:flex;justify-content:flex-end;gap:6px;flex-wrap:wrap}
+.task-record-actions .btn,.task-record-bottom>.btn{min-height:28px;padding:0 8px;font-size:9px}
+.task-record-bottom .work-order-no{font-size:9px}
+.overview-verification-body{padding:15px 16px 17px}
+.verify-title{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:13px}
+.verify-title span,.verify-title strong{display:block}
+.verify-title span{color:#778296;font-size:10px}
+.verify-title strong{margin-top:4px;color:#172033;font-size:17px}
+.verify-title em{border:1px solid #cfd9e6;border-radius:999px;background:#f3f6fa;color:#2f5d91;padding:5px 9px;font-size:9px;font-style:normal}
+.overview-verification .verify-hero{gap:8px}
+.overview-verification .verify-card{padding:11px;background:#fafbfd;border-color:#e2e7ef}
+.overview-verification .verify-card strong{font-size:17px}
+.overview-verification .decision{margin-top:11px;padding:12px}
+.overview-verification .decision b{font-size:11px}
+.overview-verification .decision p{font-size:10px;line-height:1.6}
+
 /* ============ 系统画像: 拓扑结构 + 集群服务器明细 ============ */
 .profile-toolbar{display:flex;align-items:center;justify-content:space-between;gap:20px;padding:12px 16px;margin-bottom:12px}
 .profile-toolbar label{display:flex;align-items:center;gap:12px;color:#69758a;font-size:11px;font-weight:700}

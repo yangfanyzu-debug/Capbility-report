@@ -136,9 +136,9 @@ const agentInput=document.querySelector('#agent-input');
 function navHTML(){
   const groups=[
     {label:'AGENT',items:[['overview','治理总览',icons.overview,''],['profile','系统画像',icons.profile,'']]},
-    {label:'KNOWLEDGE',items:[['knowledge','知识库',icons.knowledge,'']]},
     {label:'DEVICES',items:[['system','系统洞察',icons.system,'3']]},
-    {label:'OBSERVABILITY',items:[['simulate','方案模拟',icons.simulate,''],['tasks','治理闭环',icons.tasks,'3']]}
+    {label:'OBSERVABILITY',items:[['simulate','方案模拟',icons.simulate,'']]},
+    {label:'KNOWLEDGE',items:[['knowledge','知识库',icons.knowledge,'']]}
   ];
   return groups.flatMap(g=>g.items).map(([id,label,icon,count])=>`<button class="nav-item ${state.page===id?'active':''}" data-page="${id}">${icon}<span>${label}</span>${count?`<em>${count}</em>`:''}</button>`).join('');
 }
@@ -159,9 +159,9 @@ function render(){
     if(ta) state.homeDraft=ta.value;
   }
   nav.innerHTML=navHTML();
-  const names={overview:'我的容量治理',profile:'系统画像',system:'统一支付系统 / 系统洞察',simulate:'容量方案 / 方案模拟',knowledge:'容量治理 / 知识库',tasks:'治理任务 / 效果验证'};
+  const names={overview:'我的容量治理',profile:'系统画像',system:'统一支付系统 / 系统洞察',simulate:'容量方案 / 方案模拟',knowledge:'容量治理 / 知识库'};
   crumb.textContent=names[state.page];
-  ({overview:renderOverview,profile:renderProfile,system:renderSystem,simulate:renderSimulator,knowledge:renderKnowledge,tasks:renderTasks}[state.page]||renderOverview)();
+  ({overview:renderOverview,profile:renderProfile,system:renderSystem,simulate:renderSimulator,knowledge:renderKnowledge}[state.page]||renderOverview)();
   // 进入新页面后,恢复上一个页面留下的快照(向导 / 首页草稿)
   mountPage();
   main.focus({preventScroll:true});
@@ -201,18 +201,26 @@ function renderOverview(){
     </div>
     </div>
   </section>
-  <div class="grid two"><section class="panel"><div class="panel-head"><div><h2>我负责的系统治理优先级</h2><p>按容量风险、资源浪费、负载倾斜和行动必要性排序</p></div><small>${managedSystems.length} 个系统 · 按优先级排序</small></div><div class="systems">${managedSystems.map(systemRow).join('')}</div></section>
-  <aside class="panel"><div class="panel-head"><div><h2>面向我的治理建议</h2><p>服务器信号已归并为负责系统内的可行动结论</p></div><small>3 NEW</small></div><div class="signal-list">
+  <section class="overview-quadrants">
+  <section class="panel overview-panel overview-priority"><div class="panel-head"><div><h2>我负责的系统治理优先级</h2><p>按容量风险、资源浪费、负载倾斜和行动必要性排序</p></div><small>${managedSystems.length} 个系统 · 按优先级排序</small></div><div class="systems">${managedSystems.map(systemRow).join('')}</div></section>
+  <aside class="panel overview-panel overview-advice"><div class="panel-head"><div><h2>面向我的治理建议</h2><p>服务器信号已归并为负责系统内的可行动结论</p></div><small>3 NEW</small></div><div class="signal-list">
     ${signal('01','单节点增长 + 集群倾斜','GreatDB 最高节点磁盘 87.6%，节点差值 49.6%，不应仅凭集群平均值判断。','system')}
     ${signal('02','Redis 集群整体配置偏大','4 个实例连续 30 日 CPU 与内存峰值低于 25%，建议渐进缩容。','simulate')}
     ${signal('03','Nginx 节点规格偏高','渠道平台 Nginx 的单实例规格高于历史基线 2 倍,可考虑降配。','system')}
-  </div></aside></div>`;
+  </div></aside>
+  <section class="panel overview-panel overview-tasks"><div class="panel-head"><div><h2>正在治理的事项</h2><p>集中查看工单、变更状态和 Agent 跟进动作</p></div><small>3 ACTIVE</small></div><div class="overview-task-list">${tasks.map(overviewTaskItem).join('')}</div></section>
+  <section class="panel overview-panel overview-verification"><div class="panel-head"><div><h2>效果验证</h2><p>变更后水位与基线持续比对</p></div><small>CAP-1839 · DAY 3/7</small></div><div class="overview-verification-body"><div class="verify-title"><div><span>Redis 缩容观察</span><strong>第 3/7 天</strong></div><em>观察正常</em></div><div class="verify-hero"><div class="verify-card"><span>变更前 CPU 峰值</span><strong>18%</strong></div><div class="verify-card"><span>变更后 CPU 峰值</span><strong class="verify-good">31%</strong></div><div class="verify-card"><span>内存峰值变化</span><strong class="verify-good">23% → 36%</strong></div><div class="verify-card"><span>异常 / 告警</span><strong class="verify-good">0 / 0</strong></div></div><div class="decision"><b>Agent 当前结论</b><p>效果符合预期，暂不继续缩容。待观察满 7 天且覆盖周末批处理窗口后，再评估由 5 台缩至 4 台。</p></div></div></section>
+  </section>`;
 }
 
 function briefNumber(label,value,unit,note,cls){return `<div class="brief-number ${cls}"><span>${label}</span><strong>${value}</strong>${unit}<small>${note}</small></div>`}
 function systemRow(s){return `<button class="system-row" data-page="system" data-system-id="${s.id}"><span class="system-name"><span class="system-code">${s.code}</span><span><b>${s.name}</b><small>${s.domain} · ${s.hint}</small></span></span>${scoreCell('容量风险',s.risk,'risk')}${scoreCell('资源浪费',s.waste,'waste')}${scoreCell('负载倾斜',s.skew,'skew')}${scoreCell('治理优先',s.priority,'') }<span class="priority ${s.level==='P1'?'high':''}">${s.level}</span><span class="chev">›</span></button>`}
 function scoreCell(label,value,cls){return `<span class="score-cell ${cls}"><span>${label}</span><b>${value}</b></span>`}
 function signal(num,title,body,page){return `<div class="signal"><span class="signal-num">${num}</span><div><b>${title}</b><p>${body}</p><button data-page="${page}">查看分析 →</button></div></div>`}
+function overviewTaskItem(t){
+  const stages=['发现','建议','审批','观察','验证'];
+  return `<article class="overview-task-item"><div class="task-record-head"><span class="ticket-no">${t.id}</span><span class="work-status ${t.workStatus==='实施完成'?'done':''}">${t.workStatus||'待提单'}</span></div><b class="task-record-title">${t.title}</b><div class="task-record-meta"><span>${t.owner}</span><span class="status-pill">${t.status}</span><span class="stage-badge">${stages[t.stage]||'处理中'}</span></div><div class="task-record-bottom">${t.workOrder?`<span class="work-order-no">${t.workOrder}</span>`:`<button class="btn small" data-create-workorder="${t.id}">去提单</button>`}<span class="task-record-actions"><button class="btn small" ${t.id==='CAP-1839'?'data-verify':''}>${t.action}</button><button class="btn small" data-open-followup="${t.id}">查看 Agent 跟进记录</button></span></div></article>`;
+}
 
 function renderSystem(){
   const system=selectedSystem(),detail=systemDetails[system.id];
@@ -932,7 +940,7 @@ function renderHome(){
   const quickPrompts=[
     {icon:'◎',title:'发现异常设备',desc:'z-score 离群 · 142 个实例',page:'system'},
     {icon:'∿',title:'对比本周与上周负载',desc:'容量水位变化 · 一键钻取',page:'system'},
-    {icon:'!',title:'解释告警疲劳度',desc:'哪些告警已重复 3 次以上',page:'tasks'},
+    {icon:'!',title:'解释告警疲劳度',desc:'哪些告警已重复 3 次以上',page:'overview'},
     {icon:'✓',title:'一行话集群健康',desc:'按重要性级别 P1/P2/P3 汇总',page:'overview'}
   ];
   const followUps=[
@@ -983,14 +991,14 @@ function renderHome(){
 
 function homeRoute(text){
   const t=text.toLowerCase();
-  if(/扩容|新增节点|加节点|加机器|扩.*节点|资源不足|撑不住|不够用|快到上限|阈值|即将到期|快到期/.test(t)) return {intent:'capacity_plan',reply:`扩容建议分两步走:<br>1. 先验证近 7 日增长斜率(系统画像 → ${state.selectedSystemId||'统一支付'})<br>2. 再查历史同口径基线,确定推荐规格,而非直接复制申请。<br>我可以为你打开系统画像,或直接生成治理任务。`,chips:[{label:'看趋势证据',page:'system'},{label:'新建治理任务',page:'tasks'}]};
-  if(/缩容|减节点|释放|降配|过剩|冗余|空闲|浪费|降本|利用率低|缩配/.test(t)) return {intent:'scale_in',reply:`缩容/降配的关键是「同口径基线比对」:<br>· 找到 12 个相似组件的 CPU P95 / 内存 P95 历史中位值<br>· 当前配置如果高出中位 1.5× 以上,大概率可降<br>· 一次缩 1 节点,观察 7 天再继续(参见 CAP-1839 案例)。`,chips:[{label:'查看 Redis 案例',page:'tasks'}]};
+  if(/扩容|新增节点|加节点|加机器|扩.*节点|资源不足|撑不住|不够用|快到上限|阈值|即将到期|快到期/.test(t)) return {intent:'capacity_plan',reply:`扩容建议分两步走:<br>1. 先验证近 7 日增长斜率(系统画像 → ${state.selectedSystemId||'统一支付'})<br>2. 再查历史同口径基线,确定推荐规格,而非直接复制申请。<br>我可以为你打开系统画像,或直接生成治理任务。`,chips:[{label:'看趋势证据',page:'system'},{label:'查看治理事项',page:'overview'}]};
+  if(/缩容|减节点|释放|降配|过剩|冗余|空闲|浪费|降本|利用率低|缩配/.test(t)) return {intent:'scale_in',reply:`缩容/降配的关键是「同口径基线比对」:<br>· 找到 12 个相似组件的 CPU P95 / 内存 P95 历史中位值<br>· 当前配置如果高出中位 1.5× 以上,大概率可降<br>· 一次缩 1 节点,观察 7 天再继续(参见 CAP-1839 案例)。`,chips:[{label:'查看 Redis 案例',page:'overview'}]};
   if(/对比|本周|环比|同期|趋势|vs|比上周|比昨日|比同期/.test(t)) return {intent:'compare',reply:`本周 vs 上周对比,关键看三个维度:<br>· CPU / 内存 P95 变化(峰值压力)<br>· 磁盘水位变化(容量累积)<br>· 告警次数 / 告警疲劳度(运维负担)<br>建议在系统画像页选择两个时间窗口对比。`,chips:[{label:'打开系统画像',page:'profile'}]};
   if(/解释|为什么|判断|依据|怎么得出的|推理/.test(t)) return {intent:'explain',reply:`Agent 的判断分三层:<br>1. <b>算法层</b>:动态基线 + 7 日斜率 + 节点极差<br>2. <b>判断层</b>:结合系统等级、是否主备、是否符合历史模式<br>3. <b>行动层</b>:变更需经人工审批,所有结论可在「判断过程」弹窗逐条复核。`,chips:[{label:'看一次判断过程',page:'system'}]};
-  if(/建单|提单|jira|工单|变更单|开单|申请单|itsm/.test(t)) return {intent:'create_ticket',reply:`建单前 Agent 会自动准备:<br>· 当前集群指标(峰值 / 水位 / 增长)<br>· 历史同口径基线对比(为什么是这个规格)<br>· 风险与回滚建议<br>所有变更单仍由你点击提交,我不会自动执行。`,chips:[{label:'进入治理闭环',page:'tasks'}]};
+  if(/建单|提单|jira|工单|变更单|开单|申请单|itsm/.test(t)) return {intent:'create_ticket',reply:`建单前 Agent 会自动准备:<br>· 当前集群指标(峰值 / 水位 / 增长)<br>· 历史同口径基线对比(为什么是这个规格)<br>· 风险与回滚建议<br>所有变更单仍由你点击提交,我不会自动执行。`,chips:[{label:'查看治理事项',page:'overview'}]};
   if(/查询|看一下|看看|查一下|详情|多少|什么|状态|水位|峰值|cpu|内存|磁盘|redis|nginx|greatdb/.test(t)) return {intent:'query',reply:`已记录你的查询意图。你可以更具体一点:<br>· 「Redis CPU 峰值」 / 「GreatDB 磁盘水位」<br>· 「本周告警次数」<br>· 「同类 Nginx 的 P95 中位」<br>我会在系统画像页拉数据并标注取数时间。`,chips:[{label:'系统画像',page:'profile'}]};
   if(/复盘|回顾|今天|今天做|今天完成|总结|汇报/.test(t)) return {intent:'recap',reply:`今日复盘:<br>· 14 轮数据采集,142 个实例<br>· 3 条治理建议,1 条进入评审(CAP-1842)<br>· 1 条缩容观察中(CAP-1839 第 3/7 天)<br>详细事件在「工作事件流」中,可导出给团队。`,chips:[{label:'看工作事件',page:'home'}]};
-  if(/帮助|help|能做什么|功能|你能/.test(t)) return {intent:'help',reply:`我是 Capacity Agent,7 类高频对话:<br>· <b>查询</b>:Redis / GreatDB / Nginx 容量数据<br>· <b>对比</b>:本周 vs 上周水位<br>· <b>解释</b>:为什么 Agent 给出某个结论<br>· <b>模拟</b>:扩容/缩容/降配方案<br>· <b>建单</b>:准备 JIRA 变更单所需的所有证据<br>· <b>复盘</b>:今日工作事件总结<br>· <b>路由</b>:打开知识库/对标/治理闭环任意页面`,chips:[]};
+  if(/帮助|help|能做什么|功能|你能/.test(t)) return {intent:'help',reply:`我是 Capacity Agent,7 类高频对话:<br>· <b>查询</b>:Redis / GreatDB / Nginx 容量数据<br>· <b>对比</b>:本周 vs 上周水位<br>· <b>解释</b>:为什么 Agent 给出某个结论<br>· <b>模拟</b>:扩容/缩容/降配方案<br>· <b>建单</b>:准备 JIRA 变更单所需的所有证据<br>· <b>复盘</b>:今日工作事件总结<br>· <b>路由</b>:打开知识库、系统画像或治理总览`,chips:[]};
   return {intent:'fallback',reply:`我收到了你的问题。Agent 会把这条问题放进工作上下文,然后:<br>· 拉相关数据(峰值、水位、趋势)<br>· 查历史同口径基线<br>· 给你一个「先验证、再建议、最后由你审批」的方案。<br>所有结论都不会自动执行生产变更。`,chips:[]};
 }
 
@@ -1016,7 +1024,7 @@ function openHomeInspect(){
   content.innerHTML=`
     <p class="kicker">今日巡检 · 容量概览</p>
     <h2 style="font:600 22px var(--display);margin:6px 0 12px">今日巡检 · Capacity Agent 当前跟进</h2>
-    <p style="color:var(--muted);font-size:11px;line-height:1.7;margin:0 0 16px">所有生产变更仍由你审批。下表展示 Agent 正在持续跟进的任务,任何一行点击都能进入治理闭环页查看完整证据。</p>
+    <p style="color:var(--muted);font-size:11px;line-height:1.7;margin:0 0 16px">所有生产变更仍由你审批。下表展示 Agent 正在持续跟进的任务，完整证据统一收敛到治理总览。</p>
     <section class="home-followups">${followups.map(t=>`<div class="home-followup"><div><b>${t.title}</b><small>${t.id} · ${t.owner}</small></div><span class="work-status">${stageLabel[t.stage]||'处理中'}</span></div>`).join('') || '<div class="empty-note">暂无跟进任务</div>'}</section>
     <p class="kicker" style="margin-top:20px">状态快照</p>
     <div class="home-snapshot">
@@ -1074,7 +1082,7 @@ function renderKnowledge(){
   main.innerHTML=`
   <section class="kb-layout">
     <aside class="kb-tree panel">
-      <div class="panel-head"><div><h2>治理知识</h2><p>按治理闭环阶段分类</p></div></div>
+      <div class="panel-head"><div><h2>治理知识</h2><p>按治理阶段分类</p></div></div>
       <div class="kb-tree-body">
         <div class="kb-section">
           <div class="kb-section-head"><span class="kb-folder">治理知识</span><i aria-hidden="true">▾</i></div>
@@ -1086,7 +1094,7 @@ function renderKnowledge(){
       <div class="kb-tree-footer">本周被引用 <b>217</b> 次 · 命中 <b>31</b> 个治理任务</div>
     </aside>
     <section class="kb-list panel">
-      <div class="panel-head"><div><h2>诊断手册</h2><p>已发布的诊断手册、异常规则与处置经验 · 是 Agent 在治理闭环中的判断依据</p></div></div>
+      <div class="panel-head"><div><h2>诊断手册</h2><p>已发布的诊断手册、异常规则与处置经验 · 是 Agent 在治理流程中的判断依据</p></div></div>
       <div class="kb-meta-impact"><span>已发布 <b>96</b> 条</span><i></i><span>本周被 Agent 引用 <b class="kb-meta-ref">217</b> 次</span><i></i><span>命中 <b class="kb-meta-hit">31</b> 个治理任务</span></div>
       <div class="kb-search kb-search-bar"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m20 20-3.5-3.5"/></svg><input placeholder="搜索「诊断」(与 query_knowledge 工具同源)" /><button class="btn small">Search</button></div>
       <div class="kb-cards">${knowledge.map(k=>`<article class="kb-card">
@@ -1102,13 +1110,6 @@ function renderKnowledge(){
     </section>
   </section>`;
 }
-
-function renderTasks(){
-  main.innerHTML=`
-  <section class="panel governance-table-panel"><div class="panel-head"><div><h2>正在治理的事项</h2><p>按工单号、治理任务、当前状态、变更单和 Agent 跟进动作查看</p></div><small>3 ACTIVE</small></div><div class="governance-table-wrap"><table class="governance-table"><thead><tr><th>工单号</th><th>治理任务</th><th>负责人</th><th>当前状态</th><th>变更单号</th><th>变更状态</th><th>治理阶段</th><th>操作</th></tr></thead><tbody>${tasks.map(taskRow).join('')}</tbody></table></div></section>
-  <section class="panel verification task-verification"><p class="kicker">效果验证 · CAP-1839</p><h2>Redis 缩容观察 · 第 3/7 天</h2><p style="color:var(--muted);font-size:11px">Agent 每天取数后自动比较变更前基线与变更后水位，并决定继续观察、回滚或进入下一步。</p><div class="verify-hero"><div class="verify-card"><span>变更前 CPU 峰值</span><strong>18%</strong></div><div class="verify-card"><span>变更后 CPU 峰值</span><strong class="verify-good">31%</strong></div><div class="verify-card"><span>内存峰值变化</span><strong class="verify-good">23% → 36%</strong></div><div class="verify-card"><span>异常 / 告警</span><strong class="verify-good">0 / 0</strong></div></div><div class="decision"><b>Agent 当前结论</b><p>效果符合预期，暂不继续缩容。待观察满 7 天且覆盖周末批处理窗口后，再评估由 5 台缩至 4 台。</p></div></section>`;
-}
-function taskRow(t){const stages=['发现','建议','审批','观察','验证'];return `<tr><td><span class="ticket-no">${t.id}</span></td><td><span class="task-title"><b>${t.title}</b></span></td><td>${t.owner}</td><td><span class="status-pill">${t.status}</span></td><td>${t.workOrder?`<span class="work-order-no">${t.workOrder}</span>`:'<span class="empty-cell"></span>'}</td><td>${t.workOrder?`<span class="work-status ${t.workStatus==='实施完成'?'done':''}">${t.workStatus}</span>`:`<button class="btn small" data-create-workorder="${t.id}">去提单</button>`}</td><td><span class="stage-badge">${stages[t.stage]||'处理中'}</span></td><td><span class="table-actions"><button class="btn small" ${t.id==='CAP-1839'?'data-verify':''}>${t.action}</button><button class="btn small" data-open-followup="${t.id}">查看Agent跟进记录</button></span></td></tr>`}
 
 function renderWorkline(){
   /* workline 行已从页面移除,保留空函数以兼容旧调用 */
