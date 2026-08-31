@@ -26,7 +26,7 @@ const managedSystems=systems.filter(s=>managedSystemIds.has(s.id));
 const systemDetails={
   payment:{
     component:'GreatDB 磁盘',subject:'bjd-pay-greatdb-010-kzx / 30 DAYS',
-    notes:{risk:'6 天后磁盘触达 90%',waste:'整体不存在明显冗余',skew:'节点极差 49.6%',priority:'P1 · 本周需要决策'},
+    notes:{risk:'6 天后磁盘触达 90%',waste:'整体不存在明显冗余',skew:'节点极差 49.6%',priority:'紧急 · 本周需要决策'},
     stats:[['昨日平均','61.6%'],['昨日峰值','87.6%'],['偏离基线','+18.4%'],['预计达 90%','6 天']],
     nodes:[['greatdb-010',87.6,'var(--red)'],['greatdb-011',76.1,'var(--amber)'],['greatdb-012',65.2,'var(--mint)'],['greatdb-013',42.7,'var(--cyan)'],['greatdb-014',38.0,'var(--cyan)'],['greatdb-015',45.1,'var(--cyan)']],
     spread:'MAX−MIN 49.6%',cause:'不是集群整体容量不足',
@@ -35,7 +35,7 @@ const systemDetails={
   },
   risk:{
     component:'授权交易计算集群 CPU',subject:'auth-score-worker / 30 DAYS',
-    notes:{risk:'30 日持续增长',waste:'低峰仍有回收空间',skew:'批处理节点偏高',priority:'P2 · 观察后决策'},
+    notes:{risk:'30 日持续增长',waste:'低峰仍有回收空间',skew:'批处理节点偏高',priority:'重点 · 观察后决策'},
     stats:[['昨日平均','52.4%'],['昨日峰值','74.2%'],['偏离基线','+11.7%'],['预计达 80%','14 天']],
     nodes:[['auth-calc-01',74.2,'var(--amber)'],['auth-calc-02',69.8,'var(--amber)'],['auth-calc-03',58.6,'var(--mint)'],['auth-calc-04',46.9,'var(--cyan)'],['auth-calc-05',51.3,'var(--mint)'],['auth-calc-06',43.5,'var(--cyan)']],
     spread:'MAX−MIN 30.7%',cause:'增长来自批处理窗口叠加',
@@ -44,7 +44,7 @@ const systemDetails={
   },
   channel:{
     component:'Nginx 入口规格',subject:'dps-ingress-nginx / 30 DAYS',
-    notes:{risk:'容量风险较低',waste:'规格高于同类中位数',skew:'节点分布稳定',priority:'P3 · 可排期降配'},
+    notes:{risk:'容量风险较低',waste:'规格高于同类中位数',skew:'节点分布稳定',priority:'常规 · 可排期降配'},
     stats:[['昨日平均','18.9%'],['昨日峰值','31.4%'],['同类规格','2.1×'],['预计可回收','16C']],
     nodes:[['dps-nginx-01',31.4,'var(--cyan)'],['dps-nginx-02',28.6,'var(--cyan)'],['dps-nginx-03',25.2,'var(--mint)'],['dps-nginx-04',22.8,'var(--mint)'],['dps-nginx-05',26.1,'var(--mint)'],['dps-nginx-06',24.7,'var(--mint)']],
     spread:'MAX−MIN 8.6%',cause:'风险低但资源规格偏大',
@@ -299,8 +299,9 @@ function renderOverview(){
 }
 
 function briefNumber(label,value,unit,note,cls){return `<div class="brief-number ${cls}"><span>${label}</span><strong>${value}</strong>${unit}<small>${note}</small></div>`}
-function systemRow(s){return `<button class="system-row" data-page="profile" data-system-id="${s.id}"><span class="system-name"><span class="system-code">${s.code}</span><span><b>${s.name}</b><small>${s.domain} · ${s.hint}</small></span></span>${scoreCell('容量风险',s.risk,'risk')}${scoreCell('资源浪费',s.waste,'waste')}${scoreCell('负载倾斜',s.skew,'skew')}${scoreCell('治理优先',s.priority,'') }<span class="priority ${s.level==='P1'?'high':''}">${s.level}</span><span class="chev">›</span></button>`}
+function systemRow(s){return `<button class="system-row" data-page="profile" data-system-id="${s.id}"><span class="system-name"><span class="system-code">${s.code}</span><span><b>${s.name}</b><small>${s.domain} · ${s.hint}</small></span></span>${scoreCell('容量风险',s.risk,'risk')}${scoreCell('资源浪费',s.waste,'waste')}${scoreCell('负载倾斜',s.skew,'skew')}${scoreCell('治理优先',s.priority,'') }<span class="priority ${s.level==='P1'?'high':''}">${levelLabel(s.level)}</span><span class="chev">›</span></button>`}
 function scoreCell(label,value,cls){return `<span class="score-cell ${cls}"><span>${label}</span><b>${value}</b></span>`}
+function levelLabel(level){return {P1:'紧急',P2:'重点',P3:'常规'}[level]||level}
 function signal(num,title,body,page){return `<div class="signal"><span class="signal-num">${num}</span><div><b>${title}</b><p>${body}</p><button data-page="${page}">查看分析 →</button></div></div>`}
 function overviewTaskItem(t){
   const stages=['发现','建议','审批','观察','验证'];
@@ -378,7 +379,7 @@ function clusterProfile(cluster,selected){
 function serverTable(component,cluster){
   const snapshot=clusterSnapshot(component,cluster);
   return `<section class="panel profile-server-panel">
-    <div class="panel-head cluster-panel-head"><div><p class="kicker">CLUSTER SERVERS</p><h2>${cluster.name}</h2><p>${component.name} · ${component.role} · 点击服务器查看动态基线与容量预测</p></div><div class="cluster-head-status"><div class="cluster-usage-stats"><span class="low"><small>低使用率</small><b>${snapshot.counts.low}</b> 台</span><span class="high"><small>高使用率</small><b>${snapshot.counts.high}</b> 台</span><span class="normal"><small>合理</small><b>${snapshot.counts.normal}</b> 台</span></div><span class="cluster-level">${cluster.level}</span></div></div>
+    <div class="panel-head cluster-panel-head"><div><p class="kicker">CLUSTER SERVERS</p><h2>${cluster.name}</h2><p>${component.name} · ${component.role} · 点击服务器查看动态基线与容量预测</p></div><div class="cluster-head-status"><div class="cluster-usage-stats"><span class="low"><small>低使用率</small><b>${snapshot.counts.low}</b> 台</span><span class="high"><small>高使用率</small><b>${snapshot.counts.high}</b> 台</span><span class="normal"><small>合理</small><b>${snapshot.counts.normal}</b> 台</span></div><span class="cluster-level">${levelLabel(cluster.level)}</span></div></div>
     <div class="profile-table-wrap"><table class="profile-server-table"><thead><tr><th>服务器</th><th>IP 地址</th><th>角色</th><th>规格</th><th>CPU</th><th>内存</th><th>磁盘</th><th>容量状态</th></tr></thead><tbody>${snapshot.metrics.map(metric=>serverRow(metric,cluster,component.name)).join('')}</tbody></table></div>
     ${clusterInsight(snapshot,component,cluster)}
   </section>`;
@@ -1097,7 +1098,7 @@ function renderHome(){
     {icon:'◎',title:'发现异常设备',desc:'z-score 离群 · 142 个实例',page:'profile'},
     {icon:'∿',title:'对比本周与上周负载',desc:'容量水位变化 · 一键钻取',page:'profile'},
     {icon:'!',title:'解释告警疲劳度',desc:'哪些告警已重复 3 次以上',page:'overview'},
-    {icon:'✓',title:'一行话集群健康',desc:'按重要性级别 P1/P2/P3 汇总',page:'overview'}
+    {icon:'✓',title:'一行话集群健康',desc:'按紧急、重点、常规级别汇总',page:'overview'}
   ];
   const followUps=[
     {id:'CAP-1842',title:'GreatDB 磁盘容量风险处置',owner:'陈哲',stage:2},
@@ -1134,7 +1135,7 @@ function renderHome(){
       </div>
       <div class="home-chat-body">
         <div class="home-msg user"><div class="home-msg-bubble"><b>杨帆</b><small>刚刚</small><p>让我看看今天集群有没有什么异常。</p></div><div class="home-avatar">杨</div></div>
-        <div class="home-msg agent"><div class="home-avatar agent"><span class="agent-eye"></span></div><div class="home-msg-bubble"><b>Capacity Agent</b><small>${new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'})} · 第 14 轮</small><p>好的,我已对 <strong>3 个系统、18 个组件、142 个实例</strong>做完完整性检查。今天有 3 条值得你注意:</p><ul><li><b>P1 · PAY / GreatDB</b>:单节点磁盘 87.6%,6 天后触达 90%,节点差值 49.6%。建议先修归档,再评估增加 2 个节点。</li><li><b>P2 · AUTH</b>:CPU 30 日持续增长,批处理窗口叠加;建议错峰并观察 7 天。</li><li><b>P3 · DPS / Nginx</b>:规格高于同类中位数 2.1×,可灰度 2 台由 16C32G 降至 8C16G。</li></ul><p>需要我把 P1 整理成治理评估单,或继续追问任一条吗?</p></div></div>
+        <div class="home-msg agent"><div class="home-avatar agent"><span class="agent-eye"></span></div><div class="home-msg-bubble"><b>Capacity Agent</b><small>${new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'})} · 第 14 轮</small><p>好的,我已对 <strong>3 个系统、18 个组件、142 个实例</strong>做完完整性检查。今天有 3 条值得你注意:</p><ul><li><b>紧急 · PAY / GreatDB</b>:单节点磁盘 87.6%,6 天后触达 90%,节点差值 49.6%。建议先修归档,再评估增加 2 个节点。</li><li><b>重点 · AUTH</b>:CPU 30 日持续增长,批处理窗口叠加;建议错峰并观察 7 天。</li><li><b>常规 · DPS / Nginx</b>:规格高于同类中位数 2.1×,可灰度 2 台由 16C32G 降至 8C16G。</li></ul><p>需要我把紧急事项整理成治理评估单,或继续追问任一条吗?</p></div></div>
       </div>
       <div class="home-quickgrid">${quickPrompts.map(p=>`<button class="home-quick" data-page="${p.page}"><span class="home-quick-icon">${p.icon}</span><div><b>${p.title}</b><small>${p.desc}</small></div></button>`).join('')}</div>
       <form class="home-composer" id="home-composer">
