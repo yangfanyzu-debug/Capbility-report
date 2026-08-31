@@ -93,8 +93,8 @@ const systemProfiles={
 };
 
 const tasks=[
-  {id:'CAP-1842',title:'GreatDB 磁盘容量风险处置',owner:'陈哲',stage:2,status:'变更评审',workOrder:'ACT-CHUG-20260826-0002',workStatus:'评审中',action:'查看证据'},
-  {id:'CAP-1839',title:'Redis 低利用实例缩容验证',owner:'王璐',stage:3,status:'观察第 3/7 天',workOrder:'ACT-CHUG-20260826-0003',workStatus:'实施完成',action:'效果验证'},
+  {id:'CAP-1842',title:'GreatDB 磁盘容量风险处置',owner:'陈哲',stage:2,status:'变更评审',workOrder:'ACT-1842',workStatus:'评审中',action:'查看证据'},
+  {id:'CAP-1839',title:'Redis 低利用实例缩容验证',owner:'王璐',stage:3,status:'观察第 3/7 天',workOrder:'ACT-1839',workStatus:'实施完成',action:'效果验证'},
   {id:'CAP-1831',title:'Nginx 节点规格降配',owner:'李琦',stage:1,status:'方案待提单',workOrder:'',workStatus:'',action:'查看方案'}
 ];
 
@@ -110,7 +110,7 @@ const messages=[
 const autonomousJobs=[
   {phase:'关联 GreatDB 30 日趋势',scope:'S支付平台 / GreatDB',target:'bjd-pay-greatdb-010-kzx',kind:'趋势预测',signal:'磁盘峰值 87.6%，连续 7 日上升',next:'生成容量风险证据'},
   {phase:'计算同类组件资源效率',scope:'S数据服务网关 / Nginx',target:'同类入口规格样本',kind:'资源对标',signal:'规格高于同类中位数 2.1×',next:'标记可降配实例'},
-  {phase:'轮询 CAP-1842 评审状态',scope:'治理任务',target:'ACT-CHUG-20260826-0002',kind:'工单跟进',signal:'负责人已提交扩容窗口',next:'同步变更状态'},
+  {phase:'轮询 CAP-1842 评审状态',scope:'治理任务',target:'ACT-1842',kind:'工单跟进',signal:'负责人已提交扩容窗口',next:'同步变更状态'},
   {phase:'验证 Redis 缩容后水位',scope:'S支付平台 / Redis',target:'CAP-1839 观察期',kind:'效果验证',signal:'CPU 峰值 31%，无新增告警',next:'写入跟进记录'}
 ];
 
@@ -118,7 +118,7 @@ const collabRecords=[
   {time:'08:00',type:'collect',status:'已完成',title:'取数与完整性检查完成',body:'已拉取你负责范围内 3 个生产系统、18 个组件、142 个实例的昨日容量快照，并过滤掉 2 条采集延迟数据。',facts:['3 系统','18 组件','142 实例']},
   {time:'08:07',type:'risk',status:'高风险',title:'GreatDB 单节点磁盘进入处置队列',body:'greatdb-010 磁盘峰值 87.6%，近 7 日持续增长；同时 CPU / MEM 未同步升高，优先判断为归档或分片倾斜问题。',facts:['87.6%','+18.4%','6 天']},
   {time:'08:18',type:'analysis',status:'已归因',title:'将服务器信号合并成集群结论',body:'结论不是"全量扩容"，而是先检查归档策略和节点权重；若 3 天后增速未回落，再增加 2 个节点并重平衡。',facts:['负载倾斜','先治理','后扩容']},
-  {time:'08:42',type:'action',status:'待评审',title:'生成治理任务 CAP-1842',body:'治理建议已写入任务列表，变更单 ACT-CHUG-20260826-0002 处于评审中，Agent 会持续轮询状态。',facts:['CAP-1842','变更评审','陈哲']},
+  {time:'08:42',type:'action',status:'待评审',title:'生成治理任务 CAP-1842',body:'治理建议已写入任务列表，JIRA 单 ACT-1842 处于评审中，Agent 会持续轮询状态。',facts:['CAP-1842','变更评审','陈哲']},
   {time:'09:10',type:'follow',status:'观察中',title:'Redis 缩容进入效果观察',body:'缩减 1 个节点后，CPU 峰值由 18% 升至 31%，仍处于安全区间；需覆盖完整 7 天和周末批处理窗口。',facts:['18% → 31%','0 告警','第 3/7 天']}
 ];
 
@@ -1254,7 +1254,7 @@ function openFollowup(taskId){
     ['下一步 · 08-16 自动复核','覆盖完整观察窗口后生成最终结论。']
   ];
   modalCard.classList.add('followup-card');
-  modalContent.innerHTML=`<div class="follow-dialog"><header class="follow-hero"><div><small>Agent 跟进 · ${task.id}</small><h2>${task.title}</h2><p>${task.workOrder?`Agent 正在跟进 ${task.workOrder}，当前变更状态为 ${task.workStatus}。`:'当前治理任务尚未提单，Agent 会在提单后继续自动轮询状态。'}</p></div><span class="follow-status ${task.workStatus==='实施完成'?'done':''}">${task.workStatus||'待提单'}</span></header><div class="follow-summary"><div><span>治理工单</span><b>${task.id}</b></div><div><span>变更单</span><b>${task.workOrder||'尚未创建'}</b></div><div><span>当前阶段</span><b>${task.status}</b></div></div><div class="dialog-timeline">${events.map(([title,body],i)=>`<div class="timeline-item" style="--i:${i}"><span class="timeline-dot">${String(i+1).padStart(2,'0')}</span><div><b>${title}</b><p>${body}</p></div></div>`).join('')}</div></div>`;
+  modalContent.innerHTML=`<div class="follow-dialog"><header class="follow-hero"><div><small>Agent 跟进 · ${task.id}</small><h2>${task.title}</h2><p>${task.workOrder?`Agent 正在跟进 JIRA 单 ${task.workOrder}，当前变更状态为 ${task.workStatus}。`:'当前治理任务尚未提单，Agent 会在提单后继续自动轮询状态。'}</p></div><span class="follow-status ${task.workStatus==='实施完成'?'done':''}">${task.workStatus||'待提单'}</span></header><div class="follow-summary"><div><span>治理工单</span><b>${task.id}</b></div><div><span>JIRA 单号</span><b>${task.workOrder||'尚未创建'}</b></div><div><span>当前阶段</span><b>${task.status}</b></div></div><div class="dialog-timeline">${events.map(([title,body],i)=>`<div class="timeline-item" style="--i:${i}"><span class="timeline-dot">${String(i+1).padStart(2,'0')}</span><div><b>${title}</b><p>${body}</p></div></div>`).join('')}</div></div>`;
   modal.classList.add('open');modal.removeAttribute('inert');modal.setAttribute('aria-hidden','false');scrim.hidden=false;
 }
 function toast(title,body){const el=document.createElement('div');el.className='toast';el.innerHTML=`<b>${title}</b><span>${body}</span>`;document.querySelector('#toasts').append(el);setTimeout(()=>el.remove(),3800)}
