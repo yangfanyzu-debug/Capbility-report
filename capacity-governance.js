@@ -362,9 +362,9 @@ function findProfileCluster(profile){
   return {component,cluster};
 }
 function componentProfile(component,selectedCluster){
-  const stateTag=componentCapacityState(component);
+  const stateTags=componentCapacityStates(component);
   return `<section class="profile-lane">
-    <div class="profile-component-node"><div class="profile-resource-head"><span>组件</span>${capacityTagHTML(stateTag)}</div><b>${component.name}</b><small>${component.role}</small></div>
+    <div class="profile-component-node"><div class="profile-resource-head"><span>组件</span>${capacityTagsHTML(stateTags)}</div><b>${component.name}</b><small>${component.role}</small></div>
     <div class="profile-cluster-stack ${component.clusters.length>1?'multi':''}">${component.clusters.map(cluster=>clusterProfile(cluster,cluster.name===selectedCluster)).join('')}</div>
   </section>`;
 }
@@ -372,13 +372,13 @@ function clusterProfile(cluster,selected){
   const component=findComponentForCluster(cluster.name);
   const snapshot=clusterSnapshot(component,cluster);
   return `<button class="profile-cluster-node ${selected?'selected':''}" data-profile-cluster="${cluster.name}" aria-pressed="${selected}">
-    <span class="profile-cluster-type"><i></i>集群</span><b>${cluster.name}</b><small>${cluster.summary}</small>${capacityTagHTML(snapshot.capacityState,'cluster-tag')}<em>${cluster.servers.length} 台</em>
+    <span class="profile-cluster-type"><i></i>集群</span><b>${cluster.name}</b><small>${cluster.summary}</small>${capacityTagsHTML(snapshot.capacityTags,'cluster-tag')}<em>${cluster.servers.length} 台</em>
   </button>`;
 }
 function serverTable(component,cluster){
   const snapshot=clusterSnapshot(component,cluster);
   return `<section class="panel profile-server-panel">
-    <div class="panel-head cluster-panel-head"><div><p class="kicker">CLUSTER SERVERS</p><h2>${cluster.name}</h2><p>${component.name} · ${component.role} · 点击服务器查看动态基线与容量预测</p></div><div class="cluster-head-status">${capacityTagHTML(snapshot.capacityState)}<span class="cluster-level">${cluster.level}</span></div></div>
+    <div class="panel-head cluster-panel-head"><div><p class="kicker">CLUSTER SERVERS</p><h2>${cluster.name}</h2><p>${component.name} · ${component.role} · 点击服务器查看动态基线与容量预测</p></div><div class="cluster-head-status"><div class="cluster-usage-stats"><span class="low"><small>低使用率</small><b>${snapshot.counts.low}</b> 台</span><span class="high"><small>高使用率</small><b>${snapshot.counts.high}</b> 台</span><span class="normal"><small>合理</small><b>${snapshot.counts.normal}</b> 台</span></div><span class="cluster-level">${cluster.level}</span></div></div>
     <div class="profile-table-wrap"><table class="profile-server-table"><thead><tr><th>服务器</th><th>IP 地址</th><th>角色</th><th>规格</th><th>CPU</th><th>内存</th><th>磁盘</th><th>容量状态</th></tr></thead><tbody>${snapshot.metrics.map(metric=>serverRow(metric,cluster,component.name)).join('')}</tbody></table></div>
     ${clusterInsight(snapshot,component,cluster)}
   </section>`;
@@ -410,24 +410,26 @@ function serverMetrics(server,index,cluster,componentName){
   return {server,ip,role,spec,cpu,mem,disk,focus,focusValue,capacityState,status};
 }
 function serverRow(metric,cluster,componentName){
-  return `<tr class="profile-server-row" tabindex="0" role="button" data-profile-server="${metric.server}" data-profile-component="${componentName}" data-profile-cluster-name="${cluster.name}" aria-label="查看 ${metric.server} 容量趋势"><td><b>${metric.server}</b></td><td><code>${metric.ip}</code></td><td>${metric.role}</td><td>${metric.spec}</td><td>${metricCell(metric.cpu,metric.focus==='cpu'&&metric.capacityState.key==='high'?'warn':'')}</td><td>${metricCell(metric.mem)}</td><td>${metricCell(metric.disk,metric.focus==='disk'&&metric.capacityState.key==='high'?'warn':'')}</td><td>${capacityTagHTML(metric.capacityState,'server-capacity-tag',true)}</td></tr>`;
+  return `<tr class="profile-server-row" tabindex="0" role="button" data-profile-server="${metric.server}" data-profile-component="${componentName}" data-profile-cluster-name="${cluster.name}" aria-label="查看 ${metric.server} 容量趋势"><td><b>${metric.server}</b></td><td><code>${metric.ip}</code></td><td>${metric.role}</td><td>${metric.spec}</td><td>${metricCell(metric.cpu,metric.focus==='cpu'&&metric.capacityState.key==='high'?'warn':'')}</td><td>${metricCell(metric.mem)}</td><td>${metricCell(metric.disk,metric.focus==='disk'&&metric.capacityState.key==='high'?'warn':'')}</td><td>${metric.capacityState.key==='normal'?'<span class="capacity-normal-text">合理</span>':capacityTagHTML(metric.capacityState,'server-capacity-tag')}</td></tr>`;
 }
 function metricCell(value,tone=''){return `<span class="server-metric ${tone}"><b>${value}%</b><i><em style="width:${value}%"></em></i></span>`}
 
 function capacityStateForValue(value,cluster){
   if(value>=82)return {key:'high',label:'高使用率'};
   if(value<=35||/低利用|可降配/.test(cluster.summary))return {key:'low',label:'低使用率'};
-  if(cluster.level==='P1'||/待治理|观察期|增长|风险/.test(cluster.summary))return {key:'governance',label:'待治理'};
   return {key:'normal',label:'正常'};
 }
-function capacityTagHTML(stateTag,extraClass='',includeNormal=false){
-  if(!stateTag||(stateTag.key==='normal'&&!includeNormal))return '';
+function capacityTagHTML(stateTag,extraClass=''){
+  if(!stateTag||stateTag.key==='normal')return '';
   return `<span class="capacity-tag ${stateTag.key} ${extraClass}"><i></i>${stateTag.label}</span>`;
 }
-function componentCapacityState(component){
-  const states=component.clusters.map(cluster=>clusterSnapshot(component,cluster).capacityState);
-  const order={high:4,governance:3,low:2,normal:1};
-  return states.sort((a,b)=>order[b.key]-order[a.key])[0];
+function capacityTagsHTML(states,extraClass=''){
+  if(!states?.length)return '';
+  return `<span class="capacity-tag-group ${extraClass}">${states.map(stateTag=>capacityTagHTML(stateTag)).join('')}</span>`;
+}
+function componentCapacityStates(component){
+  const states=component.clusters.flatMap(cluster=>clusterSnapshot(component,cluster).capacityTags);
+  return ['high','low'].map(key=>states.find(stateTag=>stateTag.key===key)).filter(Boolean);
 }
 function clusterSnapshot(component,cluster){
   const metrics=cluster.servers.map((server,index)=>serverMetrics(server,index,cluster,component.name));
@@ -436,21 +438,21 @@ function clusterSnapshot(component,cluster){
   const values=metrics.map(metric=>metric[focus]);
   const max=Math.max(...values),min=Math.min(...values),spread=(max-min).toFixed(1);
   const average=values.reduce((sum,value)=>sum+value,0)/values.length;
-  const capacityState=capacityStateForValue(average,cluster);
-  if(max>=82)capacityState.key='high',capacityState.label='高使用率';
+  const counts=metrics.reduce((result,metric)=>{result[metric.capacityState.key]++;return result},{low:0,high:0,normal:0});
+  const capacityTags=[counts.high?{key:'high',label:'高使用率'}:null,counts.low?{key:'low',label:'低使用率'}:null].filter(Boolean);
+  const capacityState=counts.high?{key:'high',label:'高使用率'}:(counts.low>metrics.length/2?{key:'low',label:'低使用率'}:{key:'normal',label:'正常'});
   const detail=systemDetails[state.selectedSystemId];
   const isPrimary=detail?.nodes.some(([host])=>cluster.servers.includes(host));
   let cause=`${focusLabel}水位整体稳定`,body=`${cluster.name} 共 ${cluster.servers.length} 台服务器，${focusLabel}最高 ${max}%，最低 ${min}%，极差 ${spread}%。当前结论仅作用于该集群。`,decision='维持当前规格并按既定周期复核，无需立即调整资源。';
   if(capacityState.key==='high')cause='集群存在高水位服务器',decision='先定位高位服务器的业务负载和数据分布，再决定重平衡或扩容。';
   if(capacityState.key==='low')cause='集群整体使用率偏低',decision='按灰度方式缩减规格或节点，覆盖完整观察周期后再继续调整。';
-  if(capacityState.key==='governance')cause='集群已进入治理队列',decision='按既定治理事项推进，并由 Agent 持续跟踪实施和验证结果。';
   if(isPrimary){cause=detail.cause;body=detail.body;decision=detail.decision;}
-  return {metrics,focus,focusLabel,max,min,spread,average:+average.toFixed(1),capacityState,cause,body,decision};
+  return {metrics,focus,focusLabel,max,min,spread,average:+average.toFixed(1),counts,capacityTags,capacityState,cause,body,decision};
 }
 function clusterInsight(snapshot,component,cluster){
   return `<section class="cluster-insight-inline">
     <article class="cluster-distribution-inline"><div class="cluster-inline-title"><div><p class="kicker">CLUSTER DISTRIBUTION</p><h3>集群节点分布</h3><p>${cluster.name} · ${snapshot.focusLabel} 水位</p></div><small>MAX−MIN ${snapshot.spread}%</small></div><div class="distribution">${snapshot.metrics.map(metric=>`<div class="node-row"><label>${metric.server}</label><span class="node-bar"><i style="--value:${metric[snapshot.focus]}%;--bar:${metric.capacityState.key==='high'?'var(--red)':metric.capacityState.key==='low'?'#6f8fb7':'var(--cyan)'}"></i></span><b>${metric[snapshot.focus]}%</b></div>`).join('')}</div></article>
-    <aside class="cluster-attribution-inline"><div class="cluster-inline-title"><div><p class="kicker">CLUSTER ATTRIBUTION</p><h3>集群级归因与方案</h3><p>结论范围：${cluster.name}</p></div>${capacityTagHTML(snapshot.capacityState)}</div><div class="cause-card"><small>集群级归因</small><h3>${snapshot.cause}</h3><p>${snapshot.body}</p><div class="decision"><b>建议方案</b><p>${snapshot.decision}</p></div></div></aside>
+    <aside class="cluster-attribution-inline"><div class="cluster-inline-title"><div><p class="kicker">CLUSTER ATTRIBUTION</p><h3>集群级归因与方案</h3><p>结论范围：${cluster.name}</p></div>${capacityTagsHTML(snapshot.capacityTags)}</div><div class="cause-card"><small>集群级归因</small><h3>${snapshot.cause}</h3><p>${snapshot.body}</p><div class="decision"><b>建议方案</b><p>${snapshot.decision}</p></div></div></aside>
   </section>`;
 }
 
@@ -1182,7 +1184,7 @@ function openServerInsight(serverName,componentName,clusterName){
   const content=document.querySelector('#inspect-content');
   closeOverlays();
   content.innerHTML=`<section class="server-insight-dialog">
-    <header class="server-insight-head"><div><p class="kicker">SERVER CAPACITY INSIGHT</p><h2>${serverName} · 动态基线与容量预测</h2><p>${selectedSystem().name} / ${component.name} / ${cluster.name}</p></div>${capacityTagHTML(metric.capacityState,'',true)}</header>
+    <header class="server-insight-head"><div><p class="kicker">SERVER CAPACITY INSIGHT</p><h2>${serverName} · 动态基线与容量预测</h2><p>${selectedSystem().name} / ${component.name} / ${cluster.name}</p></div>${metric.capacityState.key==='normal'?'<span class="capacity-normal-text">容量合理</span>':capacityTagHTML(metric.capacityState)}</header>
     <div class="server-insight-meta"><span><small>IP 地址</small><b>${metric.ip}</b></span><span><small>服务器角色</small><b>${metric.role}</b></span><span><small>规格</small><b>${metric.spec}</b></span><span><small>当前${focus}</small><b>${current}%</b></span></div>
     <article class="server-insight-chart"><div class="chart-title"><div><h3>${focus}使用率趋势</h3><p>历史基线、实际水位与未来 7 天预测</p></div><div class="legend"><span><i style="background:rgba(47,93,145,.14)"></i>正常区间</span><span><i style="background:var(--cyan)"></i>实际</span><span><i style="background:var(--amber)"></i>预测</span></div></div><div class="chart">${trendChart({end:current,limit:focus==='磁盘'?90:80,metric:focus})}</div></article>
     <div class="chart-cards">${[['CPU 峰值',`${metric.cpu}%`],['内存峰值',`${metric.mem}%`],['磁盘水位',`${metric.disk}%`],['集群节点极差',`${snapshot.spread}%`]].map(([label,value])=>chartStat(label,value)).join('')}</div>
