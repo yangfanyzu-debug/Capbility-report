@@ -472,8 +472,8 @@ main{background:transparent}.page-toolbar,.system-switcher,.brief-copy,.brief-da
   box-shadow:inset 0 1px rgba(255,255,255,.85);
   overflow:hidden;
 }
-.workline:before{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(90deg,transparent,rgba(47,93,145,.055),transparent);transform:translateX(-100%);animation:workScan 5.6s linear infinite}
-.workline:after{content:"AUTONOMOUS LOOP";position:absolute;right:15px;top:5px;color:rgba(47,93,145,.10);font:8px var(--mono);letter-spacing:.18em}
+.workline:before{content:none}
+.workline:after{content:none}
 .work-core,.work-target{display:flex;align-items:center;gap:11px;min-width:0;position:relative;z-index:1}
 .work-core div,.work-target,.work-signal,.work-progress-block{min-width:0;position:relative;z-index:1}
 .work-core span:not(.work-orbit),.work-target span,.work-signal span,.work-progress-block span:not(.work-progress),.work-target small{display:block}
@@ -497,7 +497,6 @@ main{background:transparent}.page-toolbar,.system-switcher,.brief-copy,.brief-da
 .work-stats b{color:#172033;font:10px var(--mono)}
 .workline .work-detail{min-height:34px;border:1px solid #d7dde7;border-radius:8px;background:#fff;color:#2f5d91;padding:0 12px;font:10px var(--mono);white-space:nowrap;position:relative;z-index:1;box-shadow:0 5px 14px rgba(25,36,58,.045);margin-left:0}
 .workline .work-detail:hover{border-color:#aeb9cb;background:#f8fafc}
-@keyframes workScan{to{transform:translateX(100%)}}
 
 .collab-workbench{display:flex;flex-direction:column;gap:14px}
 .collab-date{display:flex;align-items:center;gap:10px;color:#8b94a5;font:9px var(--mono);letter-spacing:.10em;text-transform:uppercase}
