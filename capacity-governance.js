@@ -9,12 +9,15 @@ const icons={
 };
 
 const systems=[
-  {id:'payment',code:'PAY',name:'统一支付系统',domain:'核心交易域',risk:82,waste:18,skew:64,priority:94,level:'P1',hint:'6 天后触达磁盘风险线'},
-  {id:'data',code:'DMP',name:'数据中台',domain:'数据平台域',risk:61,waste:35,skew:72,priority:78,level:'P2',hint:'MySQL 内存偏离基线 21%'},
-  {id:'risk',code:'RSK',name:'实时风控系统',domain:'风险管理域',risk:58,waste:22,skew:49,priority:67,level:'P2',hint:'CPU 30 日持续增长'},
-  {id:'channel',code:'CHN',name:'渠道接入平台',domain:'渠道接入域',risk:24,waste:71,skew:31,priority:55,level:'P3',hint:'Nginx 存在降配空间'},
-  {id:'customer',code:'CRM',name:'客户中心系统',domain:'零售业务域',risk:19,waste:48,skew:22,priority:38,level:'P3',hint:'整体容量稳定'},
-  {id:'ledger',code:'ACT',name:'核心账务系统',domain:'核心账务域',risk:21,waste:16,skew:19,priority:32,level:'P3',hint:'整体容量稳定'}
+  {id:'payment',code:'PAY',name:'S支付平台',domain:'支付业务域',risk:82,waste:18,skew:64,priority:94,level:'P1',hint:'6 天后触达磁盘风险线'},
+  {id:'ledger',code:'ACT',name:'S新核心_账户处理',domain:'核心账户域',risk:21,waste:16,skew:19,priority:32,level:'P3',hint:'整体容量稳定'},
+  {id:'risk',code:'AUTH',name:'S新核心_授权交易',domain:'授权交易域',risk:58,waste:22,skew:49,priority:67,level:'P2',hint:'CPU 30 日持续增长'},
+  {id:'data',code:'DASP',name:'S新核心_数据&应用服务',domain:'数据应用域',risk:61,waste:35,skew:72,priority:78,level:'P2',hint:'MySQL 内存偏离基线 21%'},
+  {id:'realtime',code:'DSI',name:'S实时数据服务',domain:'实时数据域',risk:35,waste:29,skew:43,priority:49,level:'P3',hint:'整体容量稳定'},
+  {id:'channel',code:'DPS',name:'S数据服务网关',domain:'数据服务域',risk:24,waste:71,skew:31,priority:55,level:'P3',hint:'Nginx 存在降配空间'},
+  {id:'billing',code:'BPC',name:'S账单打印系统',domain:'账单服务域',risk:27,waste:33,skew:24,priority:41,level:'P3',hint:'整体容量稳定'},
+  {id:'labels',code:'LMP',name:'S用户标签数据',domain:'用户标签域',risk:31,waste:42,skew:38,priority:46,level:'P3',hint:'整体容量稳定'},
+  {id:'customer',code:'CIMS',name:'S客户信息治理系统',domain:'客户信息域',risk:19,waste:48,skew:22,priority:38,level:'P3',hint:'整体容量稳定'}
 ];
 
 const managedSystemIds=new Set(['payment','risk','channel']);
@@ -22,7 +25,7 @@ const managedSystems=systems.filter(s=>managedSystemIds.has(s.id));
 
 const systemDetails={
   payment:{
-    component:'GreatDB 磁盘',subject:'bjd-dsi-greatdb-010-kzx / 30 DAYS',
+    component:'GreatDB 磁盘',subject:'bjd-pay-greatdb-010-kzx / 30 DAYS',
     notes:{risk:'6 天后磁盘触达 90%',waste:'整体不存在明显冗余',skew:'节点极差 49.6%',priority:'P1 · 本周需要决策'},
     stats:[['昨日平均','61.6%'],['昨日峰值','87.6%'],['偏离基线','+18.4%'],['预计达 90%','6 天']],
     nodes:[['greatdb-010',87.6,'var(--red)'],['greatdb-011',76.1,'var(--amber)'],['greatdb-012',65.2,'var(--mint)'],['greatdb-013',42.7,'var(--cyan)'],['greatdb-014',38.0,'var(--cyan)'],['greatdb-015',45.1,'var(--cyan)']],
@@ -31,19 +34,19 @@ const systemDetails={
     decision:'先修复归档策略；若 3 天后增速未回落，再增加 2 个节点并重平衡。'
   },
   risk:{
-    component:'风控计算集群 CPU',subject:'rsk-score-worker / 30 DAYS',
+    component:'授权交易计算集群 CPU',subject:'auth-score-worker / 30 DAYS',
     notes:{risk:'30 日持续增长',waste:'低峰仍有回收空间',skew:'批处理节点偏高',priority:'P2 · 观察后决策'},
     stats:[['昨日平均','52.4%'],['昨日峰值','74.2%'],['偏离基线','+11.7%'],['预计达 80%','14 天']],
-    nodes:[['rsk-calc-01',74.2,'var(--amber)'],['rsk-calc-02',69.8,'var(--amber)'],['rsk-calc-03',58.6,'var(--mint)'],['rsk-calc-04',46.9,'var(--cyan)'],['rsk-calc-05',51.3,'var(--mint)'],['rsk-calc-06',43.5,'var(--cyan)']],
+    nodes:[['auth-calc-01',74.2,'var(--amber)'],['auth-calc-02',69.8,'var(--amber)'],['auth-calc-03',58.6,'var(--mint)'],['auth-calc-04',46.9,'var(--cyan)'],['auth-calc-05',51.3,'var(--mint)'],['auth-calc-06',43.5,'var(--cyan)']],
     spread:'MAX−MIN 30.7%',cause:'增长来自批处理窗口叠加',
-    body:'CPU 增长集中在夜间风控重算窗口，在线流量水位仍稳定。建议先拆分批处理权重并观察峰值是否回落。',
+    body:'CPU 增长集中在夜间授权规则重算窗口，在线交易水位仍稳定。建议先拆分批处理权重并观察峰值是否回落。',
     decision:'先调低批处理并发并错峰执行；若 7 天后 CPU P95 仍高于 70%，再评估增加 2 个计算节点。'
   },
   channel:{
-    component:'Nginx 入口规格',subject:'chn-ingress-nginx / 30 DAYS',
+    component:'Nginx 入口规格',subject:'dps-ingress-nginx / 30 DAYS',
     notes:{risk:'容量风险较低',waste:'规格高于同类中位数',skew:'节点分布稳定',priority:'P3 · 可排期降配'},
     stats:[['昨日平均','18.9%'],['昨日峰值','31.4%'],['同类规格','2.1×'],['预计可回收','16C']],
-    nodes:[['chn-nginx-01',31.4,'var(--cyan)'],['chn-nginx-02',28.6,'var(--cyan)'],['chn-nginx-03',25.2,'var(--mint)'],['chn-nginx-04',22.8,'var(--mint)'],['chn-nginx-05',26.1,'var(--mint)'],['chn-nginx-06',24.7,'var(--mint)']],
+    nodes:[['dps-nginx-01',31.4,'var(--cyan)'],['dps-nginx-02',28.6,'var(--cyan)'],['dps-nginx-03',25.2,'var(--mint)'],['dps-nginx-04',22.8,'var(--mint)'],['dps-nginx-05',26.1,'var(--mint)'],['dps-nginx-06',24.7,'var(--mint)']],
     spread:'MAX−MIN 8.6%',cause:'风险低但资源规格偏大',
     body:'Nginx 节点利用率长期低位且节点分布稳定，主要问题不是风险，而是单实例规格高于同类系统中位数。',
     decision:'先灰度 2 台由 16C32G 降至 8C16G，观察 7 天无异常后再完成整组降配。'
@@ -67,23 +70,23 @@ const systemProfiles={
   },
   risk:{
     components:[
-      {name:'Java 应用',role:'风控规则与评分服务',clusters:[
-        {name:'rsk-score-worker',level:'P2',summary:'6 台 · 8C32G · CPU 增长',servers:['rsk-calc-01','rsk-calc-02','rsk-calc-03','rsk-calc-04','rsk-calc-05','rsk-calc-06']},
-        {name:'rsk-online-api',level:'P1',summary:'8 台 · 8C16G · 在线链路',servers:['rsk-api-001','rsk-api-002','rsk-api-003','rsk-api-004','rsk-api-005','rsk-api-006','rsk-api-007','rsk-api-008']}
+      {name:'Java 应用',role:'授权规则与交易服务',clusters:[
+        {name:'auth-score-worker',level:'P2',summary:'6 台 · 8C32G · CPU 增长',servers:['auth-calc-01','auth-calc-02','auth-calc-03','auth-calc-04','auth-calc-05','auth-calc-06']},
+        {name:'auth-online-api',level:'P1',summary:'8 台 · 8C16G · 在线链路',servers:['auth-api-001','auth-api-002','auth-api-003','auth-api-004','auth-api-005','auth-api-006','auth-api-007','auth-api-008']}
       ]},
-      {name:'Redis',role:'规则缓存与黑名单',clusters:[
-        {name:'rsk-redis-prod',level:'P2',summary:'4 台 · 4C16G · 稳定',servers:['rsk-redis-001','rsk-redis-002','rsk-redis-003','rsk-redis-004']}
+      {name:'Redis',role:'授权规则与交易缓存',clusters:[
+        {name:'auth-redis-prod',level:'P2',summary:'4 台 · 4C16G · 稳定',servers:['auth-redis-001','auth-redis-002','auth-redis-003','auth-redis-004']}
       ]}
     ]
   },
   channel:{
     components:[
       {name:'Nginx',role:'统一入口与流量转发',clusters:[
-        {name:'chn-ingress-nginx',level:'P3',summary:'6 台 · 16C32G · 可降配',servers:['chn-nginx-01','chn-nginx-02','chn-nginx-03','chn-nginx-04','chn-nginx-05','chn-nginx-06']},
-        {name:'chn-edge-nginx',level:'P3',summary:'4 台 · 8C16G · 灰度入口',servers:['chn-edge-01','chn-edge-02','chn-edge-03','chn-edge-04']}
+        {name:'dps-ingress-nginx',level:'P3',summary:'6 台 · 16C32G · 可降配',servers:['dps-nginx-01','dps-nginx-02','dps-nginx-03','dps-nginx-04','dps-nginx-05','dps-nginx-06']},
+        {name:'dps-edge-nginx',level:'P3',summary:'4 台 · 8C16G · 灰度入口',servers:['dps-edge-01','dps-edge-02','dps-edge-03','dps-edge-04']}
       ]},
-      {name:'Java 应用',role:'渠道协议转换',clusters:[
-        {name:'chn-adapter-service',level:'P2',summary:'8 台 · 8C16G · 多渠道',servers:['chn-app-001','chn-app-002','chn-app-003','chn-app-004','chn-app-005','chn-app-006','chn-app-007','chn-app-008']}
+      {name:'Java 应用',role:'数据服务协议转换',clusters:[
+        {name:'dps-adapter-service',level:'P2',summary:'8 台 · 8C16G · 多协议',servers:['dps-app-001','dps-app-002','dps-app-003','dps-app-004','dps-app-005','dps-app-006','dps-app-007','dps-app-008']}
       ]}
     ]
   }
@@ -105,10 +108,10 @@ const messages=[
 ];
 
 const autonomousJobs=[
-  {phase:'关联 GreatDB 30 日趋势',scope:'统一支付 / GreatDB',target:'bjd-dsi-greatdb-010-kzx',kind:'趋势预测',signal:'磁盘峰值 87.6%，连续 7 日上升',next:'生成容量风险证据'},
-  {phase:'计算同类组件资源效率',scope:'渠道接入 / Nginx',target:'同类入口规格样本',kind:'资源对标',signal:'规格高于同类中位数 2.1×',next:'标记可降配实例'},
+  {phase:'关联 GreatDB 30 日趋势',scope:'S支付平台 / GreatDB',target:'bjd-pay-greatdb-010-kzx',kind:'趋势预测',signal:'磁盘峰值 87.6%，连续 7 日上升',next:'生成容量风险证据'},
+  {phase:'计算同类组件资源效率',scope:'S数据服务网关 / Nginx',target:'同类入口规格样本',kind:'资源对标',signal:'规格高于同类中位数 2.1×',next:'标记可降配实例'},
   {phase:'轮询 CAP-1842 评审状态',scope:'治理任务',target:'ACT-CHUG-20260826-0002',kind:'工单跟进',signal:'负责人已提交扩容窗口',next:'同步变更状态'},
-  {phase:'验证 Redis 缩容后水位',scope:'统一支付 / Redis',target:'CAP-1839 观察期',kind:'效果验证',signal:'CPU 峰值 31%，无新增告警',next:'写入跟进记录'}
+  {phase:'验证 Redis 缩容后水位',scope:'S支付平台 / Redis',target:'CAP-1839 观察期',kind:'效果验证',signal:'CPU 峰值 31%，无新增告警',next:'写入跟进记录'}
 ];
 
 const collabRecords=[
@@ -159,7 +162,7 @@ function render(){
     if(ta) state.homeDraft=ta.value;
   }
   nav.innerHTML=navHTML();
-  const names={overview:'我的容量治理',profile:'系统画像',system:'统一支付系统 / 系统洞察',simulate:'容量方案 / 方案模拟',knowledge:'容量治理 / 知识库'};
+  const names={overview:'我的容量治理',profile:'系统画像',system:`${selectedSystem().name} / 系统洞察`,simulate:'容量方案 / 方案模拟',knowledge:'容量治理 / 知识库'};
   crumb.textContent=names[state.page];
   ({overview:renderOverview,profile:renderProfile,system:renderSystem,simulate:renderSimulator,knowledge:renderKnowledge}[state.page]||renderOverview)();
   // 进入新页面后,恢复上一个页面留下的快照(向导 / 首页草稿)
@@ -195,9 +198,9 @@ function mountPage(){
 function renderOverview(){
   main.innerHTML=`
   <section class="today-brief">
-    <div class="brief-copy"><span class="brief-stamp"><i></i> AI 总结与建议 · 08:32</span><h2>支付系统需要本周内完成处置决策</h2><p>Agent 已将当前 SRE 负责范围内的 <strong>142 个实例信号归并为 3 条治理建议</strong>。GreatDB 磁盘是最高风险；Redis 属于渐进缩容观察；渠道接入平台 Nginx 存在明确降配空间。</p><div class="brief-actions"><button class="btn acid" data-page="system">查看最高风险</button><button class="btn" data-open-evidence>查看判断过程</button></div></div>
+    <div class="brief-copy"><span class="brief-stamp"><i></i> AI 总结与建议 · 08:32</span><h2>S支付平台需要本周内完成处置决策</h2><p>Agent 已将当前 SRE 负责范围内的 <strong>142 个实例信号归并为 3 条治理建议</strong>。S支付平台 GreatDB 磁盘是最高风险；Redis 属于渐进缩容观察；S数据服务网关 Nginx 存在明确降配空间。</p><div class="brief-actions"><button class="btn acid" data-page="system">查看最高风险</button><button class="btn" data-open-evidence>查看判断过程</button></div></div>
     <div class="brief-data"><div class="brief-data-head"><span>治理指标概览</span><small>我负责的 3 个系统</small></div><div class="brief-numbers">
-      ${briefNumber('容量风险','2','项','支付优先处置','risk')}${briefNumber('资源浪费','2','候选','Redis / Nginx','waste')}${briefNumber('负载倾斜','1','集群','先调度后扩容','balance')}${briefNumber('预计可回收','16C','/ 64GB','约 ¥6.1k / 月','save')}
+      ${briefNumber('容量风险','2','项','PAY 优先处置','risk')}${briefNumber('资源浪费','2','候选','Redis / Nginx','waste')}${briefNumber('负载倾斜','1','集群','先调度后扩容','balance')}${briefNumber('预计可回收','16C','/ 64GB','约 ¥6.1k / 月','save')}
     </div>
     </div>
   </section>
@@ -206,7 +209,7 @@ function renderOverview(){
   <aside class="panel overview-panel overview-advice"><div class="panel-head"><div><h2>面向我的治理建议</h2><p>服务器信号已归并为负责系统内的可行动结论</p></div><small>3 NEW</small></div><div class="signal-list">
     ${signal('01','单节点增长 + 集群倾斜','GreatDB 最高节点磁盘 87.6%，节点差值 49.6%，不应仅凭集群平均值判断。','system')}
     ${signal('02','Redis 集群整体配置偏大','4 个实例连续 30 日 CPU 与内存峰值低于 25%，建议渐进缩容。','simulate')}
-    ${signal('03','Nginx 节点规格偏高','渠道平台 Nginx 的单实例规格高于历史基线 2 倍,可考虑降配。','system')}
+    ${signal('03','Nginx 节点规格偏高','S数据服务网关 Nginx 的单实例规格高于历史基线 2 倍，可考虑降配。','system')}
   </div></aside>
   <section class="panel overview-panel overview-tasks"><div class="panel-head"><div><h2>正在治理的事项</h2><p>集中查看工单、变更状态和 Agent 跟进动作</p></div><small>3 ACTIVE</small></div><div class="overview-task-list">${tasks.map(overviewTaskItem).join('')}</div></section>
   <section class="panel overview-panel overview-verification"><div class="panel-head"><div><h2>效果验证</h2><p>变更后水位与基线持续比对</p></div><small>CAP-1839 · DAY 3/7</small></div><div class="overview-verification-body"><div class="verify-title"><div><span>Redis 缩容观察</span><strong>第 3/7 天</strong></div><em>观察正常</em></div><div class="verify-hero"><div class="verify-card"><span>变更前 CPU 峰值</span><strong>18%</strong></div><div class="verify-card"><span>变更后 CPU 峰值</span><strong class="verify-good">31%</strong></div><div class="verify-card"><span>内存峰值变化</span><strong class="verify-good">23% → 36%</strong></div><div class="verify-card"><span>异常 / 告警</span><strong class="verify-good">0 / 0</strong></div></div><div class="decision"><b>Agent 当前结论</b><p>效果符合预期，暂不继续缩容。待观察满 7 天且覆盖周末批处理窗口后，再评估由 5 台缩至 4 台。</p></div></div></section>
@@ -317,18 +320,18 @@ function trendChart(){
 /* ============ 方案模拟 · 三步向导（自 模拟仿真.html 迁移） ============ */
 const wzApps={
   "ITSM-2026-0812-001":{
-    title:"A系统进行信创改造申请资源", reason:"A系统进行信创改造申请资源，需要10台虚拟机",
-    business:"支持用户信息的查询", scenario:"信创改造", system:"A系统", type:"改造",
+    title:"S支付平台进行信创改造申请资源", reason:"S支付平台进行信创改造申请资源，需要10台虚拟机",
+    business:"支持支付信息的查询与处理", scenario:"信创改造", system:"S支付平台（PAY）", type:"改造",
     equip:[
       {name:"ES组件",count:"10台虚拟机",spec:"4C16G100G",comp:"es"},
       {name:"MySQL",count:"3台虚拟机",spec:"4C16G100G",comp:"mysql"}
     ]
   },
   "ITSM-2026-0813-002":{
-    title:"B系统新增扩容申请资源", reason:"B系统新增业务模块，需申请8台虚拟机",
-    business:"支持订单数据的查询与处理", scenario:"新增系统", system:"B系统", type:"新增",
+    title:"S数据服务网关新增扩容申请资源", reason:"S数据服务网关新增服务模块，需申请8台虚拟机",
+    business:"支持数据服务请求的接入与转发", scenario:"新增模块", system:"S数据服务网关（DPS）", type:"扩容",
     equip:[
-      {name:"B系统-Web",count:"8台虚拟机",spec:"8C32G200G",comp:"es"}
+      {name:"DPS-Web",count:"8台虚拟机",spec:"8C32G200G",comp:"es"}
     ]
   }
 };
@@ -366,8 +369,8 @@ function renderSimulator(){
     <div class="hero">
       <div class="fld"><label>申请单号</label><div class="select"><select id="appSel">
         <option value="">— 请选择申请单号 —</option>
-        <option value="ITSM-2026-0812-001">ITSM-2026-0812-001（A 系统信创改造）</option>
-        <option value="ITSM-2026-0813-002">ITSM-2026-0813-002（B 系统新增扩容）</option>
+        <option value="ITSM-2026-0812-001">ITSM-2026-0812-001（S支付平台信创改造）</option>
+        <option value="ITSM-2026-0813-002">ITSM-2026-0813-002（S数据服务网关扩容）</option>
       </select></div></div>
       <button class="btn acid" id="btnLoad">加载申请单</button>
     </div>
@@ -978,7 +981,7 @@ function renderHome(){
       </div>
       <div class="home-chat-body">
         <div class="home-msg user"><div class="home-msg-bubble"><b>杨帆</b><small>刚刚</small><p>让我看看今天集群有没有什么异常。</p></div><div class="home-avatar">杨</div></div>
-        <div class="home-msg agent"><div class="home-avatar agent"><span class="agent-eye"></span></div><div class="home-msg-bubble"><b>Capacity Agent</b><small>${new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'})} · 第 14 轮</small><p>好的,我已对 <strong>4 个系统、18 个组件、142 个实例</strong>做完完整性检查。今天有 3 条值得你注意:</p><ul><li><b>P1 · GreatDB</b>:单节点磁盘 87.6%,6 天后触达 90%,节点差值 49.6%。建议先修归档,再评估增加 2 个节点。</li><li><b>P2 · 风控</b>:CPU 30 日持续增长,批处理窗口叠加;建议错峰并观察 7 天。</li><li><b>P3 · 渠道 Nginx</b>:规格高于同类中位数 2.1×,可灰度 2 台由 16C32G 降至 8C16G。</li></ul><p>需要我把 P1 整理成治理评估单,或继续追问任一条吗?</p></div></div>
+        <div class="home-msg agent"><div class="home-avatar agent"><span class="agent-eye"></span></div><div class="home-msg-bubble"><b>Capacity Agent</b><small>${new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'})} · 第 14 轮</small><p>好的,我已对 <strong>3 个系统、18 个组件、142 个实例</strong>做完完整性检查。今天有 3 条值得你注意:</p><ul><li><b>P1 · PAY / GreatDB</b>:单节点磁盘 87.6%,6 天后触达 90%,节点差值 49.6%。建议先修归档,再评估增加 2 个节点。</li><li><b>P2 · AUTH</b>:CPU 30 日持续增长,批处理窗口叠加;建议错峰并观察 7 天。</li><li><b>P3 · DPS / Nginx</b>:规格高于同类中位数 2.1×,可灰度 2 台由 16C32G 降至 8C16G。</li></ul><p>需要我把 P1 整理成治理评估单,或继续追问任一条吗?</p></div></div>
       </div>
       <div class="home-quickgrid">${quickPrompts.map(p=>`<button class="home-quick" data-page="${p.page}"><span class="home-quick-icon">${p.icon}</span><div><b>${p.title}</b><small>${p.desc}</small></div></button>`).join('')}</div>
       <form class="home-composer" id="home-composer">
@@ -991,7 +994,7 @@ function renderHome(){
 
 function homeRoute(text){
   const t=text.toLowerCase();
-  if(/扩容|新增节点|加节点|加机器|扩.*节点|资源不足|撑不住|不够用|快到上限|阈值|即将到期|快到期/.test(t)) return {intent:'capacity_plan',reply:`扩容建议分两步走:<br>1. 先验证近 7 日增长斜率(系统画像 → ${state.selectedSystemId||'统一支付'})<br>2. 再查历史同口径基线,确定推荐规格,而非直接复制申请。<br>我可以为你打开系统画像,或直接生成治理任务。`,chips:[{label:'看趋势证据',page:'system'},{label:'查看治理事项',page:'overview'}]};
+  if(/扩容|新增节点|加节点|加机器|扩.*节点|资源不足|撑不住|不够用|快到上限|阈值|即将到期|快到期/.test(t)) return {intent:'capacity_plan',reply:`扩容建议分两步走:<br>1. 先验证近 7 日增长斜率(系统画像 → ${selectedSystem().name})<br>2. 再查历史同口径基线,确定推荐规格,而非直接复制申请。<br>我可以为你打开系统画像,或直接生成治理任务。`,chips:[{label:'看趋势证据',page:'system'},{label:'查看治理事项',page:'overview'}]};
   if(/缩容|减节点|释放|降配|过剩|冗余|空闲|浪费|降本|利用率低|缩配/.test(t)) return {intent:'scale_in',reply:`缩容/降配的关键是「同口径基线比对」:<br>· 找到 12 个相似组件的 CPU P95 / 内存 P95 历史中位值<br>· 当前配置如果高出中位 1.5× 以上,大概率可降<br>· 一次缩 1 节点,观察 7 天再继续(参见 CAP-1839 案例)。`,chips:[{label:'查看 Redis 案例',page:'overview'}]};
   if(/对比|本周|环比|同期|趋势|vs|比上周|比昨日|比同期/.test(t)) return {intent:'compare',reply:`本周 vs 上周对比,关键看三个维度:<br>· CPU / 内存 P95 变化(峰值压力)<br>· 磁盘水位变化(容量累积)<br>· 告警次数 / 告警疲劳度(运维负担)<br>建议在系统画像页选择两个时间窗口对比。`,chips:[{label:'打开系统画像',page:'profile'}]};
   if(/解释|为什么|判断|依据|怎么得出的|推理/.test(t)) return {intent:'explain',reply:`Agent 的判断分三层:<br>1. <b>算法层</b>:动态基线 + 7 日斜率 + 节点极差<br>2. <b>判断层</b>:结合系统等级、是否主备、是否符合历史模式<br>3. <b>行动层</b>:变更需经人工审批,所有结论可在「判断过程」弹窗逐条复核。`,chips:[{label:'看一次判断过程',page:'system'}]};
