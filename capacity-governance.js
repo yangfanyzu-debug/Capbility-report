@@ -1,7 +1,6 @@
 const icons={
   overview:'<svg viewBox="0 0 24 24"><path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z"/></svg>',
   system:'<svg viewBox="0 0 24 24"><path d="M4 5h16v5H4zM4 14h16v5H4zM8 7.5h.01M8 16.5h.01"/></svg>',
-  peer:'<svg viewBox="0 0 24 24"><circle cx="8" cy="8" r="3"/><circle cx="17" cy="9" r="2"/><path d="M3 20c0-4 2-7 5-7s5 3 5 7M14 14c3 0 5 2 5 6"/></svg>',
   simulate:'<svg viewBox="0 0 24 24"><path d="M4 18V9m5 9V5m5 13v-7m5 7V3"/></svg>',
   tasks:'<svg viewBox="0 0 24 24"><path d="M8 5h12M8 12h12M8 19h12M3 5h1M3 12h1M3 19h1"/></svg>',
   knowledge:'<svg viewBox="0 0 24 24"><path d="M4 4h7a3 3 0 0 1 3 3v13a2 2 0 0 0-2-2H4z"/><path d="M20 4h-7a3 3 0 0 0-3 3v13a2 2 0 0 1 2-2h8z"/></svg>',
@@ -90,30 +89,6 @@ const systemProfiles={
   }
 };
 
-const peerBenchmarks={
-  es:{
-    label:'Elasticsearch',version:'8.x',scope:'生产在线检索集群',unit:'数据节点',
-    columns:[['nodes','数据节点'],['data','数据量'],['traffic','查询 QPS'],['latency','查询 P95'],['cpu','CPU P95'],['storage','磁盘水位'],['efficiency','资源效率']],
-    rows:[
-      {id:'pay-order-search',system:'统一支付系统',cluster:'pay-order-search',nodes:'12 台',nodesValue:12,data:'18.4 TB',traffic:'8.2k',latency:'42 ms',cpu:'58%',storage:'72%',efficiency:'74',status:'待优化',facts:['单节点 1.53 TB','平均分片 42 GB','副本数 1'],recommendation:'查询量高于同类中位数，但节点规模增幅更高。先合并低活跃索引并调整分片分布，暂不建议直接扩容。'},
-      {id:'risk-feature-index',system:'实时风控系统',cluster:'risk-feature-index',nodes:'9 台',nodesValue:9,data:'13.6 TB',traffic:'6.4k',latency:'31 ms',cpu:'61%',storage:'68%',efficiency:'82',status:'合理',facts:['单节点 1.51 TB','平均分片 38 GB','副本数 1'],recommendation:'资源投入和查询负载匹配，CPU 与磁盘均处于合理水位，保持现有规模并继续观察增长趋势。'},
-      {id:'channel-access-log',system:'渠道接入平台',cluster:'channel-access-log',nodes:'10 台',nodesValue:10,data:'21.2 TB',traffic:'5.1k',latency:'49 ms',cpu:'52%',storage:'76%',efficiency:'69',status:'磁盘偏高',facts:['单节点 2.12 TB','平均分片 51 GB','副本数 1'],recommendation:'数据密度明显高于同类，优先缩短日志保留周期并下沉冷数据；清理后再判断是否需要增加数据节点。'},
-      {id:'customer-profile-search',system:'客户中心系统',cluster:'customer-profile-search',nodes:'8 台',nodesValue:8,data:'11.8 TB',traffic:'7.6k',latency:'28 ms',cpu:'64%',storage:'63%',efficiency:'88',status:'高效',facts:['单节点 1.48 TB','平均分片 36 GB','副本数 1'],recommendation:'在较少节点上承载了较高查询量，延迟仍优于同类中位数，可作为本组资源效率基线。'},
-      {id:'ledger-audit-search',system:'核心账务系统',cluster:'ledger-audit-search',nodes:'12 台',nodesValue:12,data:'19.7 TB',traffic:'4.8k',latency:'35 ms',cpu:'55%',storage:'70%',efficiency:'77',status:'合理',facts:['单节点 1.64 TB','平均分片 44 GB','副本数 1'],recommendation:'查询负载偏低但审计数据保留周期较长，建议先评估冷热分层，避免在线节点持续承载低频历史数据。'}
-    ]
-  },
-  hadoop:{
-    label:'Hadoop',version:'Hadoop 3.x',scope:'生产离线计算集群',unit:'DataNode',
-    columns:[['nodes','DataNode'],['data','HDFS 数据量'],['traffic','日增量'],['latency','批处理时长'],['cpu','YARN CPU P95'],['storage','存储利用率'],['efficiency','资源效率']],
-    rows:[
-      {id:'payment-clearing-dw',system:'统一支付系统',cluster:'payment-clearing-dw',nodes:'14 台',nodesValue:14,data:'196 TB',traffic:'4.2 TB',latency:'96 min',cpu:'72%',storage:'78%',efficiency:'75',status:'容量趋紧',facts:['单节点 14.0 TB','副本因子 3','SLA 120 min'],recommendation:'批处理仍在 SLA 内，但存储水位已接近扩容观察线。优先清理过期中间表，若 14 天后仍高于 75% 再增加 DataNode。'},
-      {id:'risk-feature-lake',system:'实时风控系统',cluster:'risk-feature-lake',nodes:'18 台',nodesValue:18,data:'286 TB',traffic:'8.6 TB',latency:'112 min',cpu:'68%',storage:'71%',efficiency:'86',status:'高效',facts:['单节点 15.9 TB','副本因子 3','SLA 150 min'],recommendation:'数据增量最高但计算和存储水位仍均衡，资源效率优于组内中位数，可作为扩容模型的参考样本。'},
-      {id:'channel-log-lake',system:'渠道接入平台',cluster:'channel-log-lake',nodes:'16 台',nodesValue:16,data:'248 TB',traffic:'7.9 TB',latency:'128 min',cpu:'61%',storage:'84%',efficiency:'67',status:'高风险',facts:['单节点 15.5 TB','副本因子 3','SLA 150 min'],recommendation:'存储水位已超过 80%，但 CPU 并不高。先治理小文件与日志保留周期，同时准备增加 3 台 DataNode 的兜底方案。'},
-      {id:'customer-feature-lake',system:'客户中心系统',cluster:'customer-feature-lake',nodes:'12 台',nodesValue:12,data:'154 TB',traffic:'3.8 TB',latency:'89 min',cpu:'66%',storage:'69%',efficiency:'89',status:'高效',facts:['单节点 12.8 TB','副本因子 3','SLA 120 min'],recommendation:'节点规模、日增量和批处理时长匹配良好，当前无需扩缩容，继续观察季度数据增长即可。'}
-    ]
-  }
-};
-
 const tasks=[
   {id:'CAP-1842',title:'GreatDB 磁盘容量风险处置',owner:'陈哲',stage:2,status:'变更评审',workOrder:'ACT-CHUG-20260826-0002',workStatus:'评审中',action:'查看证据'},
   {id:'CAP-1839',title:'Redis 低利用实例缩容验证',owner:'王璐',stage:3,status:'观察第 3/7 天',workOrder:'ACT-CHUG-20260826-0003',workStatus:'实施完成',action:'效果验证'},
@@ -145,7 +120,7 @@ const collabRecords=[
 ];
 
 
-const state={page:'overview',selectedSystemId:'payment',profileCluster:'',peerType:'es',peerCluster:'pay-order-search',agentOpen:false,agentTab:'log',work:0,progress:36,simNodes:5,simLoad:20,simTarget:'redis',simType:'物理机',simSpec:'8C32G',homeDraft:'',wzSnap:null,lastPage:null};
+const state={page:'overview',selectedSystemId:'payment',profileCluster:'',agentOpen:false,agentTab:'log',work:0,progress:36,simNodes:5,simLoad:20,simTarget:'redis',simType:'物理机',simSpec:'8C32G',homeDraft:'',wzSnap:null,lastPage:null};
 const main=document.querySelector('#main');
 const nav=document.querySelector('#nav');
 const crumb=document.querySelector('#crumb');
@@ -161,7 +136,7 @@ const agentInput=document.querySelector('#agent-input');
 function navHTML(){
   const groups=[
     {label:'AGENT',items:[['overview','治理总览',icons.overview,''],['profile','系统画像',icons.profile,'']]},
-    {label:'KNOWLEDGE',items:[['knowledge','知识库',icons.knowledge,''],['peer','同类对标',icons.peer,'']]},
+    {label:'KNOWLEDGE',items:[['knowledge','知识库',icons.knowledge,'']]},
     {label:'DEVICES',items:[['system','系统洞察',icons.system,'3']]},
     {label:'OBSERVABILITY',items:[['simulate','方案模拟',icons.simulate,''],['tasks','治理闭环',icons.tasks,'3']]}
   ];
@@ -184,9 +159,9 @@ function render(){
     if(ta) state.homeDraft=ta.value;
   }
   nav.innerHTML=navHTML();
-  const names={overview:'我的容量治理',profile:'系统画像',system:'统一支付系统 / 系统洞察',peer:'同类系统 / 资源对标',simulate:'容量方案 / 方案模拟',knowledge:'容量治理 / 知识库',tasks:'治理任务 / 效果验证'};
+  const names={overview:'我的容量治理',profile:'系统画像',system:'统一支付系统 / 系统洞察',simulate:'容量方案 / 方案模拟',knowledge:'容量治理 / 知识库',tasks:'治理任务 / 效果验证'};
   crumb.textContent=names[state.page];
-  ({overview:renderOverview,profile:renderProfile,system:renderSystem,peer:renderPeer,simulate:renderSimulator,knowledge:renderKnowledge,tasks:renderTasks}[state.page]||renderOverview)();
+  ({overview:renderOverview,profile:renderProfile,system:renderSystem,simulate:renderSimulator,knowledge:renderKnowledge,tasks:renderTasks}[state.page]||renderOverview)();
   // 进入新页面后,恢复上一个页面留下的快照(向导 / 首页草稿)
   mountPage();
   main.focus({preventScroll:true});
@@ -230,7 +205,7 @@ function renderOverview(){
   <aside class="panel"><div class="panel-head"><div><h2>面向我的治理建议</h2><p>服务器信号已归并为负责系统内的可行动结论</p></div><small>3 NEW</small></div><div class="signal-list">
     ${signal('01','单节点增长 + 集群倾斜','GreatDB 最高节点磁盘 87.6%，节点差值 49.6%，不应仅凭集群平均值判断。','system')}
     ${signal('02','Redis 集群整体配置偏大','4 个实例连续 30 日 CPU 与内存峰值低于 25%，建议渐进缩容。','simulate')}
-    ${signal('03','同类对标发现规格异常','渠道平台 Nginx 的单实例规格高于同类中位数 2 倍。','peer')}
+    ${signal('03','Nginx 节点规格偏高','渠道平台 Nginx 的单实例规格高于历史基线 2 倍,可考虑降配。','system')}
   </div></aside></div>`;
 }
 
@@ -323,43 +298,6 @@ function trendChart(){
   const grids=[40,50,60,70,80,90].map(v=>`<line class="chart-grid" x1="${p}" y1="${y(v)}" x2="${W-p}" y2="${y(v)}"/><text class="chart-label" x="0" y="${y(v)+3}">${v}</text>`).join('');
   return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="磁盘使用率偏离动态基线并预计六天后达到百分之九十">${grids}<polygon class="chart-band" points="${upper} ${lower}"/><line class="chart-limit" x1="${p}" y1="${y(90)}" x2="${W-p}" y2="${y(90)}"/><text class="chart-label" x="${W-78}" y="${y(90)-6}">风险线 90%</text><polyline class="chart-line" points="${line}"/><polyline class="chart-predict" points="${pred}"/><circle class="chart-point" cx="${x(29,actual.length)}" cy="${y(87.6)}" r="5"/><text class="chart-label" x="${p}" y="${H-3}">07-14</text><text class="chart-label" x="${W/2}" y="${H-3}">07-29</text><text class="chart-label" x="${W-70}" y="${H-3}">08-18 预测</text></svg>`;
 }
-
-function renderPeer(){
-  const group=peerBenchmarks[state.peerType]||peerBenchmarks.es;
-  const selected=group.rows.find(row=>row.id===state.peerCluster)||group.rows[0];
-  state.peerCluster=selected.id;
-  const medianNodes=median(group.rows.map(row=>row.nodesValue));
-  const medianEfficiency=median(group.rows.map(row=>Number(row.efficiency)));
-  const efficiencyDelta=Number(selected.efficiency)-medianEfficiency;
-  main.innerHTML=`
-  <section class="panel peer-toolbar">
-    <div><span>集群类型</span><div class="peer-type-tabs">${Object.entries(peerBenchmarks).map(([key,item])=>`<button class="${key===state.peerType?'active':''}" data-peer-type="${key}">${item.label}<em>${item.rows.length}</em></button>`).join('')}</div></div>
-    <div class="peer-scope"><span>${group.version}</span><span>${group.scope}</span><span>同口径 30 日 P95</span></div>
-  </section>
-  <section class="peer-summary">
-    ${peerSummary('对标样本',group.rows.length+' 个','不同系统的同类生产集群')}
-    ${peerSummary(group.unit+'中位数',medianNodes+' 台','作为资源规模参考线')}
-    ${peerSummary('效率中位数',medianEfficiency+' 分','综合容量与性能水位')}
-    ${peerSummary('当前对标对象',selected.system,selected.cluster)}
-  </section>
-  <section class="peer-workbench">
-    <article class="panel peer-matrix"><div class="panel-head"><div><h2>${group.label} 跨系统集群对标</h2><p>同技术栈、同生产等级下比较容量投入与实际负载</p></div><small>点击集群查看差异</small></div>
-      <div class="peer-table-wrap"><table class="peer-table peer-cluster-table"><thead><tr><th>所属系统 / 集群</th>${group.columns.map(([,label])=>`<th>${label}</th>`).join('')}<th>判断</th></tr></thead><tbody>${group.rows.map(row=>peerClusterRow(row,group)).join('')}</tbody></table></div>
-    </article>
-    <aside class="panel peer-insight">
-      <div class="peer-insight-head"><p class="kicker">PEER POSITION</p><span class="peer-status ${selected.status==='高风险'?'risk':''}">${selected.status}</span></div>
-      <h2>${selected.system}</h2><code>${selected.cluster}</code>
-      <div class="peer-score"><strong>${selected.efficiency}</strong><span>资源效率分</span><small>${efficiencyDelta>=0?'+':''}${efficiencyDelta} 分 vs 组内中位数</small></div>
-      <div class="peer-compare-bars">${bench('节点规模',Math.min(100,Math.round(selected.nodesValue/Math.max(...group.rows.map(row=>row.nodesValue))*100))+'%','#56779f')}${bench('容量水位',selected.storage,'#9b7445')}${bench('资源效率',selected.efficiency+'%','#2f5d91')}</div>
-      <div class="peer-facts">${selected.facts.map(fact=>`<span>${fact}</span>`).join('')}</div>
-      <div class="peer-recommend"><b>容量治理建议</b><p>${selected.recommendation}</p></div>
-    </aside>
-  </section>`;
-}
-function peerSummary(label,value,note){return `<article><span>${label}</span><b>${value}</b><small>${note}</small></article>`}
-function peerClusterRow(row,group){return `<tr class="${row.id===state.peerCluster?'current':''}" data-peer-cluster="${row.id}"><td><b>${row.system}</b><code>${row.cluster}</code></td>${group.columns.map(([key])=>`<td class="${key==='efficiency'?'peer-efficiency':''}">${row[key]}${key==='efficiency'?'<small>/100</small>':''}</td>`).join('')}<td><span class="peer-row-status ${row.status==='高风险'?'risk':''}">${row.status}</span></td></tr>`}
-function median(values){const sorted=[...values].sort((a,b)=>a-b),middle=Math.floor(sorted.length/2);return sorted.length%2?sorted[middle]:Math.round((sorted[middle-1]+sorted[middle])/2)}
-function bench(label,value,color){return `<div class="bench"><div class="bench-head"><span>${label}</span><b>${value}</b></div><div class="bench-track"><i style="--value:${value};--color:${color}"></i></div></div>`}
 
 /* ============ 方案模拟 · 三步向导（自 模拟仿真.html 迁移） ============ */
 const wzApps={
@@ -986,7 +924,7 @@ function renderHome(){
   state.homeSessions=sessions;
   const quickPrompts=[
     {icon:'◎',title:'发现异常设备',desc:'z-score 离群 · 142 个实例',page:'system'},
-    {icon:'∿',title:'对比本周与上周负载',desc:'容量水位变化 · 一键钻取',page:'peer'},
+    {icon:'∿',title:'对比本周与上周负载',desc:'容量水位变化 · 一键钻取',page:'system'},
     {icon:'!',title:'解释告警疲劳度',desc:'哪些告警已重复 3 次以上',page:'tasks'},
     {icon:'✓',title:'一行话集群健康',desc:'按重要性级别 P1/P2/P3 汇总',page:'overview'}
   ];
@@ -1038,15 +976,15 @@ function renderHome(){
 
 function homeRoute(text){
   const t=text.toLowerCase();
-  if(/扩容|新增节点|加节点|加机器|扩.*节点|资源不足|撑不住|不够用|快到上限|阈值|即将到期|快到期/.test(t)) return {intent:'capacity_plan',reply:`扩容建议分两步走:<br>1. 先验证近 7 日增长斜率(系统画像 → ${state.selectedSystemId||'统一支付'})<br>2. 再拉同类集群的中位规格(同类对标),确定推荐规格,而非直接复制申请。<br>我可以为你打开系统画像,或直接生成治理任务。`,chips:[{label:'看趋势证据',page:'system'},{label:'新建治理任务',page:'tasks'}]};
-  if(/缩容|减节点|释放|降配|过剩|冗余|空闲|浪费|降本|利用率低|缩配/.test(t)) return {intent:'scale_in',reply:`缩容/降配的关键是「同类对标」:<br>· 找到 12 个相似组件的 CPU P95 / 内存 P95 中位值<br>· 当前配置如果高出中位 1.5× 以上,大概率可降<br>· 一次缩 1 节点,观察 7 天再继续(参见 CAP-1839 案例)。`,chips:[{label:'打开同类对标',page:'peer'},{label:'查看 Redis 案例',page:'tasks'}]};
+  if(/扩容|新增节点|加节点|加机器|扩.*节点|资源不足|撑不住|不够用|快到上限|阈值|即将到期|快到期/.test(t)) return {intent:'capacity_plan',reply:`扩容建议分两步走:<br>1. 先验证近 7 日增长斜率(系统画像 → ${state.selectedSystemId||'统一支付'})<br>2. 再查历史同口径基线,确定推荐规格,而非直接复制申请。<br>我可以为你打开系统画像,或直接生成治理任务。`,chips:[{label:'看趋势证据',page:'system'},{label:'新建治理任务',page:'tasks'}]};
+  if(/缩容|减节点|释放|降配|过剩|冗余|空闲|浪费|降本|利用率低|缩配/.test(t)) return {intent:'scale_in',reply:`缩容/降配的关键是「同口径基线比对」:<br>· 找到 12 个相似组件的 CPU P95 / 内存 P95 历史中位值<br>· 当前配置如果高出中位 1.5× 以上,大概率可降<br>· 一次缩 1 节点,观察 7 天再继续(参见 CAP-1839 案例)。`,chips:[{label:'查看 Redis 案例',page:'tasks'}]};
   if(/对比|本周|环比|同期|趋势|vs|比上周|比昨日|比同期/.test(t)) return {intent:'compare',reply:`本周 vs 上周对比,关键看三个维度:<br>· CPU / 内存 P95 变化(峰值压力)<br>· 磁盘水位变化(容量累积)<br>· 告警次数 / 告警疲劳度(运维负担)<br>建议在系统画像页选择两个时间窗口对比。`,chips:[{label:'打开系统画像',page:'profile'}]};
   if(/解释|为什么|判断|依据|怎么得出的|推理/.test(t)) return {intent:'explain',reply:`Agent 的判断分三层:<br>1. <b>算法层</b>:动态基线 + 7 日斜率 + 节点极差<br>2. <b>判断层</b>:结合系统等级、是否主备、是否符合历史模式<br>3. <b>行动层</b>:变更需经人工审批,所有结论可在「判断过程」弹窗逐条复核。`,chips:[{label:'看一次判断过程',page:'system'}]};
-  if(/建单|提单|jira|工单|变更单|开单|申请单|itsm/.test(t)) return {intent:'create_ticket',reply:`建单前 Agent 会自动准备:<br>· 当前集群指标(峰值 / 水位 / 增长)<br>· 同类集群对比(为什么是这个规格)<br>· 风险与回滚建议<br>所有变更单仍由你点击提交,我不会自动执行。`,chips:[{label:'进入治理闭环',page:'tasks'}]};
+  if(/建单|提单|jira|工单|变更单|开单|申请单|itsm/.test(t)) return {intent:'create_ticket',reply:`建单前 Agent 会自动准备:<br>· 当前集群指标(峰值 / 水位 / 增长)<br>· 历史同口径基线对比(为什么是这个规格)<br>· 风险与回滚建议<br>所有变更单仍由你点击提交,我不会自动执行。`,chips:[{label:'进入治理闭环',page:'tasks'}]};
   if(/查询|看一下|看看|查一下|详情|多少|什么|状态|水位|峰值|cpu|内存|磁盘|redis|nginx|greatdb/.test(t)) return {intent:'query',reply:`已记录你的查询意图。你可以更具体一点:<br>· 「Redis CPU 峰值」 / 「GreatDB 磁盘水位」<br>· 「本周告警次数」<br>· 「同类 Nginx 的 P95 中位」<br>我会在系统画像页拉数据并标注取数时间。`,chips:[{label:'系统画像',page:'profile'}]};
   if(/复盘|回顾|今天|今天做|今天完成|总结|汇报/.test(t)) return {intent:'recap',reply:`今日复盘:<br>· 14 轮数据采集,142 个实例<br>· 3 条治理建议,1 条进入评审(CAP-1842)<br>· 1 条缩容观察中(CAP-1839 第 3/7 天)<br>详细事件在「工作事件流」中,可导出给团队。`,chips:[{label:'看工作事件',page:'home'}]};
   if(/帮助|help|能做什么|功能|你能/.test(t)) return {intent:'help',reply:`我是 Capacity Agent,7 类高频对话:<br>· <b>查询</b>:Redis / GreatDB / Nginx 容量数据<br>· <b>对比</b>:本周 vs 上周水位<br>· <b>解释</b>:为什么 Agent 给出某个结论<br>· <b>模拟</b>:扩容/缩容/降配方案<br>· <b>建单</b>:准备 JIRA 变更单所需的所有证据<br>· <b>复盘</b>:今日工作事件总结<br>· <b>路由</b>:打开知识库/对标/治理闭环任意页面`,chips:[]};
-  return {intent:'fallback',reply:`我收到了你的问题。Agent 会把这条问题放进工作上下文,然后:<br>· 拉相关数据(峰值、水位、趋势)<br>· 比对同类集群<br>· 给你一个「先验证、再建议、最后由你审批」的方案。<br>所有结论都不会自动执行生产变更。`,chips:[]};
+  return {intent:'fallback',reply:`我收到了你的问题。Agent 会把这条问题放进工作上下文,然后:<br>· 拉相关数据(峰值、水位、趋势)<br>· 查历史同口径基线<br>· 给你一个「先验证、再建议、最后由你审批」的方案。<br>所有结论都不会自动执行生产变更。`,chips:[]};
 }
 
 function homeRespond(text){
@@ -1312,8 +1250,6 @@ function toast(title,body){const el=document.createElement('div');el.className='
 document.addEventListener('click',e=>{
   const page=e.target.closest('[data-page]');if(page){if(page.dataset.systemId)state.selectedSystemId=page.dataset.systemId;state.page=page.dataset.page;closeOverlays();render();renderWorkline();return}
   const profileCluster=e.target.closest('[data-profile-cluster]');if(profileCluster){state.profileCluster=profileCluster.dataset.profileCluster;render();return}
-  const peerType=e.target.closest('[data-peer-type]');if(peerType){state.peerType=peerType.dataset.peerType;state.peerCluster=peerBenchmarks[state.peerType].rows[0].id;render();return}
-  const peerCluster=e.target.closest('[data-peer-cluster]');if(peerCluster){state.peerCluster=peerCluster.dataset.peerCluster;render();return}
   const collapseBtn=e.target.closest('[data-agent-collapse]');
   if(collapseBtn){
     e.stopPropagation();
