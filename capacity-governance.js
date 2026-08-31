@@ -3,7 +3,6 @@ const icons={
   system:'<svg viewBox="0 0 24 24"><path d="M4 5h16v5H4zM4 14h16v5H4zM8 7.5h.01M8 16.5h.01"/></svg>',
   peer:'<svg viewBox="0 0 24 24"><circle cx="8" cy="8" r="3"/><circle cx="17" cy="9" r="2"/><path d="M3 20c0-4 2-7 5-7s5 3 5 7M14 14c3 0 5 2 5 6"/></svg>',
   simulate:'<svg viewBox="0 0 24 24"><path d="M4 18V9m5 9V5m5 13v-7m5 7V3"/></svg>',
-  admission:'<svg viewBox="0 0 24 24"><path d="M12 3 4 7v5c0 5 3 8 8 9 5-1 8-4 8-9V7z"/><path d="m8 12 3 3 5-6"/></svg>',
   tasks:'<svg viewBox="0 0 24 24"><path d="M8 5h12M8 12h12M8 19h12M3 5h1M3 12h1M3 19h1"/></svg>',
   knowledge:'<svg viewBox="0 0 24 24"><path d="M4 4h7a3 3 0 0 1 3 3v13a2 2 0 0 0-2-2H4z"/><path d="M20 4h-7a3 3 0 0 0-3 3v13a2 2 0 0 1 2-2h8z"/></svg>',
   profile:'<svg viewBox="0 0 24 24"><path d="M12 4v5M12 15v5M5 12h5M14 12h5"/><circle cx="12" cy="12" r="3"/><circle cx="12" cy="4" r="2"/><circle cx="12" cy="20" r="2"/><circle cx="4" cy="12" r="2"/><circle cx="20" cy="12" r="2"/></svg>',
@@ -163,7 +162,7 @@ function navHTML(){
   const groups=[
     {label:'AGENT',items:[['overview','治理总览',icons.overview,''],['profile','系统画像',icons.profile,'']]},
     {label:'KNOWLEDGE',items:[['knowledge','知识库',icons.knowledge,''],['peer','同类对标',icons.peer,'']]},
-    {label:'DEVICES',items:[['system','系统洞察',icons.system,'3'],['admission','容量准入',icons.admission,'']]},
+    {label:'DEVICES',items:[['system','系统洞察',icons.system,'3']]},
     {label:'OBSERVABILITY',items:[['simulate','方案模拟',icons.simulate,''],['tasks','治理闭环',icons.tasks,'3']]}
   ];
   return groups.flatMap(g=>g.items).map(([id,label,icon,count])=>`<button class="nav-item ${state.page===id?'active':''}" data-page="${id}">${icon}<span>${label}</span>${count?`<em>${count}</em>`:''}</button>`).join('');
@@ -185,9 +184,9 @@ function render(){
     if(ta) state.homeDraft=ta.value;
   }
   nav.innerHTML=navHTML();
-  const names={overview:'我的容量治理',profile:'系统画像',system:'统一支付系统 / 系统洞察',peer:'同类系统 / 资源对标',simulate:'容量方案 / 方案模拟',admission:'增量资源 / 容量准入',knowledge:'容量治理 / 知识库',tasks:'治理任务 / 效果验证'};
+  const names={overview:'我的容量治理',profile:'系统画像',system:'统一支付系统 / 系统洞察',peer:'同类系统 / 资源对标',simulate:'容量方案 / 方案模拟',knowledge:'容量治理 / 知识库',tasks:'治理任务 / 效果验证'};
   crumb.textContent=names[state.page];
-  ({overview:renderOverview,profile:renderProfile,system:renderSystem,peer:renderPeer,simulate:renderSimulator,admission:renderAdmission,knowledge:renderKnowledge,tasks:renderTasks}[state.page]||renderOverview)();
+  ({overview:renderOverview,profile:renderProfile,system:renderSystem,peer:renderPeer,simulate:renderSimulator,knowledge:renderKnowledge,tasks:renderTasks}[state.page]||renderOverview)();
   // 进入新页面后,恢复上一个页面留下的快照(向导 / 首页草稿)
   mountPage();
   main.focus({preventScroll:true});
@@ -976,20 +975,13 @@ document.addEventListener('change',e=>{
   }
 });
 
-function renderAdmission(){
-  main.innerHTML=header('容量准入评估','增量容量准入','AI 提出资源方案，人负责关键决策；静态演示不会提交真实申请',`<button class="btn">历史评估</button><button class="btn acid" data-review>重新评估</button>`)+`
-  <section class="admission-layout"><article class="panel"><div class="panel-head"><div><h2>业务资源申请</h2><p>输入业务目标，而不只是申请机器数量</p></div><small>REQ-2026-0812</small></div><div class="form-grid"><div class="field"><label>系统</label><select><option>统一支付系统</option><option>数据中台</option></select></div><div class="field"><label>组件 / 集群</label><select><option>Java 订单服务 / cluster-A</option></select></div><div class="field"><label>申请规格</label><select><option>16C32G</option><option>8C16G</option></select></div><div class="field"><label>申请数量</label><input id="request-count" type="number" value="10" min="1" /></div><div class="field full"><label>业务目标与增长预期</label><textarea rows="4">双十一订单量预计增长 40%，需要保障核心交易链路安全余量。</textarea></div><div class="field full"><button class="btn acid" data-review>让 Capacity Agent 评估</button></div></div></article>
-  <aside class="panel review" id="review-result"><span class="review-badge">不建议按原申请执行</span><h2>建议新增 4 台，而不是 10 台</h2><p>Agent 综合了当前容量、90 日趋势、同类组件中位数与 30% 安全余量。原申请会造成明显过度配置。</p><div class="review-facts">${fact('当前规模','20 台')}${fact('近 30 日 CPU P95','61%')}${fact('90 日负载增速','+5.2%')}${fact('活动预计增长','+40%')}${fact('同类安全余量','28%—35%')}</div><div class="recommendation"><strong>建议方案：</strong>新增 4 台 16C32G。扩容后活动期间 CPU P95 预计约 58%，内存 P95 约 63%，风险等级低。</div><div class="brief-actions"><button class="btn acid" data-create-task>接受并生成评估单</button><button class="btn" data-open-agent>继续讨论</button></div></aside></section>`;
-}
-function fact(label,value){return `<div class="fact"><span>${label}</span><b>${value}</b></div>`}
-
 function renderHome(){
   const sessions=[
     {id:1,title:'工作台 · 今日巡检',time:'刚刚',preview:'Capacity Agent 已完成 14 轮数据采集…',tag:'进行中',active:true},
     {id:2,title:'GreatDB 磁盘增长排查',time:'08:32',preview:'为什么单节点 87.6% 而集群水位稳定?…',tag:'已完成'},
     {id:3,title:'Redis 缩容观察讨论',time:'昨天',preview:'变更后 CPU 峰值 18% → 31%,暂不继续…',tag:'已完成'},
     {id:4,title:'Nginx 节点降配方案',time:'昨天',preview:'先灰度 2 台 16C32G → 8C16G,观察 7 天…',tag:'已审批'},
-    {id:5,title:'容量准入 · 双十一评估',time:'08-12',preview:'不建议按原申请 10 台,建议新增 4 台…',tag:'已完成'}
+    {id:5,title:'Nginx 节点降配方案评审',time:'08-12',preview:'先灰度 2 台 16C32G → 8C16G,观察 7 天…',tag:'已审批'}
   ];
   state.homeSessions=sessions;
   const quickPrompts=[
@@ -1046,7 +1038,7 @@ function renderHome(){
 
 function homeRoute(text){
   const t=text.toLowerCase();
-  if(/扩容|新增节点|加节点|加机器|扩.*节点|资源不足|撑不住|不够用|快到上限|阈值|即将到期|快到期/.test(t)) return {intent:'capacity_plan',reply:`扩容建议分两步走:<br>1. 先验证近 7 日增长斜率(系统画像 → ${state.selectedSystemId||'统一支付'})<br>2. 再拉同类集群的中位规格(同类对标),确定推荐规格,而非直接复制申请。<br>我可以为你打开系统画像,或直接生成容量准入单。`,chips:[{label:'看趋势证据',page:'system'},{label:'做容量评估',page:'admission'},{label:'新建治理任务',page:'tasks'}]};
+  if(/扩容|新增节点|加节点|加机器|扩.*节点|资源不足|撑不住|不够用|快到上限|阈值|即将到期|快到期/.test(t)) return {intent:'capacity_plan',reply:`扩容建议分两步走:<br>1. 先验证近 7 日增长斜率(系统画像 → ${state.selectedSystemId||'统一支付'})<br>2. 再拉同类集群的中位规格(同类对标),确定推荐规格,而非直接复制申请。<br>我可以为你打开系统画像,或直接生成治理任务。`,chips:[{label:'看趋势证据',page:'system'},{label:'新建治理任务',page:'tasks'}]};
   if(/缩容|减节点|释放|降配|过剩|冗余|空闲|浪费|降本|利用率低|缩配/.test(t)) return {intent:'scale_in',reply:`缩容/降配的关键是「同类对标」:<br>· 找到 12 个相似组件的 CPU P95 / 内存 P95 中位值<br>· 当前配置如果高出中位 1.5× 以上,大概率可降<br>· 一次缩 1 节点,观察 7 天再继续(参见 CAP-1839 案例)。`,chips:[{label:'打开同类对标',page:'peer'},{label:'查看 Redis 案例',page:'tasks'}]};
   if(/对比|本周|环比|同期|趋势|vs|比上周|比昨日|比同期/.test(t)) return {intent:'compare',reply:`本周 vs 上周对比,关键看三个维度:<br>· CPU / 内存 P95 变化(峰值压力)<br>· 磁盘水位变化(容量累积)<br>· 告警次数 / 告警疲劳度(运维负担)<br>建议在系统画像页选择两个时间窗口对比。`,chips:[{label:'打开系统画像',page:'profile'}]};
   if(/解释|为什么|判断|依据|怎么得出的|推理/.test(t)) return {intent:'explain',reply:`Agent 的判断分三层:<br>1. <b>算法层</b>:动态基线 + 7 日斜率 + 节点极差<br>2. <b>判断层</b>:结合系统等级、是否主备、是否符合历史模式<br>3. <b>行动层</b>:变更需经人工审批,所有结论可在「判断过程」弹窗逐条复核。`,chips:[{label:'看一次判断过程',page:'system'}]};
@@ -1116,11 +1108,10 @@ function renderKnowledge(){
   const kbStages=[
     {key:'risk',name:'异常发现',count:71,active:true},
     {key:'suggest',name:'处置建议',count:12},
-    {key:'admit',name:'容量准入',count:5},
     {key:'verify',name:'效果验证',count:8}
   ];
-  const stageLabel={risk:'发现异常',suggest:'生成建议',verify:'观察验证',admit:'容量准入'};
-  const stageClass={risk:'risk',suggest:'suggest',verify:'verify',admit:'admit'};
+  const stageLabel={risk:'发现异常',suggest:'生成建议',verify:'观察验证'};
+  const stageClass={risk:'risk',suggest:'suggest',verify:'verify'};
   const knowledge=[
     {title:'负载均衡健康检查抖动 / 后端节点被踢出',stages:['suggest'],count:23,path:'diagnostics/load-balancer-health-flapping.md'},
     {title:'DNS 解析失败与解析缓慢',stages:['risk'],count:14,path:'diagnostics/dns-resolution-failure.md'},
@@ -1208,7 +1199,7 @@ function renderDrawer(){
   const form=document.querySelector('.agent-form');
   if(form) form.hidden=state.agentTab!=='log';
   if(state.agentTab==='log') drawerContent.innerHTML=renderCollabLog();
-  if(state.agentTab==='plan') drawerContent.innerHTML=`<p class="kicker">今日工作计划</p><div class="plan-timeline">${planItem({time:'08:00',status:'done',title:'三个接口取数与完整性检查',desc:'已完成 3 系统 / 142 实例',progress:100})}${planItem({time:'进行中',status:'doing',title:'GreatDB 容量风险复核',desc:'动态基线 + 集群归因',progress:47})}${planItem({time:'随后',status:'next',title:'同类组件资源效率扫描',desc:'12 个可比集群',progress:0})}${planItem({time:'14:00',status:'next',title:'生成容量准入评估摘要',desc:'2 项待人工决策',progress:0})}${planItem({time:'持续',status:'ongoing',title:'轮询治理任务与效果验证',desc:'CAP-1842 / CAP-1839',progress:0})}</div>`;
+  if(state.agentTab==='plan') drawerContent.innerHTML=`<p class="kicker">今日工作计划</p><div class="plan-timeline">${planItem({time:'08:00',status:'done',title:'三个接口取数与完整性检查',desc:'已完成 3 系统 / 142 实例',progress:100})}${planItem({time:'进行中',status:'doing',title:'GreatDB 容量风险复核',desc:'动态基线 + 集群归因',progress:47})}${planItem({time:'随后',status:'next',title:'同类组件资源效率扫描',desc:'12 个可比集群',progress:0})}${planItem({time:'14:00',status:'next',title:'生成扩容方案摘要',desc:'2 项待人工决策',progress:0})}${planItem({time:'持续',status:'ongoing',title:'轮询治理任务与效果验证',desc:'CAP-1842 / CAP-1839',progress:0})}</div>`;
 }
 function renderCollabLog(){
   const job=autonomousJobs[state.work%autonomousJobs.length];
@@ -1354,9 +1345,7 @@ document.addEventListener('click',e=>{
   const tab=e.target.closest('[data-agent-tab]');if(tab){state.agentTab=tab.dataset.agentTab;renderDrawer();return}
   const prompt=e.target.closest('[data-prompt]');if(prompt){agentInput.value=prompt.dataset.prompt;agentInput.focus();return}
   if(e.target.closest('#home-send')){const ta=document.querySelector('#home-composer textarea');if(ta&&ta.value.trim())homeRespond(ta.value.trim());return}
-  if(e.target.closest('[data-create-task]')){toast('已生成静态演示任务','CAP-1848 已进入"待 SRE 审批"，不会触发真实生产变更。');return}
   if(e.target.closest('[data-create-workorder]')){toast('已准备治理工单','演示环境不会真实提单，请在生产流程中完成变更单创建。');return}
-  if(e.target.closest('[data-review]')){toast('Capacity Agent 已完成评估','已结合历史趋势、同类对标与安全余量，建议新增 4 台。');return}
   if(e.target.closest('[data-verify]')){toast('效果验证正常','Redis 缩容后连续 3 天处于安全水位，将继续观察至第 7 天。');return}
 });
 
