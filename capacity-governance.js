@@ -308,11 +308,11 @@ function renderOverview(){
   const system=managedSystems.find(item=>item.id===state.overviewSystemId)||managedSystems[0];
   const governance=overviewGovernance[system.id];
   const flow=state.governanceFlows[system.id];
-  main.innerHTML=`<section class="overview-context"><div><span>当前治理范围</span><strong>${system.name}</strong><small>${system.domain} · 点击左侧系统切换四块内容</small></div><button class="btn small" data-page="profile" data-system-id="${system.id}">进入系统画像</button></section>
+  main.innerHTML=`<section class="overview-context"><div><span>当前治理范围</span><strong>${system.name}</strong><small>${system.domain} · 点击左侧系统切换治理上下文</small></div><button class="btn small" data-page="profile" data-system-id="${system.id}">进入系统画像</button></section>
   <section class="overview-quadrants ${flow?'has-flow':''}">
-  <section class="panel overview-panel overview-priority"><div class="panel-head"><div><h2>我负责的系统治理优先级</h2><p>点击系统后，治理建议、事项与验证结果同步切换</p></div><small>${managedSystems.length} 个系统 · 按优先级排序</small></div><div class="systems">${managedSystems.map(item=>systemRow(item,system.id)).join('')}</div></section>
+  <section class="panel overview-panel overview-priority"><div class="panel-head"><div><h2>我负责的系统治理优先级</h2><p>点击系统后，右侧治理建议同步切换</p></div><small>${managedSystems.length} 个系统 · 按优先级排序</small></div><div class="systems">${managedSystems.map(item=>systemRow(item,system.id)).join('')}</div></section>
   <aside class="panel overview-panel overview-advice"><div class="panel-head"><div><h2>${system.name}治理建议</h2><p>基于当前系统的服务器信号与治理规则生成</p></div><small>${governance.recommendations.length} 条建议</small></div><div class="governance-advice-list">${governance.recommendations.map((item,index)=>recommendationItem(item,index,system.id)).join('')}</div></aside>
-  ${flow?governanceWorkflowPanel(system,flow):`${overviewTasksPanel(governance.tasks,system)}${overviewVerificationPanel(governance.verification,system)}`}
+  ${flow?governanceWorkflowPanel(system,flow):''}
   </section>`;
 }
 

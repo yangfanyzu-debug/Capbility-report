@@ -715,7 +715,7 @@ main{background:transparent}.page-toolbar,.system-switcher,.brief-copy,.brief-da
 /* 我的治理: 系统选择驱动同一上下文，采纳建议后进入完整治理流程。 */
 .overview-context{min-height:52px;margin-bottom:12px;padding:10px 14px;border:1px solid #dce2eb;border-radius:11px;background:#fff;display:flex;align-items:center;justify-content:space-between;gap:16px;box-shadow:0 8px 22px rgba(25,36,58,.04)}
 .overview-context>div{display:flex;align-items:baseline;gap:9px;min-width:0}.overview-context span{color:#7b879b;font-size:10px}.overview-context strong{color:#172033;font-size:14px}.overview-context small{color:#8993a4;font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.overview-quadrants{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));grid-template-areas:"priority advice" "tasks verification";gap:15px;align-items:stretch}
+.overview-quadrants{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));grid-template-areas:"priority advice";gap:15px;align-items:stretch}
 .overview-quadrants.has-flow{grid-template-areas:"priority advice" "flow flow"}
 .overview-panel{min-width:0}
 .overview-priority{grid-area:priority}.overview-advice{grid-area:advice}.overview-tasks{grid-area:tasks}.overview-verification{grid-area:verification}.overview-flow{grid-area:flow}
