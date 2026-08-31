@@ -224,7 +224,7 @@ function findProfileCluster(profile){
 function componentProfile(component,selectedCluster){
   return `<section class="profile-lane">
     <div class="profile-component-node"><span>组件</span><b>${component.name}</b><small>${component.role}</small></div>
-    <div class="profile-cluster-stack">${component.clusters.map(cluster=>clusterProfile(cluster,cluster.name===selectedCluster)).join('')}</div>
+    <div class="profile-cluster-stack ${component.clusters.length>1?'multi':''}">${component.clusters.map(cluster=>clusterProfile(cluster,cluster.name===selectedCluster)).join('')}</div>
   </section>`;
 }
 function clusterProfile(cluster,selected){
