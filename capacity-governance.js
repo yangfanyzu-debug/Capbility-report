@@ -1106,7 +1106,6 @@ function taskRow(t){const stages=['发现','建议','审批','观察','验证'];
 function renderWorkline(){
   const job=activeWorkJob();
   workline.innerHTML=`
-    <div class="work-core"><span class="work-orbit"><i></i></span><div><span>Capacity Agent · 自主运行中</span><b>${job.phase}</b></div></div>
     <div class="work-signal"><span>实时上下文</span><b>${job.signal}</b></div>
     <div class="work-progress-block"><div><span>${job.kind}</span><b>${state.progress}%</b></div><span class="work-progress"><i style="width:${state.progress}%"></i></span></div>
     <div class="work-stats"><span><b>14</b> 轮</span><span><b>142</b> 实例</span><span><b>3</b> 建议</span></div>
