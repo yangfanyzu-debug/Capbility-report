@@ -1062,44 +1062,45 @@ function openHomeEvents(){
 
 function renderKnowledge(){
   const kbStages=[
-    {key:'risk',name:'异常发现',count:71,active:true},
-    {key:'suggest',name:'处置建议',count:12},
-    {key:'verify',name:'效果验证',count:8}
+    {key:'management',name:'管理办法',count:16,active:true},
+    {key:'policy',name:'制度规定',count:14},
+    {key:'standard',name:'技术规范',count:21},
+    {key:'procedure',name:'操作细则',count:12}
   ];
-  const stageLabel={risk:'发现异常',suggest:'生成建议',verify:'观察验证'};
-  const stageClass={risk:'risk',suggest:'suggest',verify:'verify'};
+  const stageLabel={management:'管理办法',policy:'制度规定',standard:'技术规范',procedure:'操作细则'};
+  const stageClass={management:'suggest',policy:'risk',standard:'verify',procedure:'suggest'};
   const knowledge=[
-    {title:'负载均衡健康检查抖动 / 后端节点被踢出',stages:['suggest'],count:23,path:'diagnostics/load-balancer-health-flapping.md'},
-    {title:'DNS 解析失败与解析缓慢',stages:['risk'],count:14,path:'diagnostics/dns-resolution-failure.md'},
-    {title:'文件句柄耗尽（Too Many Open Files）',stages:['risk','suggest'],count:9,path:'diagnostics/fd-exhaustion.md'},
-    {title:'进程 / 容器被 OOM Killer 终止',stages:['risk'],count:31,path:'diagnostics/oom-killed.md'},
-    {title:'Kubernetes 节点 NotReady',stages:['risk'],count:12,path:'diagnostics/k8s-node-notready.md'},
-    {title:'Tempo 链路缺失 / 追踪断链',stages:['risk','verify'],count:7,path:'diagnostics/tempo-missing-spans.md'},
-    {title:'HTTP 5xx 错误率突增',stages:['risk'],count:41,path:'diagnostics/error-rate-5xx.md'},
-    {title:'非对称路由与 rp_filter 丢包',stages:['risk','suggest'],count:6,path:'diagnostics/asymmetric-routing-rpfilter.md'},
-    {title:'IRQ 亲和性失衡（中断被钉在单核）',stages:['risk'],count:4,path:'diagnostics/irq-affinity-imbalance.md'},
-    {title:'NFS 卡死与陈旧文件句柄',stages:['risk'],count:5,path:'diagnostics/nfs-stale-handle.md'},
-    {title:'K8s Pod 卡在 Pending / CrashLoopBackOff',stages:['risk','suggest'],count:18,path:'diagnostics/k8s-pod-stuck.md'},
-    {title:'页缓存压力与回收停顿',stages:['risk','verify'],count:11,path:'diagnostics/page-cache-pressure.md'}
+    {title:'《信息系统容量管理办法》',stages:['management'],count:32,path:'governance/policies/information-system-capacity-management.pdf'},
+    {title:'《生产系统容量风险分级与处置管理规定》',stages:['policy'],count:27,path:'governance/policies/capacity-risk-classification.pdf'},
+    {title:'《基础设施资源申请与容量评估管理办法》',stages:['management','procedure'],count:24,path:'governance/policies/resource-application-and-assessment.pdf'},
+    {title:'《生产系统扩缩容变更管理细则》',stages:['procedure'],count:21,path:'governance/procedures/production-scaling-change.docx'},
+    {title:'《容量基线制定与季度复核规范》',stages:['standard'],count:19,path:'governance/standards/capacity-baseline-quarterly-review.pdf'},
+    {title:'《服务器资源利用率治理标准》',stages:['standard'],count:18,path:'governance/standards/server-utilization-governance.pdf'},
+    {title:'《数据库容量水位管理规范》',stages:['standard','policy'],count:17,path:'governance/standards/database-capacity-watermark.pdf'},
+    {title:'《中间件集群容量配置规范》',stages:['standard'],count:15,path:'governance/standards/middleware-cluster-sizing.pdf'},
+    {title:'《容器平台资源配额管理规范》',stages:['standard'],count:13,path:'governance/standards/container-resource-quota.pdf'},
+    {title:'《容量治理事项闭环管理细则》',stages:['procedure'],count:12,path:'governance/procedures/governance-item-lifecycle.docx'},
+    {title:'《容量变更效果验证与观察期管理细则》',stages:['procedure','policy'],count:10,path:'governance/procedures/change-verification-window.docx'},
+    {title:'《重大业务活动容量保障管理办法》',stages:['management','policy'],count:9,path:'governance/policies/major-event-capacity-assurance.pdf'}
   ];
   main.innerHTML=`
   <section class="kb-layout">
     <aside class="kb-tree panel">
-      <div class="panel-head"><div><h2>治理知识</h2><p>按治理阶段分类</p></div></div>
+      <div class="panel-head"><div><h2>制度与规范</h2><p>按文件类型分类</p></div></div>
       <div class="kb-tree-body">
         <div class="kb-section">
-          <div class="kb-section-head"><span class="kb-folder">治理知识</span><i aria-hidden="true">▾</i></div>
+          <div class="kb-section-head"><span class="kb-folder">容量治理制度库</span><i aria-hidden="true">▾</i></div>
           <div class="kb-section-items">
             ${kbStages.map(s=>`<div class="kb-item ${s.active?'active':''}"><span class="kb-chev">·</span><span>${s.name}</span><em>${s.count}</em></div>`).join('')}
           </div>
         </div>
       </div>
-      <div class="kb-tree-footer">本周被引用 <b>217</b> 次 · 命中 <b>31</b> 个治理任务</div>
+      <div class="kb-tree-footer">本周被引用 <b>143</b> 次 · 支撑 <b>28</b> 个治理事项</div>
     </aside>
     <section class="kb-list panel">
-      <div class="panel-head"><div><h2>诊断手册</h2><p>已发布的诊断手册、异常规则与处置经验 · 是 Agent 在治理流程中的判断依据</p></div></div>
-      <div class="kb-meta-impact"><span>已发布 <b>96</b> 条</span><i></i><span>本周被 Agent 引用 <b class="kb-meta-ref">217</b> 次</span><i></i><span>命中 <b class="kb-meta-hit">31</b> 个治理任务</span></div>
-      <div class="kb-search kb-search-bar"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m20 20-3.5-3.5"/></svg><input placeholder="搜索「诊断」(与 query_knowledge 工具同源)" /><button class="btn small">Search</button></div>
+      <div class="panel-head"><div><h2>容量治理制度文件</h2><p>已发布的管理办法、制度规定、技术规范和操作细则 · 是 Agent 生成治理建议与验证结论的管理依据</p></div></div>
+      <div class="kb-meta-impact"><span>已收录 <b>63</b> 份</span><i></i><span>本周被 Agent 引用 <b class="kb-meta-ref">143</b> 次</span><i></i><span>支撑 <b class="kb-meta-hit">28</b> 个治理事项</span></div>
+      <div class="kb-search kb-search-bar"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m20 20-3.5-3.5"/></svg><input placeholder="搜索管理办法、制度或规范" /><button class="btn small">搜索</button></div>
       <div class="kb-cards">${knowledge.map(k=>`<article class="kb-card">
         <div class="kb-card-head">
           <div class="kb-card-main">
