@@ -124,7 +124,7 @@ const state={page:'overview',selectedSystemId:'payment',profileCluster:'',agentO
 const main=document.querySelector('#main');
 const nav=document.querySelector('#nav');
 const crumb=document.querySelector('#crumb');
-const workline=document.querySelector('#workline');
+const workline=document.querySelector('#workline');/* 已隐藏,保留以兼容旧的 renderWorkline 调用 */
 const drawer=document.querySelector('#agent-drawer');
 const drawerContent=document.querySelector('#drawer-content');
 const modal=document.querySelector('#evidence-modal');
@@ -1104,6 +1104,8 @@ function renderTasks(){
 function taskRow(t){const stages=['发现','建议','审批','观察','验证'];return `<tr><td><span class="ticket-no">${t.id}</span></td><td><span class="task-title"><b>${t.title}</b></span></td><td>${t.owner}</td><td><span class="status-pill">${t.status}</span></td><td>${t.workOrder?`<span class="work-order-no">${t.workOrder}</span>`:'<span class="empty-cell"></span>'}</td><td>${t.workOrder?`<span class="work-status ${t.workStatus==='实施完成'?'done':''}">${t.workStatus}</span>`:`<button class="btn small" data-create-workorder="${t.id}">去提单</button>`}</td><td><span class="stage-badge">${stages[t.stage]||'处理中'}</span></td><td><span class="table-actions"><button class="btn small" ${t.id==='CAP-1839'?'data-verify':''}>${t.action}</button><button class="btn small" data-open-followup="${t.id}">查看Agent跟进记录</button></span></td></tr>`}
 
 function renderWorkline(){
+  /* workline 行已从页面移除,保留空函数以兼容旧调用 */
+  return;
   const job=activeWorkJob();
   workline.innerHTML=`
     <div class="work-signal"><span>实时上下文</span><b>${job.signal}</b></div>
