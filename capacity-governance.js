@@ -146,7 +146,7 @@ const collabRecords=[
 ];
 
 
-const state={page:'overview',selectedSystemId:'payment',profileCluster:'',peerType:'es',peerCluster:'pay-order-search',agentOpen:false,agentTab:'log',work:0,progress:36,simNodes:5,simLoad:20,simTarget:'redis',simType:'物理机',simSpec:'8C32G'};
+const state={page:'overview',selectedSystemId:'payment',profileCluster:'',peerType:'es',peerCluster:'pay-order-search',agentOpen:false,agentTab:'log',work:0,progress:36,simNodes:5,simLoad:20,simTarget:'redis',simType:'物理机',simSpec:'8C32G',homeDraft:'',wzSnap:null,lastPage:null};
 const main=document.querySelector('#main');
 const nav=document.querySelector('#nav');
 const crumb=document.querySelector('#crumb');
@@ -174,11 +174,48 @@ function header(kicker,title,subtitle,actions=''){
 }
 
 function render(){
+  // 在切换页面之前,把上一个页面的瞬时状态快照出来(用于恢复草稿、滑杆值、向导进度)
+  if(state.lastPage==='simulate' && state.page!=='simulate'){
+    state.wzSnap={no:wzNo,app:wzApp,modules:wzModules.slice(),adopted:{...wzAdopted},simRun:{...wzSimRun},active:wzActiveMod,step:wzStep};
+    const cpu=document.getElementById('pCpu'),mem=document.getElementById('pMem'),disk=document.getElementById('pDisk'),cnt=document.getElementById('pCount');
+    if(cpu&&mem&&disk&&cnt)state.wzSnap.sliders={cpu:+cpu.value,mem:+mem.value,disk:+disk.value,count:+cnt.value};
+  }
+  if(state.lastPage==='home' && state.page!=='home'){
+    const ta=document.querySelector('#home-composer textarea');
+    if(ta) state.homeDraft=ta.value;
+  }
   nav.innerHTML=navHTML();
   const names={overview:'我的容量治理',profile:'系统画像',system:'统一支付系统 / 系统洞察',peer:'同类系统 / 资源对标',simulate:'容量方案 / 方案模拟',admission:'增量资源 / 容量准入',knowledge:'容量治理 / 知识库',tasks:'治理任务 / 效果验证'};
   crumb.textContent=names[state.page];
   ({overview:renderOverview,profile:renderProfile,system:renderSystem,peer:renderPeer,simulate:renderSimulator,admission:renderAdmission,knowledge:renderKnowledge,tasks:renderTasks}[state.page]||renderOverview)();
+  // 进入新页面后,恢复上一个页面留下的快照(向导 / 首页草稿)
+  mountPage();
   main.focus({preventScroll:true});
+}
+
+function mountPage(){
+  if(state.page==='simulate' && state.wzSnap){
+    const s=state.wzSnap;
+    wzNo=s.no;wzModules=s.modules.slice();wzAdopted={...s.adopted};wzSimRun={...s.simRun};wzActiveMod=s.active||0;wzStep=s.step||1;
+    wzApp=s.app;
+    if(wzApp){
+      const sel=document.getElementById('appSel');if(sel)sel.value=wzNo;
+      // step1 模块按钮已经在 renderSimulator 渲染过,这里只需重新跳转到原 step
+      wzGo(wzStep);
+      // 恢复滑杆值(在 wzRenderSim 之后覆盖,确保用户拖过的值保留)
+      if(s.sliders){
+        const setIf=(id,v)=>{const el=document.getElementById(id);if(el)el.value=v;};
+        setIf('pCpu',s.sliders.cpu);setIf('pMem',s.sliders.mem);setIf('pDisk',s.sliders.disk);setIf('pCount',s.sliders.count);
+        wzUpdateParamUI();
+        wzRenderSimCharts();
+      }
+    }
+  }
+  if(state.page==='home' && state.homeDraft!=null){
+    const ta=document.querySelector('#home-composer textarea');
+    if(ta){ta.value=state.homeDraft;ta.dispatchEvent(new Event('input',{bubbles:true}));}
+  }
+  state.lastPage=state.page;
 }
 
 function renderOverview(){
@@ -1001,10 +1038,36 @@ function renderHome(){
       <div class="home-quickgrid">${quickPrompts.map(p=>`<button class="home-quick" data-page="${p.page}"><span class="home-quick-icon">${p.icon}</span><div><b>${p.title}</b><small>${p.desc}</small></div></button>`).join('')}</div>
       <form class="home-composer" id="home-composer">
         <textarea rows="2" placeholder="Start anywhere… 按 ⌘+↵ 发送 / 单纯 ↵ 换行"></textarea>
-        <div class="home-composer-foot"><span><span class="home-dot live-dot"></span> claude-sonnet-4-6</span><button type="button" class="btn acid">发送</button></div>
+        <div class="home-composer-foot"><span><span class="home-dot live-dot"></span> claude-sonnet-4-6</span><button type="button" class="btn acid" id="home-send">发送</button></div>
       </form>
     </section>
   </section>`;
+}
+
+function homeRoute(text){
+  const t=text.toLowerCase();
+  if(/扩容|新增节点|加节点|加机器|扩.*节点|资源不足|撑不住|不够用|快到上限|阈值|即将到期|快到期/.test(t)) return {intent:'capacity_plan',reply:`扩容建议分两步走:<br>1. 先验证近 7 日增长斜率(系统画像 → ${state.selectedSystemId||'统一支付'})<br>2. 再拉同类集群的中位规格(同类对标),确定推荐规格,而非直接复制申请。<br>我可以为你打开系统画像,或直接生成容量准入单。`,chips:[{label:'看趋势证据',page:'system'},{label:'做容量评估',page:'admission'},{label:'新建治理任务',page:'tasks'}]};
+  if(/缩容|减节点|释放|降配|过剩|冗余|空闲|浪费|降本|利用率低|缩配/.test(t)) return {intent:'scale_in',reply:`缩容/降配的关键是「同类对标」:<br>· 找到 12 个相似组件的 CPU P95 / 内存 P95 中位值<br>· 当前配置如果高出中位 1.5× 以上,大概率可降<br>· 一次缩 1 节点,观察 7 天再继续(参见 CAP-1839 案例)。`,chips:[{label:'打开同类对标',page:'peer'},{label:'查看 Redis 案例',page:'tasks'}]};
+  if(/对比|本周|环比|同期|趋势|vs|比上周|比昨日|比同期/.test(t)) return {intent:'compare',reply:`本周 vs 上周对比,关键看三个维度:<br>· CPU / 内存 P95 变化(峰值压力)<br>· 磁盘水位变化(容量累积)<br>· 告警次数 / 告警疲劳度(运维负担)<br>建议在系统画像页选择两个时间窗口对比。`,chips:[{label:'打开系统画像',page:'profile'}]};
+  if(/解释|为什么|判断|依据|怎么得出的|推理/.test(t)) return {intent:'explain',reply:`Agent 的判断分三层:<br>1. <b>算法层</b>:动态基线 + 7 日斜率 + 节点极差<br>2. <b>判断层</b>:结合系统等级、是否主备、是否符合历史模式<br>3. <b>行动层</b>:变更需经人工审批,所有结论可在「判断过程」弹窗逐条复核。`,chips:[{label:'看一次判断过程',page:'system'}]};
+  if(/建单|提单|jira|工单|变更单|开单|申请单|itsm/.test(t)) return {intent:'create_ticket',reply:`建单前 Agent 会自动准备:<br>· 当前集群指标(峰值 / 水位 / 增长)<br>· 同类集群对比(为什么是这个规格)<br>· 风险与回滚建议<br>所有变更单仍由你点击提交,我不会自动执行。`,chips:[{label:'进入治理闭环',page:'tasks'}]};
+  if(/查询|看一下|看看|查一下|详情|多少|什么|状态|水位|峰值|cpu|内存|磁盘|redis|nginx|greatdb/.test(t)) return {intent:'query',reply:`已记录你的查询意图。你可以更具体一点:<br>· 「Redis CPU 峰值」 / 「GreatDB 磁盘水位」<br>· 「本周告警次数」<br>· 「同类 Nginx 的 P95 中位」<br>我会在系统画像页拉数据并标注取数时间。`,chips:[{label:'系统画像',page:'profile'}]};
+  if(/复盘|回顾|今天|今天做|今天完成|总结|汇报/.test(t)) return {intent:'recap',reply:`今日复盘:<br>· 14 轮数据采集,142 个实例<br>· 3 条治理建议,1 条进入评审(CAP-1842)<br>· 1 条缩容观察中(CAP-1839 第 3/7 天)<br>详细事件在「工作事件流」中,可导出给团队。`,chips:[{label:'看工作事件',page:'home'}]};
+  if(/帮助|help|能做什么|功能|你能/.test(t)) return {intent:'help',reply:`我是 Capacity Agent,7 类高频对话:<br>· <b>查询</b>:Redis / GreatDB / Nginx 容量数据<br>· <b>对比</b>:本周 vs 上周水位<br>· <b>解释</b>:为什么 Agent 给出某个结论<br>· <b>模拟</b>:扩容/缩容/降配方案<br>· <b>建单</b>:准备 JIRA 变更单所需的所有证据<br>· <b>复盘</b>:今日工作事件总结<br>· <b>路由</b>:打开知识库/对标/治理闭环任意页面`,chips:[]};
+  return {intent:'fallback',reply:`我收到了你的问题。Agent 会把这条问题放进工作上下文,然后:<br>· 拉相关数据(峰值、水位、趋势)<br>· 比对同类集群<br>· 给你一个「先验证、再建议、最后由你审批」的方案。<br>所有结论都不会自动执行生产变更。`,chips:[]};
+}
+
+function homeRespond(text){
+  const r=homeRoute(text);
+  const ta=document.querySelector('#home-composer textarea');
+  if(ta){ta.value='';state.homeDraft='';}
+  const body=document.querySelector('#home-chat-body');
+  if(!body) return;
+  body.insertAdjacentHTML('beforeend','<div class="home-msg user" style="--i:0"><div class="home-msg-bubble"><b>杨帆</b><small>刚刚</small><p>'+text.replace(/</g,'&lt;')+'</p></div><div class="home-avatar">杨</div></div>');
+  const chipsHTML=(r.chips||[]).map(c=>'<button class="home-quick" data-page="'+c.page+'" style="--i:0"><span class="home-quick-icon">→</span><div><b>'+c.label+'</b></div></button>').join('');
+  body.insertAdjacentHTML('beforeend','<div class="home-msg agent" style="--i:0"><div class="home-avatar agent"><span class="agent-eye"></span></div><div class="home-msg-bubble"><b>Capacity Agent</b><small>'+new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'})+' · '+r.intent+'</small><p>'+r.reply+'</p>'+(chipsHTML?'<div class="home-quickgrid home-quickgrid-inline">'+chipsHTML+'</div>':'')+'</div></div>');
+  body.scrollTop=body.scrollHeight;
+  toast('已加入工作上下文',r.intent==='fallback'?'Agent 会持续跟进并主动通知你。':'意图已识别 · '+r.intent);
 }
 
 function openHomeInspect(){
@@ -1290,6 +1353,7 @@ document.addEventListener('click',e=>{
   const follow=e.target.closest('[data-open-followup]');if(follow){openFollowup(follow.dataset.openFollowup);return}
   const tab=e.target.closest('[data-agent-tab]');if(tab){state.agentTab=tab.dataset.agentTab;renderDrawer();return}
   const prompt=e.target.closest('[data-prompt]');if(prompt){agentInput.value=prompt.dataset.prompt;agentInput.focus();return}
+  if(e.target.closest('#home-send')){const ta=document.querySelector('#home-composer textarea');if(ta&&ta.value.trim())homeRespond(ta.value.trim());return}
   if(e.target.closest('[data-create-task]')){toast('已生成静态演示任务','CAP-1848 已进入"待 SRE 审批"，不会触发真实生产变更。');return}
   if(e.target.closest('[data-create-workorder]')){toast('已准备治理工单','演示环境不会真实提单，请在生产流程中完成变更单创建。');return}
   if(e.target.closest('[data-review]')){toast('Capacity Agent 已完成评估','已结合历史趋势、同类对标与安全余量，建议新增 4 台。');return}
@@ -1298,6 +1362,15 @@ document.addEventListener('click',e=>{
 
 document.addEventListener('input',e=>{
   if(e.target.id==='system-select'){state.selectedSystemId=e.target.value;state.profileCluster='';render()}
+  if(e.target.closest('#home-composer')){state.homeDraft=e.target.value}
+});
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'){closeOverlays();return}
+  if(e.target.closest('#home-composer') && e.key==='Enter' && (e.metaKey||e.ctrlKey)){
+    e.preventDefault();
+    const ta=document.querySelector('#home-composer textarea');
+    if(ta&&ta.value.trim())homeRespond(ta.value.trim());
+  }
 });
 
 document.addEventListener('change',e=>{
