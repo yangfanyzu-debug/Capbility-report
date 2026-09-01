@@ -57,36 +57,36 @@ const systemProfiles={
   payment:{
     components:[
       {name:'GreatDB',role:'核心交易数据库',clusters:[
-        {name:'pay-greatdb-prod',level:'P1',summary:'6 台 · 8C32G · 主从分片',servers:['greatdb-010','greatdb-011','greatdb-012','greatdb-013','greatdb-014','greatdb-015']},
-        {name:'pay-greatdb-haproxy',level:'P2',summary:'4 台 · 4C8G · 访问代理',servers:['haproxy-001','haproxy-002','haproxy-003','haproxy-004']}
+        {name:'pay-greatdb-prod',clusterRole:'primary',level:'P1',summary:'6 台 · 8C32G · 主从分片',servers:['greatdb-010','greatdb-011','greatdb-012','greatdb-013','greatdb-014','greatdb-015']},
+        {name:'pay-greatdb-haproxy',clusterRole:'standby',level:'P2',summary:'4 台 · 4C8G · 访问代理',servers:['haproxy-001','haproxy-002','haproxy-003','haproxy-004']}
       ]},
       {name:'Redis',role:'交易缓存与会话',clusters:[
-        {name:'pay-redis-prod',level:'P2',summary:'5 台 · 8C32G · 观察期',servers:['redis-010','redis-011','redis-012','redis-013','redis-014']}
+        {name:'pay-redis-prod',clusterRole:'primary',level:'P2',summary:'5 台 · 8C32G · 观察期',servers:['redis-010','redis-011','redis-012','redis-013','redis-014']}
       ]},
       {name:'Java 应用',role:'支付、订单、清结算服务',clusters:[
-        {name:'pay-core-app',level:'P1',summary:'12 台 · 8C16G · 双机房',servers:['pay-app-001','pay-app-002','pay-app-003','pay-app-004','pay-app-005','pay-app-006','pay-app-007','pay-app-008','pay-app-009','pay-app-010','pay-app-011','pay-app-012']}
+        {name:'pay-core-app',clusterRole:'primary',level:'P1',summary:'12 台 · 8C16G · 双机房',servers:['pay-app-001','pay-app-002','pay-app-003','pay-app-004','pay-app-005','pay-app-006','pay-app-007','pay-app-008','pay-app-009','pay-app-010','pay-app-011','pay-app-012']}
       ]}
     ]
   },
   risk:{
     components:[
       {name:'Java 应用',role:'授权规则与交易服务',clusters:[
-        {name:'auth-score-worker',level:'P2',summary:'6 台 · 8C32G · CPU 增长',servers:['auth-calc-01','auth-calc-02','auth-calc-03','auth-calc-04','auth-calc-05','auth-calc-06']},
-        {name:'auth-online-api',level:'P1',summary:'8 台 · 8C16G · 在线链路',servers:['auth-api-001','auth-api-002','auth-api-003','auth-api-004','auth-api-005','auth-api-006','auth-api-007','auth-api-008']}
+        {name:'auth-score-worker',clusterRole:'standby',level:'P2',summary:'6 台 · 8C32G · CPU 增长',servers:['auth-calc-01','auth-calc-02','auth-calc-03','auth-calc-04','auth-calc-05','auth-calc-06']},
+        {name:'auth-online-api',clusterRole:'primary',level:'P1',summary:'8 台 · 8C16G · 在线链路',servers:['auth-api-001','auth-api-002','auth-api-003','auth-api-004','auth-api-005','auth-api-006','auth-api-007','auth-api-008']}
       ]},
       {name:'Redis',role:'授权规则与交易缓存',clusters:[
-        {name:'auth-redis-prod',level:'P2',summary:'4 台 · 4C16G · 稳定',servers:['auth-redis-001','auth-redis-002','auth-redis-003','auth-redis-004']}
+        {name:'auth-redis-prod',clusterRole:'primary',level:'P2',summary:'4 台 · 4C16G · 稳定',servers:['auth-redis-001','auth-redis-002','auth-redis-003','auth-redis-004']}
       ]}
     ]
   },
   channel:{
     components:[
       {name:'Nginx',role:'统一入口与流量转发',clusters:[
-        {name:'dps-ingress-nginx',level:'P3',summary:'6 台 · 16C32G · 可降配',servers:['dps-nginx-01','dps-nginx-02','dps-nginx-03','dps-nginx-04','dps-nginx-05','dps-nginx-06']},
-        {name:'dps-edge-nginx',level:'P3',summary:'4 台 · 8C16G · 灰度入口',servers:['dps-edge-01','dps-edge-02','dps-edge-03','dps-edge-04']}
+        {name:'dps-ingress-nginx',clusterRole:'primary',level:'P3',summary:'6 台 · 16C32G · 可降配',servers:['dps-nginx-01','dps-nginx-02','dps-nginx-03','dps-nginx-04','dps-nginx-05','dps-nginx-06']},
+        {name:'dps-edge-nginx',clusterRole:'standby',level:'P3',summary:'4 台 · 8C16G · 灰度入口',servers:['dps-edge-01','dps-edge-02','dps-edge-03','dps-edge-04']}
       ]},
       {name:'Java 应用',role:'数据服务协议转换',clusters:[
-        {name:'dps-adapter-service',level:'P2',summary:'8 台 · 8C16G · 多协议',servers:['dps-app-001','dps-app-002','dps-app-003','dps-app-004','dps-app-005','dps-app-006','dps-app-007','dps-app-008']}
+        {name:'dps-adapter-service',clusterRole:'primary',level:'P2',summary:'8 台 · 8C16G · 多协议',servers:['dps-app-001','dps-app-002','dps-app-003','dps-app-004','dps-app-005','dps-app-006','dps-app-007','dps-app-008']}
       ]}
     ]
   }
@@ -334,10 +334,12 @@ function governanceWorkflowPanel(system,flow){
   const identifiers=[['平台治理单号',flow.governanceNo]];
   if(flow.phase>=1)identifiers.push(['JIRA 单号',flow.jiraNo]);
   if(flow.phase>=2)identifiers.push(['CICD 单号',flow.cicdNo]);
+  const jiraStatus=flow.phase>1?'已创建':flow.phase===1?'创建中':'等待治理事项创建成功';
+  const cicdStatus=flow.phase>2?'已创建':flow.phase===2?'创建中':'等待 JIRA 创建成功';
   const steps=[
     ['平台治理事项',`${flow.governanceNo} · 已创建`],
-    ['JIRA 变更单',flow.phase>=1?`${flow.jiraNo} · 创建中`:'等待治理事项创建成功'],
-    ['CICD 执行单',flow.phase>=2?`${flow.cicdNo} · 创建中`:'等待 JIRA 创建成功'],
+    ['JIRA 变更单',flow.phase>=1?`${flow.jiraNo} · ${jiraStatus}`:jiraStatus],
+    ['CICD 执行单',flow.phase>=2?`${flow.cicdNo} · ${cicdStatus}`:cicdStatus],
     ['跟进执行进度',flow.phase>=3?`执行进度 ${flow.deployProgress}%`:'等待 CICD 执行'],
     ['验证治理效果',flow.phase>=4?'对比变更前基线与验收条件':'等待执行完成'],
     ['完成治理闭环',flow.phase>=5?'治理结论已回写':'等待验证结论']
@@ -482,8 +484,10 @@ function componentProfile(component,selectedCluster){
 function clusterProfile(cluster,selected){
   const component=findComponentForCluster(cluster.name);
   const snapshot=clusterSnapshot(component,cluster);
-  return `<button class="profile-cluster-node ${selected?'selected':''}" data-profile-cluster="${cluster.name}" aria-pressed="${selected}">
-    <span class="profile-cluster-type"><i></i>集群</span><b>${cluster.name}</b><small>${cluster.summary}</small>${capacityTagsHTML(snapshot.capacityTags,'cluster-tag')}<em>${cluster.servers.length} 台</em>
+  const role=cluster.clusterRole==='standby'?'standby':'primary';
+  const roleLabel=role==='standby'?'备集群':'主集群';
+  return `<button class="profile-cluster-node ${selected?'selected':''}" data-profile-cluster="${cluster.name}" aria-pressed="${selected}" aria-label="${cluster.name}，${roleLabel}">
+    <span class="profile-cluster-type"><i></i>集群<mark class="cluster-role ${role}">${roleLabel}</mark></span><b>${cluster.name}</b><small>${cluster.summary}</small>${capacityTagsHTML(snapshot.capacityTags,'cluster-tag')}<em>${cluster.servers.length} 台</em>
   </button>`;
 }
 function serverTable(component,cluster){
