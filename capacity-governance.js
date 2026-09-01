@@ -352,6 +352,25 @@ function governanceFlowMessage(flow){
   if(flow.phase===5)return '效果验证通过，正在回写治理结论与证据快照';
   return '治理流程已闭环，单据、执行记录和验证结论均已归档';
 }
+function updateGovernanceWorkflow(systemId,updateAdvice=false){
+  if(state.page!=='overview'||state.overviewSystemId!==systemId)return;
+  const system=managedSystems.find(item=>item.id===systemId);
+  const governance=overviewGovernance[systemId];
+  const flow=state.governanceFlows[systemId];
+  const grid=main.querySelector('.overview-quadrants');
+  if(!system||!governance||!flow||!grid)return;
+  const currentPanel=grid.querySelector('.overview-flow');
+  const panelHTML=governanceWorkflowPanel(system,flow);
+  if(currentPanel)currentPanel.outerHTML=panelHTML;
+  else{
+    grid.classList.add('has-flow');
+    grid.insertAdjacentHTML('beforeend',panelHTML);
+  }
+  if(updateAdvice){
+    const adviceList=grid.querySelector('.governance-advice-list');
+    if(adviceList)adviceList.innerHTML=governance.recommendations.map((item,index)=>recommendationItem(item,index,systemId)).join('');
+  }
+}
 function startGovernanceWorkflow(systemId,recommendationId){
   const system=managedSystems.find(item=>item.id===systemId);
   const recommendation=overviewGovernance[systemId].recommendations.find(item=>item.id===recommendationId);
@@ -369,10 +388,10 @@ function startGovernanceWorkflow(systemId,recommendationId){
     const current=state.governanceFlows[systemId];
     if(!current||current.recommendationId!==recommendationId)return;
     current.phase=phase;current.deployProgress=progress;
-    if(state.page==='overview'&&state.overviewSystemId===systemId)render();
+    updateGovernanceWorkflow(systemId);
     if(phase===6)toast('治理闭环已完成',`${current.governanceNo} 的执行与效果验证已归档。`);
   },delay)));
-  render();
+  updateGovernanceWorkflow(systemId,true);
 }
 function overviewTaskItem(t){
   const stages=['发现','建议','审批','观察','验证'];
