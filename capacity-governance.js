@@ -22,6 +22,17 @@ const systems=[
 
 const managedSystemIds=new Set(['payment','risk','channel']);
 const managedSystems=systems.filter(s=>managedSystemIds.has(s.id));
+// 根据已有 risk/waste 推断每个系统的低 / 高 / 合理实例数(用于「我负责的系统治理优先级」表格)
+function inferUsageCounts(s){
+  // 总实例数取自现有 hint 中可能的集群规模(无则按风险/浪费的强弱分配)
+  const total=24+((s.id.charCodeAt(0)+s.id.charCodeAt(s.id.length-1))%9);
+  // waste 越高 → 低使用率越多;risk 越高 → 高使用率越多
+  const low=Math.max(0,Math.min(total,Math.round(s.waste/100*total*0.85)));
+  const high=Math.max(0,Math.min(total-low,Math.round(s.risk/100*total*0.55)));
+  const normal=Math.max(0,total-low-high);
+  return {low,high,normal,total};
+}
+managedSystems.forEach(s=>Object.assign(s,inferUsageCounts(s)));
 
 const systemDetails={
   payment:{
@@ -190,7 +201,7 @@ const agentInput=document.querySelector('#agent-input');
 
 function navHTML(){
   const item=(id,label,icon,child=false)=>`<button class="nav-item ${child?'child':''} ${state.page===id?'active':''}" data-page="${id}">${icon}<span>${label}</span></button>`;
-  return `${item('map','治理地图',icons.overview)}
+  return `${item('map','系统总览',icons.overview)}
     <section class="nav-section"><div class="nav-section-title"><span>存量治理</span><small>STOCK</small></div><div class="nav-children">
       ${item('overview','我的治理',icons.tasks,true)}
       ${item('profile','系统画像',icons.profile,true)}
@@ -217,7 +228,7 @@ function render(){
     if(ta) state.homeDraft=ta.value;
   }
   nav.innerHTML=navHTML();
-  const names={map:'治理地图',overview:'存量治理 / 我的治理',profile:'存量治理 / 系统画像',simulate:'增量管控 / 资源申请',knowledge:'存量治理 / 治理规则'};
+  const names={map:'系统总览',overview:'存量治理 / 我的治理',profile:'存量治理 / 系统画像',simulate:'增量管控 / 资源申请',knowledge:'存量治理 / 治理规则'};
   crumb.textContent=names[state.page];
   ({map:renderGovernanceMap,overview:renderOverview,profile:renderProfile,simulate:renderSimulator,knowledge:renderKnowledge}[state.page]||renderGovernanceMap)();
   // 进入新页面后,恢复上一个页面留下的快照(向导 / 首页草稿)
@@ -229,10 +240,10 @@ function renderGovernanceMap(){
   const systemTotal=governanceMapRows.reduce((sum,row)=>sum+row.groups.reduce((count,group)=>count+group.items.length,0),0);
   const markedTotal=governanceMapRows.reduce((sum,row)=>sum+row.groups.reduce((count,group)=>count+group.items.reduce((n,item)=>n+(item[1]||0),0),0),0);
   main.innerHTML=`<section class="map-summary">
-    <div><p class="kicker">GOVERNANCE LANDSCAPE</p><h1>治理地图</h1><p>从用户、平台与职能三个视角查看系统全景，快速定位容量治理覆盖范围。</p></div>
+    <div><p class="kicker">GOVERNANCE LANDSCAPE</p><h1>系统总览</h1><p>从用户、平台与职能三个视角查看系统全景，快速定位容量治理覆盖范围。</p></div>
     <div class="map-summary-stats"><span><b>${systemTotal}</b> 系统</span><span><b>${markedTotal}</b> 待治理信号</span><span><b>3</b> 治理视角</span></div>
   </section>
-  <section class="panel governance-map" aria-label="治理地图">
+  <section class="panel governance-map" aria-label="系统总览">
     ${governanceMapRows.map(row=>`<section class="map-lane">
       <aside class="map-axis"><span class="map-axis-icon">${row.icon}</span><b>${row.label}</b><small>${row.code}</small></aside>
       <div class="map-group-grid" style="--map-columns:${row.groups.length}">${row.groups.map(group=>`<section class="map-group"><h2>${group.name}</h2><div class="map-system-grid">${group.items.map(([name,count])=>mapSystemTile(name,count)).join('')}</div></section>`).join('')}</div>
@@ -316,7 +327,7 @@ function renderOverview(){
   </section>`;
 }
 
-function systemRow(s,selectedId){return `<button class="system-row ${s.id===selectedId?'selected':''}" data-overview-system="${s.id}" aria-pressed="${s.id===selectedId}"><span class="system-name"><span class="system-code">${s.code}</span><span><b>${s.name}</b><small>${s.domain} · ${s.hint}</small></span></span>${scoreCell('容量风险',s.risk,'risk')}${scoreCell('资源浪费',s.waste,'waste')}${scoreCell('负载倾斜',s.skew,'skew')}${scoreCell('治理优先',s.priority,'') }<span class="priority ${s.level==='P1'?'high':''}">${levelLabel(s.level)}</span><span class="chev">›</span></button>`}
+function systemRow(s,selectedId){return `<button class="system-row ${s.id===selectedId?'selected':''}" data-overview-system="${s.id}" aria-pressed="${s.id===selectedId}"><span class="system-name"><span class="system-code">${s.code}</span><span><b>${s.name}</b><small>${s.domain} · ${s.hint}</small></span></span>${scoreCell('低使用率',s.low,'low')}${scoreCell('高使用率',s.high,'high')}${scoreCell('合理',s.normal,'normal')}${scoreCell('治理优先',s.priority,'') }<span class="priority ${s.level==='P1'?'high':''}">${levelLabel(s.level)}</span><span class="chev">›</span></button>`}
 function scoreCell(label,value,cls){return `<span class="score-cell ${cls}"><span>${label}</span><b>${value}</b></span>`}
 function levelLabel(level){return {P1:'紧急',P2:'重点',P3:'常规'}[level]||level}
 function recommendationItem(item,index,systemId){
