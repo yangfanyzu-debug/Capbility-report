@@ -879,6 +879,8 @@ function wzMakeMod(base,seed){
 }
 function wzScaleTo(arr,target){const mx=Math.max.apply(null,arr);if(!mx)return arr;return arr.map(v=>Math.max(1,Math.min(96,Math.round(v*target/mx))));}
 function wzHistForIdx(idx,kind){
+  // 新增扩容/新增模块场景下没有历史数据,返回空数组,Step 2 只显示仿真线
+  if(wzApp && wzApp.type==='扩容')return [];
   const m=wzModules.length?wzModules[idx]:null;
   const b=m?wzModuleBase[m]:null;
   let arr;
@@ -893,7 +895,21 @@ function wzHistCPU(){return wzHistForIdx(wzActiveMod,'cpu');}
 function wzHistMEM(){return wzHistForIdx(wzActiveMod,'mem');}
 function wzHistDISK(){return wzHistForIdx(wzActiveMod,'disk');}
 function wzMtypeFactor(){const t=document.getElementById('pType').value;return t==='物理机'?1:(t==='虚拟机'?1.08:1.15);}
-function wzSimCurve(h,param,count,ref){const factor=(ref/param)*(WZ_SLIDER.count.max/Math.max(count,1))*wzMtypeFactor();return h.map(v=>Math.max(1,Math.min(96,Math.round(v*factor))));}
+function wzSimCurve(h,param,count,ref){
+  // 仿真曲线峰值:改造场景按规格/数量推算;新增扩容场景没有历史基线,
+  // 把仿真峰值控制在 60% 以内,基线取 50%,曲线在基线附近自然波动
+  if(wzApp && wzApp.type==='扩容'){
+    const target=50;
+    const arr=h && h.length ? h : Array.from({length:24},(_,i)=>{
+      const wave=8*Math.sin((i/24)*Math.PI*2);
+      const day=4*Math.sin((i/24)*Math.PI*4);
+      return target+wave+day;
+    });
+    return arr.map(v=>Math.max(15,Math.min(60,Math.round(v))));
+  }
+  const factor=(ref/param)*(WZ_SLIDER.count.max/Math.max(count,1))*wzMtypeFactor();
+  return h.map(v=>Math.max(1,Math.min(96,Math.round(v*factor))));
+}
 function wzSimKey(){return wzModules.length?wzModules[wzActiveMod]:'_default_';}
 function wzSimOn(){return !!wzSimRun[wzSimKey()];}
 function wzPt(arr){const n=arr.length,step=wzPW/(n-1),pts=[];for(let i=0;i<n;i++)pts.push({x:wzPL+i*step,y:wzPTop+(1-arr[i]/100)*wzPH});return pts;}
@@ -907,35 +923,31 @@ function wzCurve(pts){
   }
   return d;
 }
-function wzArea(pts){const p=wzCurve(pts),last=pts[pts.length-1],first=pts[0];return p+' L'+last.x.toFixed(1)+','+(wzPTop+wzPH).toFixed(1)+' L'+first.x.toFixed(1)+','+(wzPTop+wzPH).toFixed(1)+' Z';}
+function wzArea(pts){if(!pts.length)return '';const p=wzCurve(pts),last=pts[pts.length-1],first=pts[0];return p+' L'+last.x.toFixed(1)+','+(wzPTop+wzPH).toFixed(1)+' L'+first.x.toFixed(1)+','+(wzPTop+wzPH).toFixed(1)+' Z';}
 function wzToXUnused(){return wzPL;}
 void wzToXUnused;
 function wzMaxOf(a){return Math.max.apply(null,a);}
 function wzDrawChart2(id,hist,sim,peakId,unit,showSim){
   const el=document.getElementById(id);if(!el)return;
-  const n=hist.length,hp=wzPt(hist),sp=wzPt(sim),step=wzPW/(n-1);
+  const n=Math.max(hist.length,sim.length,24),hp=wzPt(hist),sp=wzPt(sim),step=wzPW/(n-1);
   let g,s='';
   for(g=0;g<=4;g++){const gy=wzPTop+(1-g/4)*wzPH;s+='<line x1="'+wzPL+'" y1="'+gy+'" x2="'+(wzW-wzPR)+'" y2="'+gy+'" stroke="#e9edf4" stroke-width="1"/><text x="'+(wzPL-7)+'" y="'+(gy+3)+'" text-anchor="end" font-size="9" fill="#9098a7">'+(g*25)+'%</text>';}
   const ticks=unit==='hour'?[[0,'0时'],[6,'6时'],[12,'12时'],[18,'18时'],[23,'24时']]:[[0,'1日'],[7,'8日'],[14,'15日'],[21,'22日'],[30,'31日']];
   for(g=0;g<ticks.length;g++)s+='<text x="'+(wzPL+ticks[g][0]*step)+'" y="'+(wzH-6)+'" text-anchor="middle" font-size="9" fill="#9098a7">'+ticks[g][1]+'</text>';
   s+='<defs><linearGradient id="gd'+id+'" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2f5d91" stop-opacity="0.12"/><stop offset="1" stop-color="#2f5d91" stop-opacity="0"/></linearGradient></defs>';
-  s+='<path d="'+wzArea(hp)+'" fill="rgba(47,93,145,0.05)" stroke="none"/>';
-  s+='<path d="'+wzCurve(hp)+'" fill="none" stroke="#2f5d91" stroke-width="2"/>';
-  if(showSim){
-    s+='<path d="'+wzArea(sp)+'" fill="url(#gd'+id+')" stroke="none"/>';
-    s+='<path d="'+wzCurve(sp)+'" fill="none" stroke="#8ca1bd" stroke-width="2" stroke-dasharray="5,3"/>';
-  }
+  if(hist.length){s+='<path d="'+wzArea(hp)+'" fill="rgba(47,93,145,0.05)" stroke="none"/>';s+='<path d="'+wzCurve(hp)+'" fill="none" stroke="#2f5d91" stroke-width="2"/>';}
+  if(showSim){s+='<path d="'+wzArea(sp)+'" fill="url(#gd'+id+')" stroke="none"/>';s+='<path d="'+wzCurve(sp)+'" fill="none" stroke="#8ca1bd" stroke-width="2" stroke-dasharray="5,3"/>';}
   el.innerHTML='<svg viewBox="0 0 '+wzW+' '+wzH+'">'+s+'</svg><div class="tip"></div>';
   const svgEl=el.querySelector('svg'),tipEl=el.querySelector('.tip');
   svgEl.addEventListener('mousemove',ev=>{
     const rect=el.getBoundingClientRect(),vx=(ev.clientX-rect.left)/rect.width*wzW;
     if(vx<wzPL||vx>wzW-wzPR){tipEl.style.opacity=0;return;}
     const i=Math.max(0,Math.min(n-1,Math.round((vx-wzPL)/wzPW*(n-1))));
-    tipEl.innerHTML='<span class="date">'+(unit==='hour'?i+'时':(i+1)+'日')+'</span>'+(showSim?('历史 '+hist[i]+'% · 仿真 '+sim[i]+'%'):('历史 '+hist[i]+'%'));
+    tipEl.innerHTML=(unit==='hour'?i+'时':(i+1)+'日')+(showSim?(' · 仿真 '+sim[i]+'%'):(hist.length?' · 历史 '+hist[i]+'%':''));
     tipEl.style.left=(ev.clientX-rect.left)+'px';tipEl.style.top=(ev.clientY-rect.top-10)+'px';tipEl.style.opacity=1;
   });
   svgEl.addEventListener('mouseleave',()=>{tipEl.style.opacity=0;});
-  document.getElementById(peakId).textContent=showSim?('仿真峰值 '+wzMaxOf(sim)+'%'):('历史峰值 '+wzMaxOf(hist)+'%');
+  document.getElementById(peakId).textContent=showSim?('仿真峰值 '+wzMaxOf(sim)+'%'):(hist.length?'历史峰值 '+wzMaxOf(hist)+'%':'暂无历史数据');
   const leg=el.closest('.chart-card').querySelector('.lg .s');
   if(leg)leg.style.opacity=showSim?1:0.35;
 }
@@ -1055,7 +1067,7 @@ function wzAdoptCurrent(){
 /* ---------- 第 3 步：报告 ---------- */
 function wzChartSnapURL(hist,sim,unit){
   const W2=300,H2=120,P2=28,PR2=6,PT2=8,PB2=18,PW2=W2-P2-PR2,PH2=H2-PT2-PB2;
-  const n=hist.length,st=PW2/(n-1);
+  const n=Math.max(hist.length,sim.length,24),st=PW2/(n-1);
   const pts=arr=>arr.map((v,i)=>({x:P2+i*st,y:PT2+(1-v/100)*PH2}));
   const crv=ps=>{
     if(ps.length<2)return '';
@@ -1066,14 +1078,13 @@ function wzChartSnapURL(hist,sim,unit){
     }
     return d;
   };
-  const area=ps=>{const q=crv(ps),l=ps[ps.length-1],f=ps[0];return q+' L'+l.x.toFixed(1)+','+(PT2+PH2).toFixed(1)+' L'+f.x.toFixed(1)+','+(PT2+PH2).toFixed(1)+' Z';};
+  const area=ps=>{if(!ps.length)return '';const q=crv(ps),l=ps[ps.length-1],f=ps[0];return q+' L'+l.x.toFixed(1)+','+(PT2+PH2).toFixed(1)+' L'+f.x.toFixed(1)+','+(PT2+PH2).toFixed(1)+' Z';};
   const hp=pts(hist),sp=pts(sim);
   let g,s='';
   for(g=0;g<=4;g++){const gy=PT2+(1-g/4)*PH2;s+='<line x1="'+P2+'" y1="'+gy+'" x2="'+(W2-PR2)+'" y2="'+gy+'" stroke="#e5eaf1" stroke-width="1"/><text x="'+(P2-4)+'" y="'+(gy+3)+'" text-anchor="end" font-size="7" fill="#9098a7">'+(g*25)+'%</text>';}
   const ticks=unit==='hour'?[[0,'0时'],[6,'6时'],[12,'12时'],[18,'18时'],[23,'24时']]:[[0,'1日'],[8,'8日'],[15,'15日'],[22,'22日'],[30,'31日']];
   for(g=0;g<ticks.length;g++)s+='<text x="'+(P2+ticks[g][0]*st)+'" y="'+(H2-5)+'" text-anchor="middle" font-size="7" fill="#9098a7">'+ticks[g][1]+'</text>';
-  s+='<path d="'+area(hp)+'" fill="rgba(47,93,145,0.08)" stroke="none"/>';
-  s+='<path d="'+crv(hp)+'" fill="none" stroke="#2f5d91" stroke-width="1.6"/>';
+  if(hist.length){s+='<path d="'+area(hp)+'" fill="rgba(47,93,145,0.08)" stroke="none"/>';s+='<path d="'+crv(hp)+'" fill="none" stroke="#2f5d91" stroke-width="1.6"/>';}
   s+='<path d="'+crv(sp)+'" fill="none" stroke="#8ca1bd" stroke-width="1.4" stroke-dasharray="4,3"/>';
   return 'data:image/svg+xml;charset=utf-8,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 '+W2+' '+H2+'">'+s+'</svg>');
 }
@@ -1082,7 +1093,7 @@ function wzRenderReport(){
   if(!a){toast('尚未加载申请单','请回到第 1 步先加载一条 ITSM 申请单。');wzGo(1);return;}
   const pv=wzReadParams();
   const repMods=a.type==='改造'?wzModules.slice():a.equip.map(e=>e.name);
-  const isNew=a.type==='新增';
+  const isNew=a.type==='扩容'||a.type==='新增';
   let modularow='',shotHTML='';
   repMods.forEach((m,k)=>{
     const hc=wzHistForIdx(k,'cpu'),hm=wzHistForIdx(k,'mem'),hd=wzHistForIdx(k,'disk');
