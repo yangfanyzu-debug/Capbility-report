@@ -344,7 +344,12 @@ function governanceWorkflowPanel(system,flow){
   ];
   const activeIndex=Math.min(flow.phase,steps.length-1);
   const status=flow.phase>=6?'治理闭环已完成':flow.phase===4?'正在验证治理效果':flow.phase===3?'正在跟进 CICD 执行':flow.phase===2?'正在创建 CICD 执行单':flow.phase===1?'正在创建 JIRA 变更单':'平台治理事项已创建';
-  return `<section class="panel overview-panel overview-flow"><div class="panel-head"><div><h2>治理执行流程</h2><p>${system.name} · 已采纳「${flow.recommendationTitle}」</p></div><span class="flow-status ${flow.phase>=6?'done':''}"><i></i>${status}</span></div><div class="governance-flow-body"><div class="flow-identifiers">${identifiers.map(([label,value])=>`<div><span>${label}</span><b>${value}</b></div>`).join('')}</div><div class="governance-flow-track">${steps.map(([title,detail],index)=>`<article class="flow-step ${flow.phase>=6||index<activeIndex?'done':index===activeIndex?'active':'waiting'}"><span class="flow-node">${flow.phase>=6||index<activeIndex?'✓':String(index+1).padStart(2,'0')}</span><div><b>${title}</b><small>${detail}</small>${index===3&&flow.phase===3?`<span class="flow-progress"><i style="width:${flow.deployProgress}%"></i></span>`:''}</div></article>`).join('')}</div><div class="flow-live"><span class="live-dot"></span><div><b>${governanceFlowMessage(flow)}</b><small>演示流程由 Capacity Agent 自动推进，所有外部单据均保留独立编号与状态。</small></div><em>${flow.phase>=6?'100%':Math.round((Math.min(flow.phase,5)+.35)/6*100)}%</em></div></div></section>`;
+  return `<section class="panel overview-panel overview-flow"><div class="panel-head"><div><h2>治理执行流程</h2><p>${system.name} · 已采纳「${flow.recommendationTitle}」</p></div><span class="flow-status ${flow.phase>=6?'done':''}" aria-live="polite"><i></i>${status}</span></div><div class="governance-flow-body"><div class="flow-identifiers">${identifiers.map(([label,value])=>`<div><span>${label}</span><b>${value}</b></div>`).join('')}</div><div class="governance-flow-track">${steps.map(([title,detail],index)=>`<article class="flow-step ${flow.phase>=6||index<activeIndex?'done':index===activeIndex?'active':'waiting'}"><span class="flow-node">${flow.phase>=6||index<activeIndex?'✓':String(index+1).padStart(2,'0')}</span><div><b>${title}</b><small ${index===3?'data-flow-progress-detail':''}>${detail}</small>${index===3&&flow.phase===3?`<span class="flow-progress"><i style="width:${flow.deployProgress}%"></i></span>`:''}</div></article>`).join('')}</div><div class="flow-live"><span class="live-dot"></span><div><b data-flow-message>${governanceFlowMessage(flow)}</b><small>每个主步骤停留 2 秒，所有外部单据均保留独立编号与状态。</small></div><em data-flow-percent>${governanceFlowPercent(flow)}%</em></div></div></section>`;
+}
+function governanceFlowPercent(flow){
+  if(flow.phase>=6)return 100;
+  if(flow.phase===3)return Math.round((3+flow.deployProgress/100)/6*100);
+  return Math.round((flow.phase+.5)/6*100);
 }
 function governanceFlowMessage(flow){
   if(flow.phase===0)return `平台治理事项 ${flow.governanceNo} 已创建，正在固化建议证据`;
@@ -355,7 +360,7 @@ function governanceFlowMessage(flow){
   if(flow.phase===5)return '效果验证通过，正在回写治理结论与证据快照';
   return '治理流程已闭环，单据、执行记录和验证结论均已归档';
 }
-function updateGovernanceWorkflow(systemId,updateAdvice=false){
+function updateGovernanceWorkflow(systemId,updateAdvice=false,progressOnly=false){
   if(state.page!=='overview'||state.overviewSystemId!==systemId)return;
   const system=managedSystems.find(item=>item.id===systemId);
   const governance=overviewGovernance[systemId];
@@ -363,6 +368,17 @@ function updateGovernanceWorkflow(systemId,updateAdvice=false){
   const grid=main.querySelector('.overview-quadrants');
   if(!system||!governance||!flow||!grid)return;
   const currentPanel=grid.querySelector('.overview-flow');
+  if(progressOnly&&currentPanel){
+    const progressBar=currentPanel.querySelector('.flow-progress i');
+    const progressDetail=currentPanel.querySelector('[data-flow-progress-detail]');
+    const message=currentPanel.querySelector('[data-flow-message]');
+    const percent=currentPanel.querySelector('[data-flow-percent]');
+    if(progressBar)progressBar.style.width=`${flow.deployProgress}%`;
+    if(progressDetail)progressDetail.textContent=`执行进度 ${flow.deployProgress}%`;
+    if(message)message.textContent=governanceFlowMessage(flow);
+    if(percent)percent.textContent=`${governanceFlowPercent(flow)}%`;
+    return;
+  }
   const panelHTML=governanceWorkflowPanel(system,flow);
   if(currentPanel)currentPanel.outerHTML=panelHTML;
   else{
@@ -386,12 +402,13 @@ function startGovernanceWorkflow(systemId,recommendationId){
   state.recommendationDecisions[`${systemId}:${recommendationId}`]='adopted';
   const flow={recommendationId,recommendationTitle:recommendation.title,governanceNo:recommendation.jiraNo.replace(/^ACT-/,'CAP-'),jiraNo:recommendation.jiraNo,cicdNo:recommendation.cicdNo,phase:0,deployProgress:0};
   state.governanceFlows[systemId]=flow;
-  const updates=[[650,1,0],[1300,2,0],[1950,3,18],[2600,3,47],[3250,3,78],[3900,3,100],[4500,4,100],[5250,5,100],[6000,6,100]];
+  const updates=[[2000,1,0],[4000,2,0],[6000,3,12],[6500,3,32],[7000,3,55],[7500,3,78],[7900,3,100],[8000,4,100],[10000,5,100],[12000,6,100]];
   updates.forEach(([delay,phase,progress])=>state.workflowTimers[systemId].push(setTimeout(()=>{
     const current=state.governanceFlows[systemId];
     if(!current||current.recommendationId!==recommendationId)return;
+    const progressOnly=current.phase===phase&&phase===3;
     current.phase=phase;current.deployProgress=progress;
-    updateGovernanceWorkflow(systemId);
+    updateGovernanceWorkflow(systemId,false,progressOnly);
     if(phase===6)toast('治理闭环已完成',`${current.governanceNo} 的执行与效果验证已归档。`);
   },delay)));
   updateGovernanceWorkflow(systemId,true);
