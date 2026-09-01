@@ -331,22 +331,25 @@ function overviewVerificationPanel(item,system){
   return `<section class="panel overview-panel overview-verification"><div class="panel-head"><div><h2>效果验证</h2><p>${system.name}变更后水位与基线持续比对</p></div><small>${item.ticket} · ${item.day}</small></div><div class="overview-verification-body"><div class="verify-title"><div><span>${item.title}</span><strong>${item.day}</strong></div><em>${item.status}</em></div><div class="verify-hero"><div class="verify-card"><span>变更前 CPU 峰值</span><strong>${item.beforeCpu}</strong></div><div class="verify-card"><span>变更后 CPU 峰值</span><strong class="verify-good">${item.afterCpu}</strong></div><div class="verify-card"><span>内存峰值变化</span><strong class="verify-good">${item.memory}</strong></div><div class="verify-card"><span>异常 / 告警</span><strong class="verify-good">${item.alerts}</strong></div></div><div class="decision"><b>Agent 当前结论</b><p>${item.conclusion}</p></div></div></section>`;
 }
 function governanceWorkflowPanel(system,flow){
+  const identifiers=[['平台治理单号',flow.governanceNo]];
+  if(flow.phase>=1)identifiers.push(['JIRA 单号',flow.jiraNo]);
+  if(flow.phase>=2)identifiers.push(['CICD 单号',flow.cicdNo]);
   const steps=[
-    ['平台治理事项',flow.phase>=1?flow.governanceNo:'正在生成治理单号…'],
-    ['JIRA 变更单',flow.phase>=2?flow.jiraNo:'等待治理事项创建成功'],
-    ['CICD 执行单',flow.phase>=3?flow.cicdNo:'等待 JIRA 创建成功'],
+    ['平台治理事项',`${flow.governanceNo} · 已创建`],
+    ['JIRA 变更单',flow.phase>=1?`${flow.jiraNo} · 创建中`:'等待治理事项创建成功'],
+    ['CICD 执行单',flow.phase>=2?`${flow.cicdNo} · 创建中`:'等待 JIRA 创建成功'],
     ['跟进执行进度',flow.phase>=3?`执行进度 ${flow.deployProgress}%`:'等待 CICD 执行'],
     ['验证治理效果',flow.phase>=4?'对比变更前基线与验收条件':'等待执行完成'],
     ['完成治理闭环',flow.phase>=5?'治理结论已回写':'等待验证结论']
   ];
   const activeIndex=Math.min(flow.phase,steps.length-1);
-  const status=flow.phase>=6?'治理闭环已完成':flow.phase===4?'正在验证治理效果':flow.phase===3?'正在跟进 CICD 执行':'正在自动推进';
-  return `<section class="panel overview-panel overview-flow"><div class="panel-head"><div><h2>治理执行流程</h2><p>${system.name} · 已采纳「${flow.recommendationTitle}」</p></div><span class="flow-status ${flow.phase>=6?'done':''}"><i></i>${status}</span></div><div class="governance-flow-body"><div class="flow-identifiers"><div><span>平台治理单号</span><b>${flow.phase>=1?flow.governanceNo:'生成中…'}</b></div><div><span>JIRA 单号</span><b>${flow.phase>=2?flow.jiraNo:'待创建'}</b></div><div><span>CICD 单号</span><b>${flow.phase>=3?flow.cicdNo:'待创建'}</b></div></div><div class="governance-flow-track">${steps.map(([title,detail],index)=>`<article class="flow-step ${flow.phase>=6||index<activeIndex?'done':index===activeIndex?'active':'waiting'}"><span class="flow-node">${flow.phase>=6||index<activeIndex?'✓':String(index+1).padStart(2,'0')}</span><div><b>${title}</b><small>${detail}</small>${index===3&&flow.phase===3?`<span class="flow-progress"><i style="width:${flow.deployProgress}%"></i></span>`:''}</div></article>`).join('')}</div><div class="flow-live"><span class="live-dot"></span><div><b>${governanceFlowMessage(flow)}</b><small>演示流程由 Capacity Agent 自动推进，所有外部单据均保留独立编号与状态。</small></div><em>${flow.phase>=6?'100%':Math.round((Math.min(flow.phase,5)+.35)/6*100)}%</em></div></div></section>`;
+  const status=flow.phase>=6?'治理闭环已完成':flow.phase===4?'正在验证治理效果':flow.phase===3?'正在跟进 CICD 执行':flow.phase===2?'正在创建 CICD 执行单':flow.phase===1?'正在创建 JIRA 变更单':'平台治理事项已创建';
+  return `<section class="panel overview-panel overview-flow"><div class="panel-head"><div><h2>治理执行流程</h2><p>${system.name} · 已采纳「${flow.recommendationTitle}」</p></div><span class="flow-status ${flow.phase>=6?'done':''}"><i></i>${status}</span></div><div class="governance-flow-body"><div class="flow-identifiers">${identifiers.map(([label,value])=>`<div><span>${label}</span><b>${value}</b></div>`).join('')}</div><div class="governance-flow-track">${steps.map(([title,detail],index)=>`<article class="flow-step ${flow.phase>=6||index<activeIndex?'done':index===activeIndex?'active':'waiting'}"><span class="flow-node">${flow.phase>=6||index<activeIndex?'✓':String(index+1).padStart(2,'0')}</span><div><b>${title}</b><small>${detail}</small>${index===3&&flow.phase===3?`<span class="flow-progress"><i style="width:${flow.deployProgress}%"></i></span>`:''}</div></article>`).join('')}</div><div class="flow-live"><span class="live-dot"></span><div><b>${governanceFlowMessage(flow)}</b><small>演示流程由 Capacity Agent 自动推进，所有外部单据均保留独立编号与状态。</small></div><em>${flow.phase>=6?'100%':Math.round((Math.min(flow.phase,5)+.35)/6*100)}%</em></div></div></section>`;
 }
 function governanceFlowMessage(flow){
-  if(flow.phase===0)return '正在创建平台内部治理事项并固化建议证据';
-  if(flow.phase===1)return `治理事项 ${flow.governanceNo} 已创建，正在创建 JIRA 变更单`;
-  if(flow.phase===2)return `JIRA 单 ${flow.jiraNo} 已创建，正在生成 CICD 执行单`;
+  if(flow.phase===0)return `平台治理事项 ${flow.governanceNo} 已创建，正在固化建议证据`;
+  if(flow.phase===1)return `进入 JIRA 节点，正在创建变更单 ${flow.jiraNo}`;
+  if(flow.phase===2)return `JIRA 单已创建，正在生成 CICD 执行单 ${flow.cicdNo}`;
   if(flow.phase===3)return `CICD 单 ${flow.cicdNo} 正在执行，当前进度 ${flow.deployProgress}%`;
   if(flow.phase===4)return 'CICD 执行完成，正在对比治理前基线与验收条件';
   if(flow.phase===5)return '效果验证通过，正在回写治理结论与证据快照';
